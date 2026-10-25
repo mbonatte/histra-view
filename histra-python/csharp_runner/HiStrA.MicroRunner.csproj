@@ -1,0 +1,63 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>HiStrA.MicroRunner</AssemblyName>
+    <RootNamespace>HiStrA.MicroRunner</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- MonoGame Math Structs -->
+    <Compile Include="../C#_Original/source/MonoGame.Framework/Microsoft/Xna/Framework/Vector2.cs" />
+    <Compile Include="../C#_Original/source/MonoGame.Framework/Microsoft/Xna/Framework/Vector3.cs" />
+    <Compile Include="../C#_Original/source/MonoGame.Framework/Microsoft/Xna/Framework/Vector4.cs" />
+    <Compile Include="../C#_Original/source/MonoGame.Framework/Microsoft/Xna/Framework/Matrix.cs" />
+    <Compile Include="../C#_Original/source/MonoGame.Framework/Microsoft/Xna/Framework/MathHelper.cs" />
+    <Compile Include="../C#_Original/source/MonoGame.Framework/Microsoft/Xna/Framework/Quaternion.cs" />
+    <Compile Include="../C#_Original/source/MonoGame.Framework/Microsoft/Xna/Framework/Rectangle.cs" />
+    <Compile Include="../C#_Original/source/MonoGame.Framework/Microsoft/Xna/Framework/Point.cs" />
+
+    <!-- MatrixManager -->
+    <Compile Include="../C#_Original/source/MatrixManager/Vector.cs" />
+
+    <!-- UtilityLibrary Enums -->
+    <Compile Include="../C#_Original/source/UtilityLibrary/Tipi/PhaseEnum.cs" />
+    <Compile Include="../C#_Original/source/UtilityLibrary/Tipi/ShearYieldingDomainEnum.cs" />
+    <Compile Include="../C#_Original/source/UtilityLibrary/Tipi/HystereticTypeEnum.cs" />
+    <Compile Include="../C#_Original/source/UtilityLibrary/Tipi/ElementTypeEnum.cs" />
+    <Compile Include="../C#_Original/source/UtilityLibrary/Tipi/SpringPurposeEnum.cs" />
+    <Compile Include="../C#_Original/source/UtilityLibrary/Tipi/SpringTypeEnum.cs" />
+    <Compile Include="../C#_Original/source/UtilityLibrary/Tipi/HystereticCompressiveCurveTypeEnum.cs" />
+    <Compile Include="../C#_Original/source/UtilityLibrary/Tipi/HystereticTensileCurveTypeEnum.cs" />
+    <Compile Include="../C#_Original/source/UtilityLibrary/Tipi/ConvegenceCriteriaEnum.cs" />
+    <Compile Include="../C#_Original/source/UtilityLibrary/Tipi/ThicknessLawEnum.cs" />
+    <Compile Include="../C#_Original/source/UtilityLibrary/Tipi/PlaneEnum.cs" />
+    <Compile Include="../C#_Original/source/UtilityLibrary/Tipi/ViewDirectionEnum.cs" />
+    <Compile Include="../C#_Original/source/UtilityLibrary/Tipi/IntegrationMethodEnum.cs" />
+    <Compile Include="../C#_Original/source/UtilityLibrary/Tipi/IntervalEnum.cs" />
+    <Compile Include="../C#_Original/source/UtilityLibrary/Tipi/ArcLengthProcedureEnum.cs" />
+    <Compile Include="../C#_Original/source/UtilityLibrary/Tipi/TypeModelTorsionEnum.cs" />
+    <Compile Include="../C#_Original/source/UtilityLibrary/Tipi/ConstitutiveLawMasonryShearEnum.cs" />
+    <Compile Include="../C#_Original/source/UtilityLibrary/Tipi/ConstitutiveLawCollocation.cs" />
+    <Compile Include="../C#_Original/source/UtilityLibrary/Tipi/ResponseTypeEnum.cs" />
+
+    <!-- Unmodified Candidate Numerical Files -->
+    <Compile Include="../C#_Original/source/ModelLibrary/Objects/Spring.cs" />
+    <Compile Include="../C#_Original/source/ModelLibrary/Objects/SpringMultiLinearPlastic.cs" />
+    <Compile Include="../C#_Original/source/ModelLibrary/Objects/SpringCoulomb03.cs" />
+    <Compile Include="../C#_Original/source/ModelLibrary/Objects/SpringHysteretic.cs" />
+    <Compile Include="../C#_Original/source/ModelLibrary/MacroKernel/MacroNumTools/QuadraturaGaussiana.cs" />
+    <Compile Include="../C#_Original/source/SolverRuntime/ConvergenceTest/ConvergenceTest.cs" />
+    <Compile Include="../C#_Original/source/SolverRuntime/ConvergenceTest/CTestNormUnbalance.cs" />
+    <Compile Include="../C#_Original/source/SolverRuntime/ConvergenceTest/CTestNormDispIncr.cs" />
+    <Compile Include="../C#_Original/source/SolverRuntime/ConvergenceTest/CTestEnergyIncr.cs" />
+    <Compile Include="../C#_Original/source/SolverRuntime/LineSearch/SecantLineSearch.cs" />
+    <Compile Include="../C#_Original/source/SolverRuntime/Integrator/ArcLength.cs" />
+  </ItemGroup>
+
+</Project>

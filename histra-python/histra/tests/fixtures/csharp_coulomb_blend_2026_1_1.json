@@ -1,0 +1,613 @@
+﻿{
+    "cases":  [
+                  {
+                      "interface_e1":  [
+                                           1.0,
+                                           0.0,
+                                           0.0
+                                       ],
+                      "quad_e1":  [
+                                      1.0,
+                                      0.0,
+                                      0.0
+                                  ],
+                      "primary":  {
+                                      "E":  1415.58392627463,
+                                      "cohesion":  0.273435095827634,
+                                      "mu":  0.456732658438312,
+                                      "ductility":  12345.127693442,
+                                      "plastic_stiffness_ratio":  0.01,
+                                      "max_tensile_ratio":  0.2,
+                                      "is_elastic":  false
+                                  },
+                      "secondary":  {
+                                        "E":  2778.01245687123,
+                                        "cohesion":  0.137656839215837,
+                                        "mu":  0.723484279982739,
+                                        "ductility":  44565.543628456,
+                                        "plastic_stiffness_ratio":  0.04,
+                                        "max_tensile_ratio":  0.5,
+                                        "is_elastic":  false
+                                    },
+                      "expected":  {
+                                       "c1":  1,
+                                       "ductility":  12345.127693442,
+                                       "mu":  0.456732658438312,
+                                       "c2":  0,
+                                       "E":  1415.58392627463,
+                                       "cohesion":  0.273435095827634
+                                   }
+                  },
+                  {
+                      "interface_e1":  [
+                                           1.0,
+                                           0.0,
+                                           0.0
+                                       ],
+                      "quad_e1":  [
+                                      1.0,
+                                      0.0,
+                                      0.0
+                                  ],
+                      "primary":  {
+                                      "E":  1415.58392627463,
+                                      "cohesion":  0.273435095827634,
+                                      "mu":  0.456732658438312,
+                                      "ductility":  12345.127693442,
+                                      "plastic_stiffness_ratio":  0.01,
+                                      "max_tensile_ratio":  0.2,
+                                      "is_elastic":  false
+                                  },
+                      "secondary":  {
+                                        "E":  2778.01245687123,
+                                        "cohesion":  0.137656839215837,
+                                        "mu":  0.723484279982739,
+                                        "ductility":  44565.543628456,
+                                        "plastic_stiffness_ratio":  0.04,
+                                        "max_tensile_ratio":  0.5,
+                                        "is_elastic":  true
+                                    },
+                      "expected":  {
+                                       "c1":  1,
+                                       "ductility":  12345.127693442,
+                                       "mu":  0.456732658438312,
+                                       "c2":  0,
+                                       "E":  1415.58392627463,
+                                       "cohesion":  0.273435095827634
+                                   }
+                  },
+                  {
+                      "interface_e1":  [
+                                           1.0,
+                                           0.0,
+                                           0.0
+                                       ],
+                      "quad_e1":  [
+                                      1.0,
+                                      0.0,
+                                      0.0
+                                  ],
+                      "primary":  {
+                                      "E":  1415.58392627463,
+                                      "cohesion":  0.273435095827634,
+                                      "mu":  0.456732658438312,
+                                      "ductility":  12345.127693442,
+                                      "plastic_stiffness_ratio":  0.01,
+                                      "max_tensile_ratio":  0.2,
+                                      "is_elastic":  true
+                                  },
+                      "secondary":  {
+                                        "E":  2778.01245687123,
+                                        "cohesion":  0.137656839215837,
+                                        "mu":  0.723484279982739,
+                                        "ductility":  44565.543628456,
+                                        "plastic_stiffness_ratio":  0.04,
+                                        "max_tensile_ratio":  0.5,
+                                        "is_elastic":  false
+                                    },
+                      "expected":  {
+                                       "c1":  1,
+                                       "ductility":  12345.127693442,
+                                       "mu":  0.456732658438312,
+                                       "c2":  0,
+                                       "E":  1415.58392627463,
+                                       "cohesion":  0.273435095827634
+                                   }
+                  },
+                  {
+                      "interface_e1":  [
+                                           1.0,
+                                           0.0,
+                                           0.0
+                                       ],
+                      "quad_e1":  [
+                                      1.0,
+                                      0.0,
+                                      0.0
+                                  ],
+                      "primary":  {
+                                      "E":  1415.58392627463,
+                                      "cohesion":  0.273435095827634,
+                                      "mu":  0.456732658438312,
+                                      "ductility":  12345.127693442,
+                                      "plastic_stiffness_ratio":  0.01,
+                                      "max_tensile_ratio":  0.2,
+                                      "is_elastic":  true
+                                  },
+                      "secondary":  {
+                                        "E":  2778.01245687123,
+                                        "cohesion":  0.137656839215837,
+                                        "mu":  0.723484279982739,
+                                        "ductility":  44565.543628456,
+                                        "plastic_stiffness_ratio":  0.04,
+                                        "max_tensile_ratio":  0.5,
+                                        "is_elastic":  true
+                                    },
+                      "expected":  {
+                                       "c1":  1,
+                                       "ductility":  12345.127693442,
+                                       "mu":  0.456732658438312,
+                                       "c2":  0,
+                                       "E":  1415.58392627463,
+                                       "cohesion":  0.273435095827634
+                                   }
+                  },
+                  {
+                      "interface_e1":  [
+                                           0.8364628553390503,
+                                           0.5480235815048218,
+                                           0.0
+                                       ],
+                      "quad_e1":  [
+                                      0.9615239500999451,
+                                      0.2747211158275604,
+                                      0.0
+                                  ],
+                      "primary":  {
+                                      "E":  1415.58392627463,
+                                      "cohesion":  0.273435095827634,
+                                      "mu":  0.456732658438312,
+                                      "ductility":  12345.127693442,
+                                      "plastic_stiffness_ratio":  0.01,
+                                      "max_tensile_ratio":  0.2,
+                                      "is_elastic":  false
+                                  },
+                      "secondary":  {
+                                        "E":  2778.01245687123,
+                                        "cohesion":  0.137656839215837,
+                                        "mu":  0.723484279982739,
+                                        "ductility":  44565.543628456,
+                                        "plastic_stiffness_ratio":  0.04,
+                                        "max_tensile_ratio":  0.5,
+                                        "is_elastic":  false
+                                    },
+                      "expected":  {
+                                       "c1":  0.95483273267745972,
+                                       "ductility":  15190.011681216307,
+                                       "mu":  0.48028534684479218,
+                                       "c2":  0.297143824784724,
+                                       "E":  1535.8788076007627,
+                                       "cohesion":  0.26144662898406829
+                                   }
+                  },
+                  {
+                      "interface_e1":  [
+                                           0.8364628553390503,
+                                           0.5480235815048218,
+                                           0.0
+                                       ],
+                      "quad_e1":  [
+                                      0.9615239500999451,
+                                      0.2747211158275604,
+                                      0.0
+                                  ],
+                      "primary":  {
+                                      "E":  1415.58392627463,
+                                      "cohesion":  0.273435095827634,
+                                      "mu":  0.456732658438312,
+                                      "ductility":  12345.127693442,
+                                      "plastic_stiffness_ratio":  0.01,
+                                      "max_tensile_ratio":  0.2,
+                                      "is_elastic":  false
+                                  },
+                      "secondary":  {
+                                        "E":  2778.01245687123,
+                                        "cohesion":  0.137656839215837,
+                                        "mu":  0.723484279982739,
+                                        "ductility":  44565.543628456,
+                                        "plastic_stiffness_ratio":  0.04,
+                                        "max_tensile_ratio":  0.5,
+                                        "is_elastic":  true
+                                    },
+                      "expected":  {
+                                       "c1":  0.95483273267745972,
+                                       "ductility":  12345.127693442,
+                                       "mu":  0.456732658438312,
+                                       "c2":  0.297143824784724,
+                                       "E":  1535.8788076007627,
+                                       "cohesion":  0.273435095827634
+                                   }
+                  },
+                  {
+                      "interface_e1":  [
+                                           0.8364628553390503,
+                                           0.5480235815048218,
+                                           0.0
+                                       ],
+                      "quad_e1":  [
+                                      0.9615239500999451,
+                                      0.2747211158275604,
+                                      0.0
+                                  ],
+                      "primary":  {
+                                      "E":  1415.58392627463,
+                                      "cohesion":  0.273435095827634,
+                                      "mu":  0.456732658438312,
+                                      "ductility":  12345.127693442,
+                                      "plastic_stiffness_ratio":  0.01,
+                                      "max_tensile_ratio":  0.2,
+                                      "is_elastic":  true
+                                  },
+                      "secondary":  {
+                                        "E":  2778.01245687123,
+                                        "cohesion":  0.137656839215837,
+                                        "mu":  0.723484279982739,
+                                        "ductility":  44565.543628456,
+                                        "plastic_stiffness_ratio":  0.04,
+                                        "max_tensile_ratio":  0.5,
+                                        "is_elastic":  false
+                                    },
+                      "expected":  {
+                                       "c1":  0.95483273267745972,
+                                       "ductility":  12345.127693442,
+                                       "mu":  0.456732658438312,
+                                       "c2":  0.297143824784724,
+                                       "E":  1535.8788076007627,
+                                       "cohesion":  0.273435095827634
+                                   }
+                  },
+                  {
+                      "interface_e1":  [
+                                           0.8364628553390503,
+                                           0.5480235815048218,
+                                           0.0
+                                       ],
+                      "quad_e1":  [
+                                      0.9615239500999451,
+                                      0.2747211158275604,
+                                      0.0
+                                  ],
+                      "primary":  {
+                                      "E":  1415.58392627463,
+                                      "cohesion":  0.273435095827634,
+                                      "mu":  0.456732658438312,
+                                      "ductility":  12345.127693442,
+                                      "plastic_stiffness_ratio":  0.01,
+                                      "max_tensile_ratio":  0.2,
+                                      "is_elastic":  true
+                                  },
+                      "secondary":  {
+                                        "E":  2778.01245687123,
+                                        "cohesion":  0.137656839215837,
+                                        "mu":  0.723484279982739,
+                                        "ductility":  44565.543628456,
+                                        "plastic_stiffness_ratio":  0.04,
+                                        "max_tensile_ratio":  0.5,
+                                        "is_elastic":  true
+                                    },
+                      "expected":  {
+                                       "c1":  0.95483273267745972,
+                                       "ductility":  12345.127693442,
+                                       "mu":  0.456732658438312,
+                                       "c2":  0.297143824784724,
+                                       "E":  1535.8788076007627,
+                                       "cohesion":  0.273435095827634
+                                   }
+                  },
+                  {
+                      "interface_e1":  [
+                                           0.6,
+                                           0.8,
+                                           0.0
+                                       ],
+                      "quad_e1":  [
+                                      -0.8,
+                                      0.6,
+                                      0.0
+                                  ],
+                      "primary":  {
+                                      "E":  1415.58392627463,
+                                      "cohesion":  0.273435095827634,
+                                      "mu":  0.456732658438312,
+                                      "ductility":  12345.127693442,
+                                      "plastic_stiffness_ratio":  0.01,
+                                      "max_tensile_ratio":  0.2,
+                                      "is_elastic":  false
+                                  },
+                      "secondary":  {
+                                        "E":  2778.01245687123,
+                                        "cohesion":  0.137656839215837,
+                                        "mu":  0.723484279982739,
+                                        "ductility":  44565.543628456,
+                                        "plastic_stiffness_ratio":  0.04,
+                                        "max_tensile_ratio":  0.5,
+                                        "is_elastic":  false
+                                    },
+                      "expected":  {
+                                       "c1":  0,
+                                       "ductility":  44565.543628456,
+                                       "mu":  0.723484279982739,
+                                       "c2":  1,
+                                       "E":  2778.01245687123,
+                                       "cohesion":  0.137656839215837
+                                   }
+                  },
+                  {
+                      "interface_e1":  [
+                                           0.6,
+                                           0.8,
+                                           0.0
+                                       ],
+                      "quad_e1":  [
+                                      -0.8,
+                                      0.6,
+                                      0.0
+                                  ],
+                      "primary":  {
+                                      "E":  1415.58392627463,
+                                      "cohesion":  0.273435095827634,
+                                      "mu":  0.456732658438312,
+                                      "ductility":  12345.127693442,
+                                      "plastic_stiffness_ratio":  0.01,
+                                      "max_tensile_ratio":  0.2,
+                                      "is_elastic":  false
+                                  },
+                      "secondary":  {
+                                        "E":  2778.01245687123,
+                                        "cohesion":  0.137656839215837,
+                                        "mu":  0.723484279982739,
+                                        "ductility":  44565.543628456,
+                                        "plastic_stiffness_ratio":  0.04,
+                                        "max_tensile_ratio":  0.5,
+                                        "is_elastic":  true
+                                    },
+                      "expected":  {
+                                       "c1":  0,
+                                       "ductility":  12345.127693442,
+                                       "mu":  0.456732658438312,
+                                       "c2":  1,
+                                       "E":  2778.01245687123,
+                                       "cohesion":  0.273435095827634
+                                   }
+                  },
+                  {
+                      "interface_e1":  [
+                                           0.6,
+                                           0.8,
+                                           0.0
+                                       ],
+                      "quad_e1":  [
+                                      -0.8,
+                                      0.6,
+                                      0.0
+                                  ],
+                      "primary":  {
+                                      "E":  1415.58392627463,
+                                      "cohesion":  0.273435095827634,
+                                      "mu":  0.456732658438312,
+                                      "ductility":  12345.127693442,
+                                      "plastic_stiffness_ratio":  0.01,
+                                      "max_tensile_ratio":  0.2,
+                                      "is_elastic":  true
+                                  },
+                      "secondary":  {
+                                        "E":  2778.01245687123,
+                                        "cohesion":  0.137656839215837,
+                                        "mu":  0.723484279982739,
+                                        "ductility":  44565.543628456,
+                                        "plastic_stiffness_ratio":  0.04,
+                                        "max_tensile_ratio":  0.5,
+                                        "is_elastic":  false
+                                    },
+                      "expected":  {
+                                       "c1":  0,
+                                       "ductility":  12345.127693442,
+                                       "mu":  0.456732658438312,
+                                       "c2":  1,
+                                       "E":  2778.01245687123,
+                                       "cohesion":  0.273435095827634
+                                   }
+                  },
+                  {
+                      "interface_e1":  [
+                                           0.6,
+                                           0.8,
+                                           0.0
+                                       ],
+                      "quad_e1":  [
+                                      -0.8,
+                                      0.6,
+                                      0.0
+                                  ],
+                      "primary":  {
+                                      "E":  1415.58392627463,
+                                      "cohesion":  0.273435095827634,
+                                      "mu":  0.456732658438312,
+                                      "ductility":  12345.127693442,
+                                      "plastic_stiffness_ratio":  0.01,
+                                      "max_tensile_ratio":  0.2,
+                                      "is_elastic":  true
+                                  },
+                      "secondary":  {
+                                        "E":  2778.01245687123,
+                                        "cohesion":  0.137656839215837,
+                                        "mu":  0.723484279982739,
+                                        "ductility":  44565.543628456,
+                                        "plastic_stiffness_ratio":  0.04,
+                                        "max_tensile_ratio":  0.5,
+                                        "is_elastic":  true
+                                    },
+                      "expected":  {
+                                       "c1":  0,
+                                       "ductility":  12345.127693442,
+                                       "mu":  0.456732658438312,
+                                       "c2":  1,
+                                       "E":  2778.01245687123,
+                                       "cohesion":  0.273435095827634
+                                   }
+                  },
+                  {
+                      "interface_e1":  [
+                                           0.5773502588272095,
+                                           0.5773502588272095,
+                                           0.5773502588272095
+                                       ],
+                      "quad_e1":  [
+                                      0.0,
+                                      1.0,
+                                      0.0
+                                  ],
+                      "primary":  {
+                                      "E":  1415.58392627463,
+                                      "cohesion":  0.273435095827634,
+                                      "mu":  0.456732658438312,
+                                      "ductility":  12345.127693442,
+                                      "plastic_stiffness_ratio":  0.01,
+                                      "max_tensile_ratio":  0.2,
+                                      "is_elastic":  false
+                                  },
+                      "secondary":  {
+                                        "E":  2778.01245687123,
+                                        "cohesion":  0.137656839215837,
+                                        "mu":  0.723484279982739,
+                                        "ductility":  44565.543628456,
+                                        "plastic_stiffness_ratio":  0.04,
+                                        "max_tensile_ratio":  0.5,
+                                        "is_elastic":  false
+                                    },
+                      "expected":  {
+                                       "c1":  0.57735025882720947,
+                                       "ductility":  33825.40536898432,
+                                       "mu":  0.6345670759930766,
+                                       "c2":  0.81649658825506077,
+                                       "E":  2323.8696296411517,
+                                       "cohesion":  0.18291625646178294
+                                   }
+                  },
+                  {
+                      "interface_e1":  [
+                                           0.5773502588272095,
+                                           0.5773502588272095,
+                                           0.5773502588272095
+                                       ],
+                      "quad_e1":  [
+                                      0.0,
+                                      1.0,
+                                      0.0
+                                  ],
+                      "primary":  {
+                                      "E":  1415.58392627463,
+                                      "cohesion":  0.273435095827634,
+                                      "mu":  0.456732658438312,
+                                      "ductility":  12345.127693442,
+                                      "plastic_stiffness_ratio":  0.01,
+                                      "max_tensile_ratio":  0.2,
+                                      "is_elastic":  false
+                                  },
+                      "secondary":  {
+                                        "E":  2778.01245687123,
+                                        "cohesion":  0.137656839215837,
+                                        "mu":  0.723484279982739,
+                                        "ductility":  44565.543628456,
+                                        "plastic_stiffness_ratio":  0.04,
+                                        "max_tensile_ratio":  0.5,
+                                        "is_elastic":  true
+                                    },
+                      "expected":  {
+                                       "c1":  0.57735025882720947,
+                                       "ductility":  12345.127693442,
+                                       "mu":  0.456732658438312,
+                                       "c2":  0.81649658825506077,
+                                       "E":  2323.8696296411517,
+                                       "cohesion":  0.273435095827634
+                                   }
+                  },
+                  {
+                      "interface_e1":  [
+                                           0.5773502588272095,
+                                           0.5773502588272095,
+                                           0.5773502588272095
+                                       ],
+                      "quad_e1":  [
+                                      0.0,
+                                      1.0,
+                                      0.0
+                                  ],
+                      "primary":  {
+                                      "E":  1415.58392627463,
+                                      "cohesion":  0.273435095827634,
+                                      "mu":  0.456732658438312,
+                                      "ductility":  12345.127693442,
+                                      "plastic_stiffness_ratio":  0.01,
+                                      "max_tensile_ratio":  0.2,
+                                      "is_elastic":  true
+                                  },
+                      "secondary":  {
+                                        "E":  2778.01245687123,
+                                        "cohesion":  0.137656839215837,
+                                        "mu":  0.723484279982739,
+                                        "ductility":  44565.543628456,
+                                        "plastic_stiffness_ratio":  0.04,
+                                        "max_tensile_ratio":  0.5,
+                                        "is_elastic":  false
+                                    },
+                      "expected":  {
+                                       "c1":  0.57735025882720947,
+                                       "ductility":  12345.127693442,
+                                       "mu":  0.456732658438312,
+                                       "c2":  0.81649658825506077,
+                                       "E":  2323.8696296411517,
+                                       "cohesion":  0.273435095827634
+                                   }
+                  },
+                  {
+                      "interface_e1":  [
+                                           0.5773502588272095,
+                                           0.5773502588272095,
+                                           0.5773502588272095
+                                       ],
+                      "quad_e1":  [
+                                      0.0,
+                                      1.0,
+                                      0.0
+                                  ],
+                      "primary":  {
+                                      "E":  1415.58392627463,
+                                      "cohesion":  0.273435095827634,
+                                      "mu":  0.456732658438312,
+                                      "ductility":  12345.127693442,
+                                      "plastic_stiffness_ratio":  0.01,
+                                      "max_tensile_ratio":  0.2,
+                                      "is_elastic":  true
+                                  },
+                      "secondary":  {
+                                        "E":  2778.01245687123,
+                                        "cohesion":  0.137656839215837,
+                                        "mu":  0.723484279982739,
+                                        "ductility":  44565.543628456,
+                                        "plastic_stiffness_ratio":  0.04,
+                                        "max_tensile_ratio":  0.5,
+                                        "is_elastic":  true
+                                    },
+                      "expected":  {
+                                       "c1":  0.57735025882720947,
+                                       "ductility":  12345.127693442,
+                                       "mu":  0.456732658438312,
+                                       "c2":  0.81649658825506077,
+                                       "E":  2323.8696296411517,
+                                       "cohesion":  0.273435095827634
+                                   }
+                  }
+              ],
+    "source":  "Original ConstitutiveLawCoulomb/Elastic.PropOrthotropyParameter and native Vector3.Dot"
+}

@@ -1,0 +1,101 @@
+{
+  "source": "Original ModelLibrary.dll 2026.1.1 MasonryMaterial.SetShearConstitutiveLaw and SetSlidingConstitutiveLaw",
+  "cases": [
+    {
+      "gd": 8,
+      "alpha": 0,
+      "shear": 800000,
+      "sliding": 16.000160217285156
+    },
+    {
+      "gd": 8,
+      "alpha": 0.5,
+      "shear": 16,
+      "sliding": 32
+    },
+    {
+      "gd": 8,
+      "alpha": 0.9,
+      "shear": 8.88888931274414,
+      "sliding": 159.99996948242188
+    },
+    {
+      "gd": 8,
+      "alpha": 1,
+      "shear": 8.000080108642578,
+      "sliding": 1597830.125
+    },
+    {
+      "gd": 130,
+      "alpha": 0,
+      "shear": 13000000,
+      "sliding": 260.0025939941406
+    },
+    {
+      "gd": 130,
+      "alpha": 0.5,
+      "shear": 260,
+      "sliding": 520
+    },
+    {
+      "gd": 130,
+      "alpha": 0.9,
+      "shear": 144.44444274902344,
+      "sliding": 2599.999267578125
+    },
+    {
+      "gd": 130,
+      "alpha": 1,
+      "shear": 130.0012969970703,
+      "sliding": 25964740
+    },
+    {
+      "gd": 135,
+      "alpha": 0,
+      "shear": 13500000,
+      "sliding": 270.0027160644531
+    },
+    {
+      "gd": 135,
+      "alpha": 0.5,
+      "shear": 270,
+      "sliding": 540
+    },
+    {
+      "gd": 135,
+      "alpha": 0.9,
+      "shear": 150,
+      "sliding": 2699.999267578125
+    },
+    {
+      "gd": 135,
+      "alpha": 1,
+      "shear": 135.00135803222656,
+      "sliding": 26963382
+    },
+    {
+      "gd": 0.017,
+      "alpha": 0,
+      "shear": 1700.0001220703125,
+      "sliding": 0.03400034084916115
+    },
+    {
+      "gd": 0.017,
+      "alpha": 0.5,
+      "shear": 0.03400000184774399,
+      "sliding": 0.06800000369548798
+    },
+    {
+      "gd": 0.017,
+      "alpha": 0.9,
+      "shear": 0.018888890743255615,
+      "sliding": 0.3399999439716339
+    },
+    {
+      "gd": 0.017,
+      "alpha": 1,
+      "shear": 0.017000170424580574,
+      "sliding": 3395.38916015625
+    }
+  ]
+}

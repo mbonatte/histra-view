@@ -1,0 +1,295 @@
+{
+  "provenance": "Compiled unmodified dnSpy-exported C# 2026.1.1 SecantLineSearch/BisectionLineSearch with minimal vector/integrator doubles. Isolated algorithm traces; not a full engine run.",
+  "cases": [
+    {
+      "Algorithm": "Secant",
+      "Case": "positive-trial-sign",
+      "S0": -2.0,
+      "S1": -1.0,
+      "Tolerance": 0.1,
+      "MinEta": 0.0,
+      "MaxEta": 10.0,
+      "Direction": 1.0,
+      "FinalIncrement": 2.0,
+      "FinalPosition": 2.0,
+      "MaxIterations": 5,
+      "Failure": 0,
+      "ReturnCode": 0,
+      "Residuals": [
+        0.05
+      ],
+      "Corrections": [
+        1.0
+      ]
+    },
+    {
+      "Algorithm": "Secant",
+      "Case": "worse-trial-fallback-sequence",
+      "S0": -2.0,
+      "S1": -1.0,
+      "Tolerance": 0.1,
+      "MinEta": 0.0,
+      "MaxEta": 10.0,
+      "Direction": 1.0,
+      "FinalIncrement": 1.0,
+      "FinalPosition": 1.0,
+      "MaxIterations": 5,
+      "Failure": 0,
+      "ReturnCode": 0,
+      "Residuals": [
+        3.0,
+        2.0,
+        2.0
+      ],
+      "Corrections": [
+        1.0,
+        -1.0,
+        0.0
+      ]
+    },
+    {
+      "Algorithm": "Secant",
+      "Case": "tiny-nonzero-residual",
+      "S0": 1E-35,
+      "S1": 5E-35,
+      "Tolerance": 0.8,
+      "MinEta": 0.1,
+      "MaxEta": 10.0,
+      "Direction": 1.0,
+      "FinalIncrement": 0.1,
+      "FinalPosition": 0.09999999999999998,
+      "MaxIterations": 5,
+      "Failure": 0,
+      "ReturnCode": 0,
+      "Residuals": [
+        0.0
+      ],
+      "Corrections": [
+        -0.9
+      ]
+    },
+    {
+      "Algorithm": "Secant",
+      "Case": "iteration-cap",
+      "S0": -2.0,
+      "S1": -1.0,
+      "Tolerance": 0.01,
+      "MinEta": 0.0,
+      "MaxEta": 10.0,
+      "Direction": 1.0,
+      "FinalIncrement": 1.526315789473684,
+      "FinalPosition": 1.526315789473684,
+      "MaxIterations": 2,
+      "Failure": 0,
+      "ReturnCode": 0,
+      "Residuals": [
+        0.9,
+        -0.8,
+        0.9
+      ],
+      "Corrections": [
+        1.0,
+        -0.47368421052631593
+      ]
+    },
+    {
+      "Algorithm": "Secant",
+      "Case": "current-constrained-direction",
+      "S0": -2.0,
+      "S1": -1.0,
+      "Tolerance": 0.1,
+      "MinEta": 0.0,
+      "MaxEta": 10.0,
+      "Direction": 2.0,
+      "FinalIncrement": 4.0,
+      "FinalPosition": 4.0,
+      "MaxIterations": 5,
+      "Failure": 0,
+      "ReturnCode": 0,
+      "Residuals": [
+        0.1
+      ],
+      "Corrections": [
+        2.0
+      ]
+    },
+    {
+      "Algorithm": "Secant",
+      "Case": "integrator-failure",
+      "S0": -2.0,
+      "S1": -1.0,
+      "Tolerance": 0.1,
+      "MinEta": 0.0,
+      "MaxEta": 10.0,
+      "Direction": 1.0,
+      "FinalIncrement": 1.0,
+      "FinalPosition": 1.0,
+      "MaxIterations": 5,
+      "Failure": -7,
+      "ReturnCode": -7,
+      "Residuals": [
+        0.0
+      ],
+      "Corrections": [
+        1.0
+      ]
+    },
+    {
+      "Algorithm": "Secant",
+      "Case": "initial-acceptance",
+      "S0": -2.0,
+      "S1": -0.1,
+      "Tolerance": 0.8,
+      "MinEta": 0.0,
+      "MaxEta": 10.0,
+      "Direction": 2.0,
+      "FinalIncrement": 2.0,
+      "FinalPosition": 2.0,
+      "MaxIterations": 5,
+      "Failure": 0,
+      "ReturnCode": 0,
+      "Residuals": [
+        0.0
+      ],
+      "Corrections": []
+    },
+    {
+      "Algorithm": "Bisection",
+      "Case": "bracketing-early-exit-keeps-increment",
+      "S0": -2.0,
+      "S1": -1.0,
+      "Tolerance": 0.2,
+      "MinEta": 0.0,
+      "MaxEta": 10.0,
+      "Direction": 1.0,
+      "FinalIncrement": 1.0,
+      "FinalPosition": 2.0,
+      "MaxIterations": 5,
+      "Failure": 0,
+      "ReturnCode": 0,
+      "Residuals": [
+        0.2
+      ],
+      "Corrections": [
+        1.0
+      ]
+    },
+    {
+      "Algorithm": "Bisection",
+      "Case": "no-bracket-extra-full-step",
+      "S0": -2.0,
+      "S1": -1.0,
+      "Tolerance": 0.1,
+      "MinEta": 0.0,
+      "MaxEta": 3.0,
+      "Direction": 1.0,
+      "FinalIncrement": 1.0,
+      "FinalPosition": 5.0,
+      "MaxIterations": 2,
+      "Failure": 0,
+      "ReturnCode": 0,
+      "Residuals": [
+        -1.0
+      ],
+      "Corrections": [
+        1.0,
+        2.0,
+        1.0
+      ]
+    },
+    {
+      "Algorithm": "Bisection",
+      "Case": "bracket-and-bisect",
+      "S0": -2.0,
+      "S1": 1.0,
+      "Tolerance": 0.1,
+      "MinEta": 0.0,
+      "MaxEta": 10.0,
+      "Direction": 1.0,
+      "FinalIncrement": 0.125,
+      "FinalPosition": 0.125,
+      "MaxIterations": 3,
+      "Failure": 0,
+      "ReturnCode": 0,
+      "Residuals": [
+        0.3
+      ],
+      "Corrections": [
+        -0.5,
+        -0.25,
+        -0.125
+      ]
+    },
+    {
+      "Algorithm": "Bisection",
+      "Case": "independent-phase-iteration-limits",
+      "S0": -2.0,
+      "S1": -1.0,
+      "Tolerance": 0.1,
+      "MinEta": 0.0,
+      "MaxEta": 10.0,
+      "Direction": 1.0,
+      "FinalIncrement": 1.0,
+      "FinalPosition": 1.0,
+      "MaxIterations": 2,
+      "Failure": 0,
+      "ReturnCode": 0,
+      "Residuals": [
+        -1.0,
+        1.0,
+        0.3
+      ],
+      "Corrections": [
+        1.0,
+        2.0,
+        -2.0,
+        -1.0
+      ]
+    },
+    {
+      "Algorithm": "Bisection",
+      "Case": "integrator-failure",
+      "S0": -2.0,
+      "S1": -1.0,
+      "Tolerance": 0.1,
+      "MinEta": 0.0,
+      "MaxEta": 10.0,
+      "Direction": 1.0,
+      "FinalIncrement": 1.0,
+      "FinalPosition": 1.0,
+      "MaxIterations": 5,
+      "Failure": -7,
+      "ReturnCode": -7,
+      "Residuals": [
+        0.0
+      ],
+      "Corrections": [
+        1.0
+      ]
+    },
+    {
+      "Algorithm": "Bisection",
+      "Case": "zero-initial-residual",
+      "S0": 0.0,
+      "S1": 1.0,
+      "Tolerance": 0.8,
+      "MinEta": 0.0,
+      "MaxEta": 10.0,
+      "Direction": 2.0,
+      "FinalIncrement": 2.0,
+      "FinalPosition": 2.0,
+      "MaxIterations": 5,
+      "Failure": 0,
+      "ReturnCode": 0,
+      "Residuals": [
+        0.0
+      ],
+      "Corrections": []
+    }
+  ],
+  "source_hashes": {
+    "BisectionLineSearch.cs": "741FCBA1B3D7F102E9737059750614E6D9F538FB6D91D6B6987776D74E420D5E",
+    "SecantLineSearch.cs": "AAF4E72B746EFC67CF7E631503F560FEB10217BB0C99ED94CB8F8DCDA2D7A51F",
+    "LineSearchOracle.cs": "9AFE74D2204C0BE12370E70999F602E5239EA0DE311F6D2DF999672B5F9FF59C"
+  }
+}

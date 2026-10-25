@@ -1,0 +1,428 @@
+{
+  "schema_version": 1,
+  "audit_date": "2026-07-27",
+  "source_package": "histra.zip",
+  "selected_reference": {
+    "analysis_key": 1,
+    "analysis_name": "Vert",
+    "database_combination": 1,
+    "hrx_load_combination_key": 6,
+    "integration_method": "LoadControl",
+    "solution_method": "ModifiedRegulaFalsiLineSearch",
+    "convergence_criterion": "Work",
+    "convergence_tolerance": 0.0001,
+    "load_factors": [
+      0.2,
+      0.4,
+      0.6,
+      0.8,
+      1.0
+    ],
+    "p_delta": "None",
+    "als": false,
+    "initial_analysis_key": -100
+  },
+  "package_inventory": {
+    "python_source_root": ".",
+    "csharp_source_root": "C#_Original",
+    "tests_root": "tests",
+    "documentation_root": "histra_documentation",
+    "hrx_files": [
+      "model-output/model.hrx"
+    ],
+    "results_files": [
+      "model-output/model.Results"
+    ],
+    "global_dofs": 126,
+    "nodes": 28,
+    "quads": 18,
+    "interfaces": 29,
+    "hysteretic_springs": 2349,
+    "coulomb03_springs": 105,
+    "analysis_keys": [
+      1,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32
+    ],
+    "load_combination_keys": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      15
+    ],
+    "load_condition_keys": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "load_function_keys": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32
+    ]
+  },
+  "sqlite": {
+    "table_row_counts": {
+      "DisplModelPoints": 6,
+      "DynamicVectorsState": 126,
+      "FiberStates": 0,
+      "FrameSectionStates": 0,
+      "FrameStates": 0,
+      "InterfaceStates": 174,
+      "InterfaceStatesMF": 0,
+      "InverseTriangularValues": 0,
+      "ModalShapeValues": 0,
+      "ModalValues": 0,
+      "NodeCStates": 24,
+      "QuadStates": 108,
+      "ReactionSumStates": 6,
+      "RestraintStates": 12,
+      "SolidStates": 0,
+      "SpringStates": 2454,
+      "SpringStatesTmp": 14724,
+      "TrussStates": 0,
+      "VertexStates": 0
+    },
+    "dynamic_vector_dof_indexing": "zero-based",
+    "hrx_afference_indexing": "one-based",
+    "stored_analysis_keys": [
+      1
+    ],
+    "stored_combinations": [
+      1
+    ],
+    "stored_steps": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "complete_spring_state": "SpringStates, final step only",
+    "compact_spring_state": "SpringStatesTmp, every step, insufficient for lossless restart"
+  },
+  "baseline": {
+    "compile": "passed",
+    "import": "passed",
+    "tests": {
+      "passed": 84,
+      "failed": 12,
+      "skipped": 0,
+      "note": "failures were stale path/model assumptions"
+    },
+    "benchmark": {
+      "completion_status": "did not complete within 120 seconds",
+      "steps_completed": [
+        1
+      ],
+      "divergence_or_stall": "step 2",
+      "step_1_relative_displacement_error": 0.002213916,
+      "step_1_max_absolute_dof_difference": 9.0126e-06
+    }
+  },
+  "final_tests": {
+    "compile": "passed",
+    "import": "passed",
+    "pytest": {
+      "passed": 114,
+      "failed": 0,
+      "skipped": 1,
+      "warnings": 0,
+      "elapsed_seconds": 10.66
+    },
+    "skip_reason": "opt-in long full-analysis acceptance test; benchmark is run separately"
+  },
+  "final_benchmark": {
+    "schema_version": 1,
+    "benchmark": {
+      "hrx": "model-output/model.hrx",
+      "results": "model-output/model.Results",
+      "analysis_key": 1,
+      "analysis_name": "Vert",
+      "combination": 1,
+      "integration_method": "LoadControl",
+      "solution_method": "ModifiedRegulaFalsiLineSearch",
+      "dof_count": 126,
+      "reference_steps": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    "environment": {
+      "python": "3.13.5",
+      "platform": "Linux-6.12.13-x86_64-with-glibc2.41",
+      "numpy": "2.3.5"
+    },
+    "run": {
+      "completion_code": 0,
+      "completion_status": "completed",
+      "elapsed_seconds": 34.450486055999136,
+      "steps_completed": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "step_order_exact": true,
+      "all_values_finite": true
+    },
+    "acceptance": {
+      "global_displacement_relative_tolerance": 0.0001,
+      "load_factor_absolute_tolerance": 1e-06,
+      "per_step": {
+        "1": {
+          "displacement": true,
+          "load_factor": true
+        },
+        "2": {
+          "displacement": false,
+          "load_factor": true
+        },
+        "3": {
+          "displacement": false,
+          "load_factor": true
+        },
+        "4": {
+          "displacement": false,
+          "load_factor": true
+        },
+        "5": {
+          "displacement": false,
+          "load_factor": true
+        }
+      }
+    },
+    "steps": [
+      {
+        "step": 1,
+        "status": "OK",
+        "exit_code": 3,
+        "load_factor": 0.2,
+        "iterations": 3,
+        "convergence_error": 8.474252314437089e-05,
+        "residual_norm": 67.05288040160411,
+        "increment_norm": 0.00014535070954709367,
+        "elastic_energy": 0.04088528184605059,
+        "dissipated_energy": 0.0,
+        "no_nan_or_infinite": true,
+        "selected_dofs": {
+          "0": 0.0003337090709219812,
+          "6": -1.3828608363301651e-06,
+          "42": -6.444222528927398e-06,
+          "125": 5.9306481930760546e-08
+        },
+        "reference_load_factor": 0.2,
+        "relative_displacement_error": 1.3106646540694453e-14,
+        "max_absolute_dof_difference": 6.364605565668813e-17,
+        "python_displacement_norm": 0.010728415409922134,
+        "csharp_displacement_norm": 0.010728415409922155,
+        "load_factor_absolute_error": 0.0
+      },
+      {
+        "step": 2,
+        "status": "OK",
+        "exit_code": 11,
+        "load_factor": 0.4,
+        "iterations": 11,
+        "convergence_error": 9.806222148561888e-05,
+        "residual_norm": 138.0265370503243,
+        "increment_norm": 0.00021301674126045488,
+        "elastic_energy": 0.2132705505291008,
+        "dissipated_energy": 0.0,
+        "no_nan_or_infinite": true,
+        "selected_dofs": {
+          "0": -0.0008018019249026645,
+          "6": -6.93362958253147e-06,
+          "42": -7.678585156224993e-05,
+          "125": 3.7420187992856945e-06
+        },
+        "reference_load_factor": 0.4,
+        "relative_displacement_error": 0.05929677725722092,
+        "max_absolute_dof_difference": 0.0007257004853806312,
+        "python_displacement_norm": 0.023897032101464412,
+        "csharp_displacement_norm": 0.02467756771836326,
+        "load_factor_absolute_error": 0.0
+      },
+      {
+        "step": 3,
+        "status": "OK",
+        "exit_code": 16,
+        "load_factor": 0.6000000000000001,
+        "iterations": 16,
+        "convergence_error": 9.900769890198728e-05,
+        "residual_norm": 182.57664893879024,
+        "increment_norm": 0.001493925265958015,
+        "elastic_energy": 0.6722612302557253,
+        "dissipated_energy": 0.0,
+        "no_nan_or_infinite": true,
+        "selected_dofs": {
+          "0": -0.0034231860337323706,
+          "6": -1.3657908148118836e-05,
+          "42": -0.00024693629369382155,
+          "125": 8.410403307198946e-06
+        },
+        "reference_load_factor": 0.6000000000000001,
+        "relative_displacement_error": 0.1798694448920421,
+        "max_absolute_dof_difference": 0.0033377833038959435,
+        "python_displacement_norm": 0.039974554736036144,
+        "csharp_displacement_norm": 0.045656926451225606,
+        "load_factor_absolute_error": 0.0
+      },
+      {
+        "step": 4,
+        "status": "OK",
+        "exit_code": 7,
+        "load_factor": 0.8,
+        "iterations": 7,
+        "convergence_error": 6.154932293724582e-05,
+        "residual_norm": 264.3045881806575,
+        "increment_norm": 0.0004238145990637589,
+        "elastic_energy": 1.7265520056503676,
+        "dissipated_energy": 0.0,
+        "no_nan_or_infinite": true,
+        "selected_dofs": {
+          "0": -0.003225018912947457,
+          "6": -4.305161317630206e-06,
+          "42": -0.00029105109839338775,
+          "125": 9.001002069196691e-06
+        },
+        "reference_load_factor": 0.8,
+        "relative_displacement_error": 0.19150128681954673,
+        "max_absolute_dof_difference": 0.004313420268666221,
+        "python_displacement_norm": 0.05119801884496266,
+        "csharp_displacement_norm": 0.05907708945998398,
+        "load_factor_absolute_error": 0.0
+      },
+      {
+        "step": 5,
+        "status": "OK",
+        "exit_code": 38,
+        "load_factor": 1.0,
+        "iterations": 38,
+        "convergence_error": 8.777318355877864e-05,
+        "residual_norm": 217.03154430971253,
+        "increment_norm": 3.761971298186734e-05,
+        "elastic_energy": 3.3629274448662883,
+        "dissipated_energy": 0.0,
+        "no_nan_or_infinite": true,
+        "selected_dofs": {
+          "0": -0.0067020746815662155,
+          "6": 5.0531880746469044e-05,
+          "42": -0.00045035997096181605,
+          "125": 1.4673363321812582e-05
+        },
+        "reference_load_factor": 1.0,
+        "relative_displacement_error": 0.11526804702625512,
+        "max_absolute_dof_difference": 0.005408471749737489,
+        "python_displacement_norm": 0.07157235474825219,
+        "csharp_displacement_norm": 0.07471339491466585,
+        "load_factor_absolute_error": 0.0
+      }
+    ],
+    "solver_log": [
+      "Analysis method: LoadControl with ModifiedRegulaFalsiLineSearch",
+      "Step 1 solving: Mult=0.200000, IncrMult=0.200000",
+      "Step 1: committed, load_factor=0.200000, displacement=-9.770637e-12, iterations=3",
+      "Step 2 solving: Mult=0.400000, IncrMult=0.200000",
+      "Step 2: committed, load_factor=0.400000, displacement=-1.542491e-11, iterations=11",
+      "Step 3 solving: Mult=0.600000, IncrMult=0.200000",
+      "Step 3: committed, load_factor=0.600000, displacement=-8.042563e-12, iterations=16",
+      "Step 4 solving: Mult=0.800000, IncrMult=0.200000",
+      "Step 4: committed, load_factor=0.800000, displacement=-2.824429e-11, iterations=7",
+      "Step 5 solving: Mult=1.000000, IncrMult=0.200000",
+      "Step 5: committed, load_factor=1.000000, displacement=-2.559343e-11, iterations=38",
+      "Analysis executed and completed"
+    ]
+  },
+  "acceptance_summary": {
+    "step_order_exact": true,
+    "load_factor_all_steps": true,
+    "all_values_finite": true,
+    "displacement_steps_accepted": [
+      1
+    ],
+    "displacement_steps_rejected": [
+      2,
+      3,
+      4,
+      5
+    ],
+    "full_equivalence_achieved": false
+  },
+  "isolation_evidence": {
+    "complete_step_1_state": "global, quad, interface and all 2454 spring histories match approximately 1e-12 or better",
+    "hysteretic_step_2_exact_input": {
+      "count": 2349,
+      "phase_match": true,
+      "max_force_difference": 2.78e-15
+    },
+    "coulomb03_step_2_exact_input": {
+      "count": 105,
+      "phase_match": true,
+      "max_force_difference_upper_bound": 1e-13
+    },
+    "csharp_step_2_reassembled_residual_norm": 129.185,
+    "remaining_boundary": "global Newton/Regula-Falsi numerical path beginning in step 2, or C# source/binary version skew",
+    "missing_reference_data": "no per-iteration vectors in SQLite and no runnable original C# UMFPACK stack in the audit environment"
+  }
+}

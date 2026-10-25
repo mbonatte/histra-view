@@ -1,0 +1,2969 @@
+--- a/AUDIT_SUMMARY.md
++++ b/AUDIT_SUMMARY.md
+@@ -0,0 +1,25 @@
++# HiStrA final audit summary
++
++Date: 2026-07-27
++
++## Results
++
++- Runtime modules compile and import.
++- Automated test suite: **96 passed**.
++- Supplied model inventory: 2,142 DOFs, 306 quads, 555 interfaces.
++- C# analysis 1, step 1 comparison:
++  - relative displacement error: `2.2820198e-5`;
++  - maximum absolute DOF error: `2.2123213e-7`;
++  - Python convergence: 2 iterations at load factor 0.2.
++
++## Important correction
++
++The Python solver did not reset element-local/spring state saved in the HRX when starting a virgin analysis. The C# solver does. The audited version parses restart keys and performs the supported C# virgin-state reset.
++
++## Remaining blockers
++
++- C# `Quad.ComputeDN` normal-force/material coupling into `SpringCoulomb03` is not ported.
++- Complete prior-analysis state restoration from SQLite is not implemented.
++- Therefore the complete five-step analysis 1 and chained ArcLength analysis 22 are not yet equivalent to C#.
++
++See `histra/histra_documentation/AUDIT_REPORT.md`, `BENCHMARK_RESULTS.md`, and `ISSUES.md`.
+--- a/histra/histra_csharp_aligned/CHANGES.md
++++ b/histra/histra_csharp_aligned/CHANGES.md
+@@ -72,3 +72,13 @@
+ - `histra/types/convergence_test.py`
+ - `histra/types/linear_system.py`
+ - `tests/test_csharp_alignment.py`
++
++## Final-archive audit additions
++
++- Parsed `InitialAnalysisKey` and `InitialCombinationAnalysisKey`.
++- Stored the absolute HRX source path on `Model`.
++- Added the C# `CommonOperations.SetInitial` subset for supported quads, interfaces, and springs.
++- Rejected chained analysis restart until complete database state can be restored.
++- Repaired test discovery, portable fixture paths, stale API assertions, swallowed exceptions, and pytest return warnings.
++- Added an automated first-step comparison against the supplied C# SQLite database.
++- Updated documentation to distinguish first-step agreement from full-analysis equivalence.
+--- a/histra/histra_csharp_aligned/CSHARP_COMPARISON.md
++++ b/histra/histra_csharp_aligned/CSHARP_COMPARISON.md
+@@ -10,6 +10,7 @@
+ 
+ | Python issue | What the C# actually does | Classification | Revision |
+ |---|---|---|---|
++| Python kept solved HRX local state when starting a virgin analysis | C# `ModelManager.SetStatus` calls `CommonOperations.SetInitial` when `InitialAnalysisKey < 0`, resetting global, element, and spring state | Mistranslation | Added supported virgin-state reset and restart-key parsing |
+ | `LinearSystem.set_zero()` erased `K`, `b`, and `x` | C# `LinearSystem.SetZero()` clears only matrix coefficients; `SetZeroLoad()` and `SetZeroDisplacement()` are separate (`MatrixManager/LinearSystem.cs`, lines 161–185 and 334–340) | Mistranslation | `set_zero()` now clears only `K` |
+ | Standard Newton used initial stiffness | C# calls `ComputeK(alfa)` and then assembles the current element matrices (`SolverRuntime/ModelManager.cs`, lines 265–270) | Mistranslation | Requested `alfa` is preserved during assembly |
+ | LoadControl reset total displacement every step | C# `LoadControl.NewStep()` never clears `U`; `Update()` accumulates `U += LS.X` (`LoadControl.cs`, lines 38–58 and 78–83) | Mistranslation | Removed total-displacement reset |
+@@ -63,3 +64,7 @@
+ The revised Python does **not** copy several apparent defects found in the original C# source. They are listed in [ORIGINAL_CSHARP_BUGS.md](ORIGINAL_CSHARP_BUGS.md).
+ 
+ It also raises explicit errors for P-Delta and Psi-dependent combinations because the necessary C# model/load subsystems were not included in the Python snapshot. Silent approximation would be more dangerous than an unsupported-feature error.
++
++## Final benchmark qualification
++
++The supplied final archive made a numerical comparison possible. Analysis 1 step 1 agrees with the C# SQLite result to about `2.282e-5` relative displacement error. Full analysis equivalence is not yet established because the Python quad path does not port C# `ComputeDN`/normal-force coupling into `SpringCoulomb03`, and chained-result restoration remains unimplemented.
+--- a/histra/histra_csharp_aligned/README.md
++++ b/histra/histra_csharp_aligned/README.md
+@@ -34,9 +34,10 @@
+ 
+ - all Python modules compiled;
+ - package imports succeeded;
+-- 9 focused regression tests passed.
++- 96 automated tests passed.
++- The supplied analysis-1 first load step matches the C# SQLite displacement state to approximately `2.282e-5` relative error.
+ 
+-No representative `.hrx` benchmark model or expected nonlinear result set was included. Therefore, this revision is structurally and behaviorally checked against the inspected C# paths, but it is not yet numerically validated against a complete engineering benchmark.
++The complete five-step nonlinear path is not yet equivalent; see `VALIDATION.md` and the main documentation `ISSUES.md`.
+ 
+ ## Important unsupported features
+ 
+--- a/histra/histra_csharp_aligned/VALIDATION.md
++++ b/histra/histra_csharp_aligned/VALIDATION.md
+@@ -1,34 +1,36 @@
+ # Validation
+ 
+-## Completed
++## Current automated result
+ 
+-- All package files compile with `python -m compileall`.
+-- `import histra` and `import histra.solver` succeed.
+-- Nine focused tests pass.
++```bash
++PYTHONPATH=. python -m pytest -q
++```
+ 
+-The tests cover:
++Result after the final archive audit:
+ 
+-1. matrix reset preserving residual/displacement vectors;
+-2. requested tangent `alfa` reaching assembly;
+-3. Regula Falsi bracket and state consistency;
+-4. cumulative LoadControl displacement;
+-5. vector rollback;
+-6. convergence criterion and maximum displacement;
+-7. C# load-function item parsing;
+-8. unloading discretization;
+-9. a one-DOF ArcLength predictor and commit.
++```text
++96 passed
++```
+ 
+-## Still required for engineering validation
++The suite now includes the original focused C#-alignment checks, corrected legacy tests, supplied-model parsing, restart-key behavior, virgin-state initialization, and a first-step comparison with the C# SQLite database.
+ 
+-A representative model and trusted results are needed to check:
++## Numerical benchmark
+ 
+-- complete element stiffness and resisting-force assembly;
+-- monotonic nonlinear LoadControl response;
+-- cyclic load functions;
+-- post-peak ArcLength tracing;
+-- each line-search method with nonlinear springs;
+-- ALS across element yielding;
+-- energy values;
+-- comparison of force-displacement curves with the original C# executable.
++For analysis 1, step 1 at load factor 0.2:
+ 
+-No `.hrx` benchmark and expected result database were included, so those checks could not be performed.
++- Python exit code: 0;
++- nonlinear iterations: 2;
++- relative displacement-vector difference against C# `QuadStates`: about `2.282e-5`;
++- maximum absolute DOF difference: about `2.212e-7`.
++
++## New mistranslation found
++
++The Python solver reset global vectors but did not reproduce C# `CommonOperations.SetInitial`. Because the HRX contains saved solved local state, the first increment was being added to old quad/interface/spring deformation.
++
++The revised code now resets supported local/constitutive state for analyses with `InitialAnalysisKey < 0`.
++
++## Remaining numerical gap
++
++The complete five-step analysis 1 does not yet reproduce the C# run. The leading known difference is `Quad.UpdateDomain`: C# calls `ComputeDN` and passes normal-force change, material, volume, and initial stress to `SpringCoulomb03`; Python still passes zero/empty placeholders.
++
++Analyses that restart from a prior analysis are rejected until complete SQLite state restoration is implemented. This blocks end-to-end analysis-22 ArcLength validation.
+--- a/histra/histra_documentation/ARCHITECTURE.md
++++ b/histra/histra_documentation/ARCHITECTURE.md
+@@ -1,93 +1,48 @@
+ # Architecture
+ 
+-## System intent
++## Purpose
+ 
+-The project is a Python port of a HiStrA/.NET structural-analysis runtime. It reads an HRX model, reconstructs macro-elements and constitutive springs, assembles sparse global systems, and performs linear or nonlinear static analysis.
++HiStrA Python is a direct port of a subset of a C# structural-analysis application. The runtime parses HRX data, assembles sparse systems, updates macro-elements and path-dependent springs, and performs static nonlinear analysis.
+ 
+-## Layered view
++## Layers
+ 
+ ```mermaid
+ graph TD
+-    CLI["histra.__main__"] --> IO["histra.io"]
+-    IO --> MODEL["histra.model"]
+-    IO --> ELEMENTS["histra.elements"]
+-    ELEMENTS --> SPRINGS["histra.springs"]
+-    ELEMENTS --> TYPES["histra.types"]
+-    SPRINGS --> TYPES
+-    SOLVER["histra.solver"] --> MODEL
++    CLI[histra.__main__] --> IO[histra.io]
++    IO --> MODEL[histra.model]
++    IO --> ELEMENTS[histra.elements]
++    ELEMENTS --> SPRINGS[histra.springs]
++    ELEMENTS --> TYPES[histra.types]
++    SOLVER[histra.solver] --> MODEL
+     SOLVER --> ELEMENTS
+     SOLVER --> TYPES
+-    SOLVER --> SCIPY["NumPy / SciPy"]
+-    RESULTS["SQLite .Results"] --> IO
++    SOLVER --> SCIPY[NumPy/SciPy]
++    DB[SQLite .Results] --> IO
+ ```
+ 
+-The intended dependency direction is from orchestration toward mechanics and shared types. Elements own local mechanics; the solver should not need constitutive details beyond the element protocol.
++## Main owners
+ 
+-## Main runtime objects
++| State | Owner |
++|---|---|
++| Schema/geometry/connectivity | `Model` and `Collections` |
++| Global sparse matrix/residual/correction | `LinearSystem` |
++| Analysis callbacks and global displacement | `Program` |
++| Load factor, pseudo-time, step accumulation | Integrator |
++| Local displacement/forces | Quad/Interface state |
++| Trial and committed constitutive history | Spring instances |
++| Reference/external load vectors | Currently `ModelManager` class state |
+ 
+-### `Model` and `Collections`
++## Critical lifecycle distinction
+ 
+-`Model` stores global metadata and one `Collections` object. `Collections` owns dictionaries keyed by HRX IDs: nodes, constrained nodes, quads, interfaces, restraints, load combinations, load conditions, load functions, analyses, and materials.
++An HRX file can serialize the last solved state. A new virgin analysis must reset that state. A chained analysis must instead restore one specific prior committed state from the results database. These are different operations and must never be approximated by merely setting the global displacement vector to zero.
+ 
+-### Elements and springs
++## Current architectural constraints
+ 
+-A `Quad` or `Interface` owns geometry, local-to-global mappings, local state, and springs. Springs implement the constitutive lifecycle:
++- `ModelManager` class attributes make analysis state process-global and non-thread-safe.
++- Element/spring state is mutable and has no general transaction/snapshot protocol.
++- The Python model covers only a subset of C# entity/load families.
++- Compatibility modules preserve historical imports but can obscure the canonical implementation location.
+ 
+-1. receive a trial deformation;
+-2. expose current force and tangent stiffness;
+-3. commit an accepted state; or
+-4. revert after a failed trial.
++## Recommended direction
+ 
+-### `Program`, `LinearSystem`, and analysis state
+-
+-`Program` is the analysis-level holder for displacement/velocity vectors, callbacks, status flags, and report hooks. `LinearSystem` stores sparse matrices and dense residual/solution vectors. `IntegratorState` is passed into element updates.
+-
+-The current design also stores analysis vectors on `ModelManager` class attributes. That mirrors static .NET fields but is an architectural risk because it creates process-global mutable analysis state.
+-
+-## Nonlinear strategy composition
+-
+-The nonlinear workflow combines three independent choices:
+-
+-- **Integrator:** `LoadControl`, `ArcLength`, or `ArcLengthLinear`.
+-- **Equilibrium algorithm:** `NewtonRaphson` or `NewtonLineSearch`.
+-- **Convergence test:** residual norm, iteration limit, and maximum displacement.
+-
+-`EquiSolnAlgo.new_equi_soln_algo()` builds this composition from the `Analysis` record.
+-
+-```mermaid
+-graph LR
+-    A[Analysis settings] --> F[EquiSolnAlgo factory]
+-    F --> I[StaticIntegrator]
+-    F --> N[Newton algorithm]
+-    F --> C[ConvergenceTest]
+-    F --> L[LineSearch optional]
+-```
+-
+-## State ownership and lifecycle
+-
+-The code uses several state scopes that should remain distinct:
+-
+-| Scope | Intended contents | Current owner |
+-|---|---|---|
+-| Model definition | Geometry, connectivity, material/load settings | `Model` / `Collections` |
+-| Analysis-wide | Total displacement, external/reference load, pseudo-time | `Program`, integrator, and `ModelManager` globals |
+-| Step | Predictor, accumulated step displacement, load increment | Integrator |
+-| Iteration | Residual, tangent matrix, correction vector | `LinearSystem` |
+-| Constitutive committed | Last accepted spring/element history | Element and spring objects |
+-| Constitutive trial | Current Newton/line-search evaluation | Element and spring objects |
+-
+-Several critical issues arise because total, step, iteration, committed, and trial states are not consistently separated. The remediation plan recommends an explicit `AnalysisContext` and transactional snapshots.
+-
+-## Extension points
+-
+-- Add an HRX entity by extending `Collections` and `hr_loader.load_model()`.
+-- Add a spring by subclassing `Spring` and registering its `TypeOf` value.
+-- Add an integrator through `StaticIntegrator.new_static_integrator()`.
+-- Add an equilibrium algorithm through `EquiSolnAlgo.new_equi_soln_algo()`.
+-- Add a load type through load parsing plus `assemble_load_vector()` generation/scattering.
+-
+-These factories currently use permissive string fallbacks. Production extension should move to explicit enums/registries so unsupported values fail visibly.
+-
+-## Compatibility modules
+-
+-`histra.model.quad`, `histra.model.interface`, `histra.model.spring`, `histra.model._types`, and `histra.solver.nonlinear_solver` re-export classes from their new locations. They preserve old import paths but should contain no independent implementation.
++Introduce an `AnalysisContext` containing all global vectors and analysis state, plus typed snapshot/restore interfaces for elements and springs. Results-database restart should deserialize into the same context and committed-state protocol used by rollback.
+--- a/histra/histra_documentation/AUDIT_REPORT.md
++++ b/histra/histra_documentation/AUDIT_REPORT.md
+@@ -0,0 +1,96 @@
++# Final audit report
++
++## Scope
++
++The audit used all supplied material:
++
++- the complete Python package;
++- the focused original C# source tree;
++- existing unit and integration tests;
++- `model-output/model.hrx`;
++- `model-output/model.Results`;
++- `model-output/results.json`.
++
++The review concentrated on the translated runtime rather than the complete desktop C# application.
++
++## Test-suite findings
++
++The initial full collection could not run because `run_solver_test.py` executed at import time and used a Windows-only path. After excluding that side effect, the baseline was:
++
++```text
++82 passed, 11 failed, 4 warnings
++```
++
++The 11 failures were test defects rather than newly demonstrated runtime defects:
++
++- eight used the wrong model-fixture path;
++- one expected the obsolete Regula-Falsi fallback for Initial Interpolated search;
++- two called the superseded convergence-test API.
++
++Additional quality problems were repaired:
++
++- four pytest tests returned `True` instead of returning normally;
++- a loader test swallowed every exception and therefore could not fail;
++- the manual solver runner was collected as a test.
++
++After correction and addition of benchmark/restart tests:
++
++```text
++96 passed in approximately 11 seconds
++```
++
++## Source correction discovered during benchmark execution
++
++The HRX file contains solved element-local displacement and spring state. The original C# calls `CommonOperations.SetInitial` when `InitialAnalysisKey < 0`, resetting the model to a virgin state before analysis.
++
++The Python solver initialized global `u` and `v` to zero but left the saved local element state untouched. Its first increment was consequently added to old solved deformations. This caused an immediate residual increase from about 71 to about 46,726 during diagnostic execution.
++
++The corrected Python path now:
++
++- parses `InitialAnalysisKey` and `InitialCombinationAnalysisKey`;
++- stores the source HRX path on `Model`;
++- resets supported quad/interface/spring state for a virgin analysis;
++- rejects chained analyses explicitly rather than silently starting from the wrong state.
++
++## Reference-data quality
++
++`results.json` is not an independent nonlinear benchmark. Its displacement vector matches the displacement state serialized in the HRX, and two metadata values are stale:
++
++- JSON interface count: 556; actual top-level HRX interfaces: 555;
++- JSON stiffness nonzeros: 29,192; current assembly: 42,252.
++
++The SQLite `model.Results` database is therefore used as the authoritative C# result source.
++
++## Numerical conclusion
++
++For analysis 1, step 1 (`load factor = 0.2`):
++
++- Python converges in two nonlinear iterations;
++- relative global-displacement difference versus C# reconstructed quad state is approximately `2.282e-5`;
++- maximum absolute DOF difference is approximately `2.212e-7`.
++
++This is strong evidence that initialization, load assembly, the active generalized-DOF system, and the primarily elastic first-step response are substantially aligned.
++
++The complete five-step analysis still does not complete on the C# reference path. With default search limits, execution reaches step 2 but spends excessive time in nonlinear line-search trials. With intentionally reduced iteration limits, step 2 fails convergence. The incomplete `Quad.ComputeDN` normal-force/material coupling is the most important known mechanical difference.
++
++## Files changed by this audit
++
++Runtime:
++
++- `histra/model/load.py`
++- `histra/model/model.py`
++- `histra/io/hr_loader.py`
++- `histra/solver/solve.py`
++
++Tests/configuration:
++
++- `pytest.ini`
++- `histra/tests/run_solver_test.py`
++- `histra/tests/test_sample.py`
++- `histra/tests/test_spring_hysteretic.py`
++- `histra/tests/test_coulomb03_state_machine.py`
++- `histra/tests/test_benchmark_alignment.py`
++- `histra/tests/unit/test_solver.py`
++- `histra/tests/unit/test_types.py`
++
++Documentation was revised to distinguish repaired translation defects from current limitations.
+--- a/histra/histra_documentation/BENCHMARK_RESULTS.md
++++ b/histra/histra_documentation/BENCHMARK_RESULTS.md
+@@ -0,0 +1,80 @@
++# Benchmark results
++
++## Supplied artifacts
++
++| Artifact | Use in validation |
++|---|---|
++| `model.hrx` | Input model and serialized application state |
++| `model.Results` | Authoritative C# SQLite results |
++| `results.json` | Historical parser/assembly snapshot; not an independent solver result |
++
++## Model inventory
++
++The current loader reports:
++
++| Item | Count/value |
++|---|---:|
++| Generalized DOFs | 2,142 |
++| Quads | 306 |
++| Interfaces | 555 |
++| Nodes | 388 |
++| NodeCs | 18 |
++| Restraints | 14 |
++| Initial-stiffness `K.nnz` | 42,252 |
++
++The XML itself confirms 555 top-level keyed `Interface` entities.
++
++## C# database coverage
++
++The SQLite database contains, among other tables:
++
++- `QuadStates` for analysis 1, steps 0 through 5;
++- `InterfaceStates` for analysis 1, steps 0 through 5;
++- `QuadStates` and `InterfaceStates` for analysis 22, steps 0 through 61;
++- final `DynamicVectorsState` for analyses 1 and 22;
++- final spring-history records in `SpringStates`.
++
++## First-step comparison
++
++The automated benchmark constructs the same first load interval as C# analysis 1 and compares Python global displacement with displacement reconstructed from C# `QuadStates`, step 1.
++
++| Metric | Result |
++|---|---:|
++| Python exit code | 0 |
++| Python committed steps | 1 |
++| Python nonlinear iterations | 2 |
++| Load factor | 0.2 |
++| Python displacement-vector norm | `4.3901193906e-2` |
++| C# displacement-vector norm | `4.3901191095e-2` |
++| Relative vector difference | `2.2820198e-5` |
++| Maximum absolute DOF difference | `2.2123213e-7` |
++| Mean absolute DOF difference | `4.4611311e-9` |
++
++Test thresholds are intentionally slightly looser:
++
++```text
++relative error < 5e-5
++maximum absolute error < 3e-7
++```
++
++## Full-analysis result
++
++The complete C# analysis 1 has five committed load steps. The Python run currently:
++
++1. completes step 1;
++2. enters step 2;
++3. performs repeated nonlinear line-search trials;
++4. does not complete within the bounded audit run.
++
++A diagnostic run with deliberately small line-search/Newton limits terminates at step 2 with nonconvergence. This bounded run is diagnostic only and is not a replacement for the production settings.
++
++## Interpretation
++
++The first-step agreement validates an important but limited regime. It does **not** validate:
++
++- later yielding and friction/contact evolution;
++- `Quad.ComputeDN` normal-force coupling;
++- full `SpringCoulomb03` history correspondence;
++- automatic load stepping after nonlinear failure;
++- chained analysis 22 restart and ArcLength history;
++- final force, reaction, and energy agreement.
+--- a/histra/histra_documentation/FEATURE_STATUS.md
++++ b/histra/histra_documentation/FEATURE_STATUS.md
+@@ -1,32 +1,32 @@
+-# Feature Status
++# Feature status
+ 
+-This table describes behavior visible in the reviewed snapshot. “Partial” means code exists but important correctness or completeness gaps remain.
+-
+-| Area | Status | Notes |
++| Area | Status | Evidence/notes |
+ |---|---|---|
+-| HRX streaming parser | Implemented with gaps | Parses core entities; load-function point histories and broader load definitions are incomplete |
+-| Node/NodeC/restraint parsing | Implemented | Restraint-to-DOF mapping supports a limited node/quad mapping path |
+-| Quad mechanics | Implemented | Includes diagonal spring, load, stiffness, state, force, energy |
+-| Interface mechanics | Implemented | Includes flexural, sliding, out-of-plane spring contributions |
+-| Elastic spring | Implemented | Simple constitutive path |
+-| Hysteretic spring | Implemented, needs validation | Large path-dependent state machine; no included benchmark tests |
+-| Coulomb03 spring | Implemented, needs validation | Large direct port; no included benchmark tests |
+-| Multilinear spring | Parsing-focused | Verify force/tangent behavior inherited from base is sufficient |
+-| Sparse global stiffness | Implemented | COO-to-CSC assembly |
+-| Explicit boundary-condition reduction | Implemented in helper | Not used by LoadControl nonlinear increment solve |
+-| Linear solve | Partial | Parameter mix-up and solve validation issues |
+-| LoadControl nonlinear analysis | Partial / unsafe | Boundary conditions, displacement state, rollback, load histories |
+-| ArcLength analysis | Partial / unsafe | Initial K, solve validation, load-source assumption |
+-| Standard Newton | Partial | Tangent assembly is overwritten by initial-stiffness assembly |
+-| Modified Newton | Partial | Core loop exists; affected by other state/BC defects |
+-| Newton line search | Broken | Degenerate Regula Falsi and convergence initialization |
+-| Automatic Load Stepping | Broken/unsafe | Incomplete restoration and increment accounting |
+-| Convergence residual norm | Partial | Newton path initializes a reference; line-search path does not |
+-| Max displacement stop | Broken configuration | `analysis.max_u` is not passed into the test |
+-| Self-weight | Implemented | Main explicitly generated load |
+-| Other load actions | Unsupported/incomplete | Parsed metadata does not produce force vectors |
+-| Psi combination factors | Unsupported | Hard-coded to zero |
+-| P-Delta | Not implemented consistently | Type mismatch and no computed `_pq` vector |
+-| Result SQLite reader | Implemented | Reads quad states and steps |
+-| CLI inspection | Implemented | Loads, assembles, reports; does not run nonlinear solve |
+-| Automated tests | Absent | No tests included in archive |
++| HRX core parser | Implemented | Supplied model loads: 2,142 DOFs, 306 quads, 555 interfaces |
++| Analysis restart-key parsing | Implemented | `InitialAnalysisKey` and combination key retained |
++| Virgin analysis initialization | Implemented for supported entities | Matches C# `SetInitial` subset for quads/interfaces/springs |
++| Prior-analysis restart | Unsupported safely | Raises until full SQLite history restore is implemented |
++| Load-function items | Implemented | Separate C# entities joined and sorted |
++| Sparse stiffness assembly | Implemented | Supplied model assembles to 42,252 nonzeros |
++| Linear sparse solving | Implemented with validation | Nonfinite/rank failures converted to errors |
++| LoadControl | Partially validated | First C# reference step matches closely; full path does not |
++| Standard/Modified Newton | Implemented | Tangent/initial stiffness choice preserved |
++| Regula Falsi | Implemented, later-path validation pending | Focused tests pass; full reference step 2 unresolved |
++| Secant/Bisection/Initial Interpolated | Implemented, limited validation | Unit-level behavior only |
++| ArcLength | C#-aligned structure, not end-to-end validated | Analysis 22 requires restart state first |
++| ALS | Implemented structurally, benchmark pending | Rollback/subincrement tests exist; no full yielding reference |
++| Force/disp/work convergence | Implemented | Absolute C# criteria |
++| Quad mechanics | Partial | Missing C# `ComputeDN`/normal-force coupling |
++| Interface mechanics | Implemented, benchmark incomplete | First-step local state is close to C# |
++| Hysteretic spring | Unit-tested | XML, envelope, trial/commit/revert tests |
++| Coulomb03 spring | Unit-tested, system coupling incomplete | State-machine tests pass; quad normal coupling missing |
++| Self-weight | Implemented | Used by analysis 1 benchmark |
++| Other load actions | Incomplete | Requires broader C# load subsystem |
++| Psi coefficients | Explicitly unsupported | Raises instead of silently eliminating load |
++| P-Delta | Explicitly unsupported | Required C# subsystem absent |
++| SQLite quad-state reader | Implemented | Used in first-step C# benchmark |
++| Global dynamic-vector reader | Implemented | Reads final/specified `U,V` from SQLite |
++| Complete restart-state reader | Not implemented | Interface and spring history still needed |
++| CLI inspection | Implemented | Parser/assembly snapshot, not nonlinear solve |
++| Automated tests | Implemented | 96 passing |
++| Engineering equivalence | Not established | Only first nonlinear step presently agrees |
+--- a/histra/histra_documentation/ISSUES.md
++++ b/histra/histra_documentation/ISSUES.md
+@@ -1,674 +1,109 @@
+-# Issues Found
++# Current issues
+ 
+-## Review evidence
++This file lists issues that remain after the C# alignment and final benchmark audit. Earlier issues such as false success codes, cumulative-displacement reset, tangent-assembly overwrite, degenerate Regula Falsi initialization, and missing load-function items have been repaired and are summarized at the end.
+ 
+-- Snapshot SHA-256: `f14245368d0bf1f19b2a28d4835d311bcffa0ff792270ad03d89d3cf390c3bc2`
+-- Python modules inspected: 51
+-- `python -m compileall -q histra`: passed
+-- `import histra; import histra.solver`: passed
+-- `pytest -q`: no tests collected
+-- Small behavioral probes reproduced the constrained-solve and rollback defects described below.
++## ISSUE-01 — Quad normal-force coupling is not translated
+ 
+-## Priority summary
++**Severity:** Critical  
++**Location:** `histra/elements/quad.py`, `Quad.update_domain`
+ 
+-| ID | Severity | Issue |
+-|---|---|---|
+-| ISSUE-01 | **Critical** | Regula Falsi line search starts with a degenerate bracket and corrupts trial-state accounting |
+-| ISSUE-02 | **Critical** | Nonlinear analysis reports exit code zero after a failed step |
+-| ISSUE-03 | **Critical** | LoadControl clears the vector documented and used as total displacement at every step |
+-| ISSUE-04 | **Critical** | Standard Newton tangent assembly is overwritten by initial-stiffness assembly |
+-| ISSUE-05 | **Critical** | Load-controlled Newton solves ignore restrained DOFs |
+-| ISSUE-06 | **Critical** | Rollback calls `LinearSystem.set_x` with the wrong signature |
+-| ISSUE-07 | **Critical** | NewtonLineSearch initializes relative convergence with a zero reference norm |
+-| ISSUE-08 | **Critical** | Standard ArcLength predictor can solve against an unassembled zero matrix |
+-| ISSUE-12 | **Critical** | Automatic Load Stepping starts from failed trial state and double-counts progress |
+-| ISSUE-09 | **High** | Load-function points are not represented or parsed |
+-| ISSUE-10 | **High** | Configured maximum displacement is read but not passed to the convergence test |
+-| ISSUE-11 | **High** | P-Delta configuration uses incompatible string and integer representations and has no computed load vector |
+-| ISSUE-13 | **High** | Zero-diagonal DOFs are silently converted into restraints |
+-| ISSUE-14 | **High** | Psi load-combination coefficients are hard-coded to zero |
+-| ISSUE-15 | **High** | Reported load factor and displacement-based stopping metric use placeholder/wrong values |
+-| ISSUE-17 | **High** | Factory and linear-solver arguments silently select incorrect behavior |
+-| ISSUE-18 | **High** | Sparse solve warnings and nonfinite results are not promoted to solver failures |
+-| ISSUE-20 | **High** | Production solver contains unsafe model-specific debug indexing |
+-| ISSUE-24 | **High** | Load support is limited to self-weight while parsing suggests broader load-condition support |
+-| ISSUE-25 | **High** | ArcLength silently substitutes analysis key 1 for reference-load assembly |
+-| ISSUE-16 | **Medium** | Energy accumulation modifies local float copies and returns nothing |
+-| ISSUE-19 | **Medium** | Multiplier-based discretization mishandles unloading ranges |
+-| ISSUE-21 | **Medium** | ModelManager stores analysis vectors as class-global mutable state |
+-| ISSUE-22 | **Low** | Duplicate definitions and factories obscure the active implementation |
+-| ISSUE-23 | **Low** | Progress callbacks use inconsistent scales |
+-| ISSUE-26 | **Low** | CLI summary assumes nonzero model size and nonempty arrays |
++The C# `Quad.UpdateDomain` computes `dN` and `sigma` through `ComputeDN`, stores the first-step initial stress, updates `Status.f` from the residual, and passes `dN`, masonry material, volume, and initial stress into `SpringCoulomb03`.
+ 
+-## Observed behavioral probes
++The Python code currently passes:
+ 
+-The following small probes were run directly against the extracted package:
+-
+-```text
+-Boundary-condition probe:
+-  computed full-system correction = [-2.0, 3.0]
+-  expected constrained correction  = [0.0, 2.0]
+-
+-Rollback probe:
+-  TypeError: LinearSystem.set_x() missing 1 required positional argument: 'v'
+-
+-Regula Falsi probe:
+-  returned eta = 0.0 after entering with a previously applied full step
++```python
++dN = 0.0
++masonry = None
++volume = 0.0
++sigma = 0.0
+ ```
+ 
+-<a id="issue-01"></a>
+-## ISSUE-01 — Regula Falsi line search starts with a degenerate bracket and corrupts trial-state accounting
++This removes the axial/normal-force dependency from the diagonal frictional constitutive law. It is the leading known explanation for loss of agreement after the first mostly elastic load step.
++
++**Required work:** port `ComputeDN`, material/volume association, initial-stress capture, and the C# `Status.f` update; compare every Newton iteration against C#.
++
++## ISSUE-02 — Chained analysis restart state is not restored
+ 
+ **Severity:** Critical  
+-**Locations:** `histra/solver/line_search.py:78-84`, `histra/solver/line_search.py:136-144`, `histra/solver/newton_line_search.py:90-110`
++**Location:** `histra/solver/solve.py`
+ 
+-### Problem
++The HRX analyses use `InitialAnalysisKey` to start from prior results. Correct restoration requires:
+ 
+-Both bracket endpoints are initialized at `eta = 1` with the same function value. The first denominator is therefore zero, `eta_prev` stays at zero, and the method can return zero after the caller has already applied the full Newton step. The final update also risks applying an increment again instead of moving from the current trial point to the selected point.
++- the global displacement and velocity vectors;
++- quad and interface local state;
++- every committed spring-history variable;
++- load factor, pseudo-time, and other analysis state.
+ 
+-### Impact
++The loader now parses the restart keys, but Python deliberately raises `NotImplementedError` for a chained analysis. This is safer than silently starting from zero.
+ 
+-Returned line-search factors do not reliably match the actual element and displacement state. Convergence can be false, delayed, or impossible.
++**Required work:** implement a typed SQLite state loader for `DynamicVectorsState`, `QuadStates`, `InterfaceStates`, and all relevant `SpringStates` columns, followed by a state-consistency test.
+ 
+-### Fix direction
++## ISSUE-03 — Complete nonlinear reference analysis is not reproduced
+ 
+-Represent the initial bracket as `(eta=0, s0)` and `(eta=1, s1)`. Snapshot or revert the full trial state between evaluations. Apply only incremental differences between successive eta values, and finish with exactly one state corresponding to the returned eta.
++**Severity:** Critical validation gap
+ 
+-### Required regression tests
++Analysis 1 step 1 agrees closely with C#. The complete five-step run has not converged/completed within the bounded Python audit. Until the later steps and final state match, engineering equivalence is unproven.
+ 
+-- One-DOF nonlinear residual with a known line minimum
+-- State equality between returned eta and final displacement
+-- Arc-length lambda/state restoration during trial evaluations
++This is an outcome issue rather than one isolated code line. ISSUE-01 should be addressed first.
+ 
+-<a id="issue-02"></a>
+-## ISSUE-02 — Nonlinear analysis reports exit code zero after a failed step
++## ISSUE-04 — P-Delta remains unsupported
+ 
+-**Severity:** Critical  
+-**Locations:** `histra/solver/solve.py:200-216`, `histra/solver/solve.py:273-279`
++**Severity:** High
+ 
+-### Problem
++The C# application has frame/load-generation infrastructure for P-Delta. That subsystem is absent from this Python package. Python now raises explicitly when P-Delta is enabled.
+ 
+-A failed step is recorded and breaks the loop, but the function always logs completion and returns `(0, step_data)`.
++## ISSUE-05 — Loading support is narrower than C#
+ 
+-### Impact
++**Severity:** High
+ 
+-Callers can accept failed analyses as successful and persist or present unconverged results.
++Self-weight is implemented. Broader load actions and Psi-dependent combinations do not have the complete source data/model behavior needed by C#. Unsupported Psi modes raise rather than silently returning zero.
+ 
+-### Fix direction
++## ISSUE-06 — Line-search work can grow excessively
+ 
+-Track a final exit code, revert to the last committed state on failure, log a failure-specific final message, and return the negative code.
++**Severity:** High / performance
+ 
+-### Required regression tests
++The supplied analysis permits up to 1,000 line-search evaluations and 1,000 nonlinear iterations. Each trial updates all nonlinear elements and reforms the residual. When the constitutive path is wrong or stagnates, runtime grows dramatically.
+ 
+-- Forced max-iteration failure returns `-2`
+-- Failed step remains marked failed
+-- Committed model state is unchanged after failure
++Add stagnation detection, diagnostics for eta/residual progression, and configurable bounded benchmark profiles. Do not use a timeout as a numerical convergence rule.
+ 
+-<a id="issue-03"></a>
+-## ISSUE-03 — LoadControl clears the vector documented and used as total displacement at every step
++## ISSUE-07 — `ModelManager` uses process-global mutable state
+ 
+-**Severity:** Critical  
+-**Locations:** `histra/solver/load_control.py:125-143`, `histra/solver/load_control.py:176-184`, `histra/solver/incremental_integrator.py:19-24`
++**Severity:** Medium
+ 
+-### Problem
++Reference/external load and total-displacement vectors are class attributes. Concurrent or nested analyses can interfere. Move them into an `AnalysisContext` owned by one solve.
+ 
+-`self.u.fill(0.0)` resets the analysis displacement before each load step, while updates and commits treat `self.u` as cumulative total displacement.
++## ISSUE-08 — Results reconstruction from local quad states is approximate
+ 
+-### Impact
++**Severity:** Medium
+ 
+-Reported displacement, maximum displacement, rollback, and downstream internal-force calculations can contain only the latest step rather than the full response.
++`extract_displacements` takes the first afference entry for each local quad DOF. Shared/combined afference may overwrite a global value. The first-step comparison is close, but authoritative global comparison should use `DynamicVectorsState` whenever available.
+ 
+-### Fix direction
++## ISSUE-09 — Reporting and reaction extraction are simplified
+ 
+-Maintain distinct `u_total`, `du_step`, and `du_iteration` vectors. Never clear the total vector at step start.
++**Severity:** Medium
+ 
+-### Required regression tests
++`Program.get_value_graph_analysis` reports the integrator multiplier and one generalized displacement. It does not reproduce the C# model-point/reaction graph subsystem.
+ 
+-- Two linear load steps produce cumulative displacement
+-- Commit preserves total displacement
+-- Rollback restores the previous total vector
++## ISSUE-10 — `results.json` is stale and ambiguously named
+ 
+-<a id="issue-04"></a>
+-## ISSUE-04 — Standard Newton tangent assembly is overwritten by initial-stiffness assembly
++**Severity:** Documentation/data quality
+ 
+-**Severity:** Critical  
+-**Locations:** `histra/solver/model_manager.py:35-47`, `histra/solver/model_manager.py:67-79`, `histra/solver/newton_raphson.py:80-90`
++It reports 556 interfaces instead of 555 and an old `K_nnz`. Its displacement vector reflects HRX saved state, not a new Python nonlinear solve. It should be retained only as a historical snapshot or regenerated with explicit provenance.
+ 
+-### Problem
++## Repaired issues
+ 
+-`compute_ktang()` calls element `compute_k(alfa)` and then `assemble_k()`, but `assemble_k()` always calls `assemble_global_k(..., alfa=0.0)` and also zeros the linear system.
++The audited code now includes fixes for:
+ 
+-### Impact
+-
+-Standard and modified Newton behavior can collapse to the same initial-stiffness method. Zeroing the system may also discard a residual formed immediately before the solve.
+-
+-### Fix direction
+-
+-Pass the requested stiffness mode into assembly and separate `zero_matrix`, `zero_rhs`, and `zero_solution` operations. Re-form the residual after any operation that clears `b`.
+-
+-### Required regression tests
+-
+-- Standard Newton matrix changes with tangent state
+-- Modified Newton matrix remains fixed
+-- Residual is unchanged by matrix-only assembly
+-
+-<a id="issue-05"></a>
+-## ISSUE-05 — Load-controlled Newton solves ignore restrained DOFs
+-
+-**Severity:** Critical  
+-**Locations:** `histra/solver/incremental_integrator.py:202-217`, `histra/types/linear_system.py:76-79`, `histra/solver/newton_raphson.py:46-55`
+-
+-### Problem
+-
+-`compute_increment()` receives `fixed_dofs` but calls `ls.solve()` on the full matrix. Zeroing residual entries at supports is not the same as enforcing zero displacement.
+-
+-### Impact
+-
+-Restrained DOFs can move and the free-DOF solution can be wrong.
+-
+-### Fix direction
+-
+-Use one constrained-solve helper everywhere: reduce to free DOFs, solve, validate finiteness, and expand into a full vector with zeros at restrained DOFs.
+-
+-### Required regression tests
+-
+-- Two-DOF constrained analytical system
+-- Multiple restraints
+-- All DOFs restrained
+-- Loaded restrained DOF reaction handling
+-
+-<a id="issue-06"></a>
+-## ISSUE-06 — Rollback calls `LinearSystem.set_x` with the wrong signature
+-
+-**Severity:** Critical  
+-**Locations:** `histra/solver/incremental_integrator.py:108-118`, `histra/types/linear_system.py:32-34`
+-
+-### Problem
+-
+-`revert_to_last_commit()` calls `ls.set_x(dx)`, but `set_x` requires an index and a scalar value.
+-
+-### Impact
+-
+-Failure recovery and ALS rollback can raise `TypeError` instead of restoring the committed state.
+-
+-### Fix direction
+-
+-Assign `ls.x[:] = dx` or add a dedicated validated `set_x_vector()` method. Restore all analysis-level load and lambda state as part of the same transaction.
+-
+-### Required regression tests
+-
+-- Direct rollback call
+-- ALS failed-substep rollback
+-- Element and global vectors match the committed snapshot
+-
+-<a id="issue-07"></a>
+-## ISSUE-07 — NewtonLineSearch initializes relative convergence with a zero reference norm
+-
+-**Severity:** Critical  
+-**Locations:** `histra/solver/newton_line_search.py:59-61`, `histra/types/convergence_test.py:54-62`, `histra/types/convergence_test.py:95-100`
+-
+-### Problem
+-
+-The line-search algorithm calls `the_test.start()` without a linear system or reference norm. Relative error then divides by the `1e-30` fallback.
+-
+-### Impact
+-
+-Ordinary nonzero residuals become astronomically large and line-search analyses tend to hit the iteration limit.
+-
+-### Fix direction
+-
+-Initialize the convergence test with the same external-load/reference norm logic used by `NewtonRaphson`.
+-
+-### Required regression tests
+-
+-- Same initial relative error in Newton and NewtonLineSearch
+-- Scale invariance under proportional load scaling
+-
+-<a id="issue-08"></a>
+-## ISSUE-08 — Standard ArcLength predictor can solve against an unassembled zero matrix
+-
+-**Severity:** Critical  
+-**Locations:** `histra/solver/solve.py:161-175`, `histra/solver/arc_length.py:65-89`
+-
+-### Problem
+-
+-Initial stiffness is assembled before `new_step()` only for methods containing `Modified`. ArcLength `new_step()` immediately solves `K duP = P` using `ls.k`, which begins as a zero matrix.
+-
+-### Impact
+-
+-The first predictor can contain zeros or nonfinite values; sparse rank warnings are not necessarily raised as exceptions.
+-
+-### Fix direction
+-
+-Assemble and validate a stiffness matrix before every first ArcLength predictor and after topology changes.
+-
+-### Required regression tests
+-
+-- Standard ArcLength first step has finite nonzero `duP`
+-- Singular predictor returns a solver error
+-
+-<a id="issue-09"></a>
+-## ISSUE-09 — Load-function points are not represented or parsed
+-
+-**Severity:** High  
+-**Locations:** `histra/model/load.py:78-84`, `histra/io/hr_loader.py:107-115`, `histra/solver/incremental_integrator.py:125-137`
+-
+-### Problem
+-
+-Integrators look for `load_function.items`, but `LoadFunction` has no such field and the loader parses no pseudo-time/multiplier children. The code always falls back to a linear `(0,0) → (1,1)` history.
+-
+-### Impact
+-
+-Custom, cyclic, unloading, or staged load histories are silently ignored.
+-
+-### Fix direction
+-
+-Add a typed `LoadFunctionItem` list and parse the HRX child records before clearing the XML element.
+-
+-### Required regression tests
+-
+-- Multi-segment load function
+-- Unloading segment
+-- Cyclic sequence
+-- Empty function uses documented default
+-
+-<a id="issue-10"></a>
+-## ISSUE-10 — Configured maximum displacement is read but not passed to the convergence test
+-
+-**Severity:** High  
+-**Locations:** `histra/solver/solution_algorithm.py:92-96`, `histra/types/convergence_test.py:108-109`
+-
+-### Problem
+-
+-The factory reads `analysis.max_u` into a local variable and constructs `ConvergenceTest` without it.
+-
+-### Impact
+-
+-The configured stop limit is replaced by the default `1e30`.
+-
+-### Fix direction
+-
+-Pass `max_u=max_u` and verify whether the metric should cover interfaces as well as quads.
+-
+-### Required regression tests
+-
+-- Configured limit triggers `-3`
+-- Default limit does not stop ordinary analyses
+-
+-<a id="issue-11"></a>
+-## ISSUE-11 — P-Delta configuration uses incompatible string and integer representations and has no computed load vector
+-
+-**Severity:** High  
+-**Locations:** `histra/model/load.py:109`, `histra/io/hr_loader.py:158`, `histra/solver/incremental_integrator.py:229-234`, `histra/solver/model_manager.py:106-116`
+-
+-### Problem
+-
+-The model stores values such as `"None"`, one path checks integers `(1,2)`, and another checks `pdelta != 0`. `_pq` is initialized but no implementation computes it.
+-
+-### Impact
+-
+-Disabled P-Delta may enter the wrong branch, while enabled P-Delta produces no geometric-load contribution.
+-
+-### Fix direction
+-
+-Use one enum, normalize at parsing, implement the P-Delta vector and update schedule, or reject unsupported modes explicitly.
+-
+-### Required regression tests
+-
+-- None mode stays disabled
+-- Each-step and each-iteration update schedules
+-- Known geometric-stiffness benchmark
+-
+-<a id="issue-12"></a>
+-## ISSUE-12 — Automatic Load Stepping starts from failed trial state and double-counts progress
+-
+-**Severity:** Critical  
+-**Locations:** `histra/solver/solve.py:182-187`, `histra/solver/solve.py:333-373`
+-
+-### Problem
+-
+-ALS is entered after the failed full increment without restoring the committed global and element state. Its remaining-increment expression subtracts both `accumulated` and `sub_incr * success_count`.
+-
+-### Impact
+-
+-Substeps can start from an invalid state, apply excess or insufficient load, and fail during rollback.
+-
+-### Fix direction
+-
+-Snapshot the complete committed state before the original increment, restore it before ALS, calculate remaining load once, and snapshot each accepted substep transactionally.
+-
+-### Required regression tests
+-
+-- Full-step failure followed by successful subdivision
+-- Repeated subdivision attempts
+-- Exact final accumulated multiplier
+-
+-<a id="issue-13"></a>
+-## ISSUE-13 — Zero-diagonal DOFs are silently converted into restraints
+-
+-**Severity:** High  
+-**Locations:** `histra/solver/assembler.py:345-390`
+-
+-### Problem
+-
+-Any near-zero diagonal is added to the restrained set without checking the row, applied load, or physical support definition.
+-
+-### Impact
+-
+-Mechanisms, disconnected DOFs, and assembly errors can be hidden instead of reported as structural instability.
+-
+-### Fix direction
+-
+-Distinguish explicit restraints, inactive zero rows with zero load, and mechanisms. Raise a diagnostic error for loaded or coupled singular DOFs.
+-
+-### Required regression tests
+-
+-- Unloaded inactive DOF
+-- Loaded mechanism
+-- Zero diagonal with off-diagonal coupling
+-
+-<a id="issue-14"></a>
+-## ISSUE-14 — Psi load-combination coefficients are hard-coded to zero
+-
+-**Severity:** High  
+-**Locations:** `histra/solver/assembler.py:461-474`
+-
+-### Problem
+-
+-`Psi0`, `Psi1`, `Psi2`, and gamma/Psi combinations resolve to zero rather than model values.
+-
+-### Impact
+-
+-Variable actions using these factors disappear from the assembled load.
+-
+-### Fix direction
+-
+-Parse and store Psi values on the relevant load condition/template and resolve every supported coefficient type. Raise for unknown types.
+-
+-### Required regression tests
+-
+-- Each Psi coefficient type
+-- Combined gamma/Psi coefficient
+-- Unknown type rejection
+-
+-<a id="issue-15"></a>
+-## ISSUE-15 — Reported load factor and displacement-based stopping metric use placeholder/wrong values
+-
+-**Severity:** High  
+-**Locations:** `histra/solver/program.py:43-56`, `histra/solver/solve.py:225-266`
+-
+-### Problem
+-
+-`get_value_graph_analysis()` always returns load factor `1.0`; the variable named `abs_displ` compares load-factor entries rather than displacement entries.
+-
+-### Impact
+-
+-Every successful step can report the same load factor, and load-reduction stopping logic can terminate incorrectly.
+-
+-### Fix direction
+-
+-Read load factor from the active integrator and displacement from `p.u[dof]`. Keep clearly named load and displacement metrics.
+-
+-### Required regression tests
+-
+-- Monotonic load-control factors
+-- Arc-length factor history
+-- Displacement stop criterion uses displacement
+-
+-<a id="issue-16"></a>
+-## ISSUE-16 — Energy accumulation modifies local float copies and returns nothing
+-
+-**Severity:** Medium  
+-**Locations:** `histra/solver/model_manager.py:163-173`, `histra/solver/solve.py:218-223`
+-
+-### Problem
+-
+-Python floats are immutable; adding to `eel` and `ed` inside `compute_energy()` cannot update the caller variables.
+-
+-### Impact
+-
+-Analysis-level elastic and dissipated energy remain unchanged.
+-
+-### Fix direction
+-
+-Return `(elastic, dissipated)` or store energy in a dedicated result/state object.
+-
+-### Required regression tests
+-
+-- Single elastic spring energy
+-- Accumulation over multiple elements and steps
+-
+-<a id="issue-17"></a>
+-## ISSUE-17 — Factory and linear-solver arguments silently select incorrect behavior
+-
+-**Severity:** High  
+-**Locations:** `histra/solver/solution_algorithm.py:75-90`, `histra/solver/solver.py:20-33`
+-
+-### Problem
+-
+-Unknown equilibrium methods are treated as NewtonLineSearch, unsupported line-search names fall back to Regula Falsi, and `solve_linear(model, alfa)` passes `alfa` as the `analysis_key` argument to load assembly.
+-
+-### Impact
+-
+-Typos or unsupported settings do not fail fast; linear loads can be assembled from the wrong analysis key.
+-
+-### Fix direction
+-
+-Use enums or explicit factory maps and raise on unknown values. Separate `stiffness_alfa`, `analysis_key`, and `combination` parameters.
+-
+-### Required regression tests
+-
+-- Unknown method raises
+-- Each supported factory path
+-- Linear solve selects intended load combination
+-
+-<a id="issue-18"></a>
+-## ISSUE-18 — Sparse solve warnings and nonfinite results are not promoted to solver failures
+-
+-**Severity:** High  
+-**Locations:** `histra/types/linear_system.py:76-79`, `histra/solver/arc_length.py:77-89`, `histra/solver/solver.py:32-33`
+-
+-### Problem
+-
+-SciPy can emit `MatrixRankWarning` and return `nan`/`inf` without throwing an ordinary exception. Current code often catches only exceptions or performs no validation.
+-
+-### Impact
+-
+-Nonfinite increments can propagate into constitutive state and be mistaken for ordinary iteration behavior.
+-
+-### Fix direction
+-
+-Treat rank warnings as errors, validate every solve result with `np.isfinite`, and return a structured singular-system error.
+-
+-### Required regression tests
+-
+-- Singular matrix
+-- Nearly singular matrix
+-- Nonfinite solution rejection
+-
+-<a id="issue-19"></a>
+-## ISSUE-19 — Multiplier-based discretization mishandles unloading ranges
+-
+-**Severity:** Medium  
+-**Locations:** `histra/solver/load_control.py:98-110`, `histra/solver/incremental_integrator.py:187-199`
+-
+-### Problem
+-
+-`ceil(range_mult / discr_val)` uses a signed range. Negative unloading ranges collapse to one step instead of being subdivided by magnitude.
+-
+-### Impact
+-
+-Unloading/cyclic histories can use unexpectedly large increments.
+-
+-### Fix direction
+-
+-Calculate step count from `abs(range_mult) / positive_discr_val` and preserve the sign only in `df`.
+-
+-### Required regression tests
+-
+-- Positive loading
+-- Negative unloading
+-- Zero range
+-- Invalid nonpositive discretization
+-
+-<a id="issue-20"></a>
+-## ISSUE-20 — Production solver contains unsafe model-specific debug indexing
+-
+-**Severity:** High  
+-**Locations:** `histra/solver/solve.py:143-154`, `histra/solver/newton_raphson.py:110-130`
+-
+-### Problem
+-
+-The main loop assumes at least one quad, sometimes an eleventh or 101st quad, a non-null spring, and private constitutive fields.
+-
+-### Impact
+-
+-Small, interface-only, empty, or differently configured models can crash due to logging rather than mechanics.
+-
+-### Fix direction
+-
+-Remove the debug block or move it behind an opt-in diagnostic callback with defensive checks.
+-
+-### Required regression tests
+-
+-- No-quads model
+-- One-quad model
+-- Quad without nonlinear spring
+-
+-<a id="issue-21"></a>
+-## ISSUE-21 — ModelManager stores analysis vectors as class-global mutable state
+-
+-**Severity:** Medium  
+-**Locations:** `histra/solver/model_manager.py:22-31`, `histra/solver/solve.py:64-68`
+-
+-### Problem
+-
+-Reference loads, external loads, P-Delta loads, and total displacement are shared across all analyses in the process.
+-
+-### Impact
+-
+-Concurrent, nested, or interleaved analyses can overwrite one another and tests require global cleanup.
+-
+-### Fix direction
+-
+-Create an analysis context/state object owned by `Program` or the integrator and pass it explicitly.
+-
+-### Required regression tests
+-
+-- Two independent analyses in one process
+-- Parallel execution isolation
+-
+-<a id="issue-22"></a>
+-## ISSUE-22 — Duplicate definitions and factories obscure the active implementation
+-
+-**Severity:** Low  
+-**Locations:** `histra/types/convergence_test.py:49-50`, `histra/types/convergence_test.py:71-112`, `histra/solver/incremental_integrator.py:104-106`, `histra/solver/incremental_integrator.py:139-144`, `histra/solver/solution_algorithm.py:9-31`, `histra/solver/newton_line_search.py:143-163`
+-
+-### Problem
+-
+-Later method definitions overwrite earlier ones, and line-search factory logic is duplicated.
+-
+-### Impact
+-
+-Documented APIs differ from runtime behavior and future fixes can be applied to only one copy.
+-
+-### Fix direction
+-
+-Keep one implementation, use abstract base methods where appropriate, and centralize factory registration.
+-
+-### Required regression tests
+-
+-- Factory mapping unit tests
+-- Public API signature checks
+-
+-<a id="issue-23"></a>
+-## ISSUE-23 — Progress callbacks use inconsistent scales
+-
+-**Severity:** Low  
+-**Locations:** `histra/solver/load_control.py:137-141`, `histra/solver/arc_length.py:124-128`, `histra/solver/newton_raphson.py:138-143`
+-
+-### Problem
+-
+-Step integrators emit values in `0..1`, while iteration code emits percentage-like values up to `90`.
+-
+-### Impact
+-
+-User interfaces cannot interpret progress consistently.
+-
+-### Fix direction
+-
+-Define one callback contract, preferably `0.0..1.0`, and compose step/iteration progress centrally.
+-
+-### Required regression tests
+-
+-- All emitted progress values fall in contract range
+-- Monotonic progress for a successful analysis
+-
+-<a id="issue-24"></a>
+-## ISSUE-24 — Load support is limited to self-weight while parsing suggests broader load-condition support
+-
+-**Severity:** High  
+-**Locations:** `histra/solver/assembler.py:478-527`, `histra/io/hr_loader.py:82-105`
+-
+-### Problem
+-
+-The loader accepts general load-condition metadata, but load generation implements self-weight only.
+-
+-### Impact
+-
+-Models with other static actions can parse successfully yet omit those loads.
+-
+-### Fix direction
+-
+-Document the supported subset, implement each HRX load type, and validate/reject unsupported load conditions at analysis startup.
+-
+-### Required regression tests
+-
+-- Self-weight benchmark
+-- Each supported nodal/distributed load type
+-- Unsupported load rejection
+-
+-<a id="issue-25"></a>
+-## ISSUE-25 — ArcLength silently substitutes analysis key 1 for reference-load assembly
+-
+-**Severity:** High  
+-**Locations:** `histra/solver/solve.py:101-107`
+-
+-### Problem
+-
+-Every ArcLength analysis assembles reference loads from analysis key `1` instead of its configured key.
+-
+-### Impact
+-
+-Load patterns can come from an unrelated analysis or be absent when key 1 does not exist.
+-
+-### Fix direction
+-
+-Make the intended reference-load source explicit in the analysis schema and validate the referenced analysis/load combination.
+-
+-### Required regression tests
+-
+-- ArcLength analysis whose key is not 1
+-- Missing reference analysis produces a clear error
+-
+-<a id="issue-26"></a>
+-## ISSUE-26 — CLI summary assumes nonzero model size and nonempty arrays
+-
+-**Severity:** Low  
+-**Locations:** `histra/__main__.py:44-58`
+-
+-### Problem
+-
+-Matrix density divides by `K.shape[0] ** 2`, and diagonal/displacement minima are evaluated without guarding empty arrays.
+-
+-### Impact
+-
+-Inspection of empty or malformed models raises unrelated exceptions.
+-
+-### Fix direction
+-
+-Validate `model.gdl > 0` and collection consistency before computing summary statistics.
+-
+-### Required regression tests
+-
+-- Zero-DOF model reports a validation error
++- real nonlinear failure exit codes and rollback;
++- cumulative LoadControl displacement;
++- requested tangent stiffness assembly;
++- robust sparse-solve failure handling;
++- vector rollback semantics;
++- valid line-search endpoints and final-state handling;
++- C#-aligned convergence criteria and `max_u` propagation;
++- initial stiffness before ArcLength prediction;
++- load-function item parsing and unloading step counts;
++- ALS starting from the last committed state;
++- separate linear stiffness/load parameters;
++- explicit errors for unsupported P-Delta/Psi behavior;
++- C# virgin-state initialization for `InitialAnalysisKey < 0`.
+--- a/histra/histra_documentation/README.md
++++ b/histra/histra_documentation/README.md
+@@ -1,60 +1,60 @@
+-# HiStrA Python Code Documentation
++# HiStrA Python documentation
+ 
+-This documentation describes the uploaded HiStrA Python snapshot globally and module by module, and records the defects and incomplete features found during review.
++This documentation describes the supplied Python port, its relationship to the original C# solver, the current automated-test baseline, and the numerical validation performed with the supplied `model.hrx` and `model.Results` files.
+ 
+-**Review date:** 2026-07-27  
+-**Source files:** 51 Python modules  
+-**Automated baseline:** all modules compile and the package imports; no project tests were included.
++**Audit date:** 2026-07-27  
++**Runtime Python modules:** 51  
++**Automated tests:** 96 passing  
++**Reference data:** supplied HRX model plus C# SQLite result database
+ 
+-> [!WARNING]
+-> The nonlinear solver contains unresolved critical correctness defects. Read [ISSUES.md](ISSUES.md) before relying on numerical results.
++> [!IMPORTANT]
++> The first nonlinear load step of analysis 1 agrees closely with the stored C# result, but the complete nonlinear analysis is not yet validated. Do not treat the Python solver as an engineering-equivalent replacement until the remaining constitutive coupling and restart-state issues in [ISSUES.md](ISSUES.md) are resolved.
+ 
+ ## Documentation map
+ 
+-| Document | What it explains |
++| Document | Purpose |
+ |---|---|
+-| [ARCHITECTURE.md](ARCHITECTURE.md) | Package layers, dependencies, ownership, and extension points |
+-| [SOLVER_FLOW.md](SOLVER_FLOW.md) | Linear and nonlinear execution flows, LoadControl, ArcLength, Newton, and commit/revert |
+-| [DATA_MODEL.md](DATA_MODEL.md) | Model collections, nodes, elements, springs, afference, loads, and results |
+-| [FEATURE_STATUS.md](FEATURE_STATUS.md) | Implemented, partial, and unsupported behavior visible in this snapshot |
+-| [ISSUES.md](ISSUES.md) | Prioritized defects, impact, repair direction, and regression tests |
+-| [REMEDIATION_PLAN.md](REMEDIATION_PLAN.md) | Recommended order for making the solver trustworthy |
+-| [TESTING_AND_VALIDATION.md](TESTING_AND_VALIDATION.md) | Numerical, unit, integration, and regression test strategy |
+-| [PORTING_NOTES.md](PORTING_NOTES.md) | .NET-port conventions, compatibility layers, and naming |
+-| [GLOSSARY.md](GLOSSARY.md) | Structural-analysis and codebase terminology |
+-| [MODULE_INDEX.md](MODULE_INDEX.md) | Links to one documentation file per Python source module |
++| [AUDIT_REPORT.md](AUDIT_REPORT.md) | What was checked, changed, and measured |
++| [BENCHMARK_RESULTS.md](BENCHMARK_RESULTS.md) | Comparison with `model.Results` |
++| [ARCHITECTURE.md](ARCHITECTURE.md) | Layers, ownership, and dependencies |
++| [SOLVER_FLOW.md](SOLVER_FLOW.md) | Linear and nonlinear execution sequence |
++| [FEATURE_STATUS.md](FEATURE_STATUS.md) | Supported, partial, and unsupported behavior |
++| [ISSUES.md](ISSUES.md) | Current issues, separated from repaired defects |
++| [REMEDIATION_PLAN.md](REMEDIATION_PLAN.md) | Recommended next implementation order |
++| [TESTING_AND_VALIDATION.md](TESTING_AND_VALIDATION.md) | Test suite and engineering-validation plan |
++| [MODULE_INDEX.md](MODULE_INDEX.md) | Per-module reference pages |
++| [PORTING_NOTES.md](PORTING_NOTES.md) | C# translation conventions |
++| [GLOSSARY.md](GLOSSARY.md) | Structural-analysis terms |
+ 
+-## Package overview
++## Verified baseline
+ 
+-| Package | Responsibility |
+-|---|---|
+-| `histra.io` | Parse HRX XML and read SQLite result databases |
+-| `histra.model` | Store schema-oriented model, load, material, node, and restraint data |
+-| `histra.elements` | Implement quads and interfaces, including mutable local states |
+-| `histra.springs` | Implement constitutive force-deformation laws |
+-| `histra.types` | Share geometry, enums, numerical vectors/matrices, and integration state |
+-| `histra.solver` | Assemble systems, apply loading, iterate equilibrium, test convergence, and commit results |
++From the repository root:
+ 
+-## Typical usage
++```bash
++PYTHONPATH=. python -m pytest -q
++python -m compileall -q histra
++```
++
++Current result:
++
++```text
++96 passed
++```
++
++The tests include a real comparison of the first nonlinear step against the C# SQLite database.
++
++## Typical use
+ 
+ ```python
+ from histra.io.hr_loader import load_model
+-from histra.solver.solver import solve_linear
+ from histra.solver.solve import solve_static_nonlinear
+ 
+-model = load_model("model.hrx")
++model = load_model("model-output/model.hrx")
++analysis = model.collections.analyses[1]
++code, steps = solve_static_nonlinear(model, analysis, combination=1)
+ 
+-# Linear helper. Review ISSUE-17 before using the current signature.
+-u_linear = solve_linear(model)
+-
+-analysis = model.collections.analyses[1]
+-exit_code, steps = solve_static_nonlinear(model, analysis, combination=1)
+-if exit_code != 0:
+-    raise RuntimeError(f"Analysis failed: {exit_code}")
++if code != 0:
++    raise RuntimeError(f"Analysis failed with code {code}")
+ ```
+ 
+-The example expresses the intended public workflow. The current implementation does not yet satisfy all of the safety assumptions shown, especially reliable failure codes and constrained nonlinear solves.
+-
+-## Reading order
+-
+-Start with [ARCHITECTURE.md](ARCHITECTURE.md), then [SOLVER_FLOW.md](SOLVER_FLOW.md). Use [MODULE_INDEX.md](MODULE_INDEX.md) when tracing a concrete class or function. Use [ISSUES.md](ISSUES.md) before modifying or validating the solver.
++Only analyses with `InitialAnalysisKey < 0` currently start safely. An analysis that depends on a previous analysis is rejected until the complete committed C# database state can be restored.
+--- a/histra/histra_documentation/REMEDIATION_PLAN.md
++++ b/histra/histra_documentation/REMEDIATION_PLAN.md
+@@ -1,81 +1,45 @@
+-# Remediation Plan
++# Remediation plan
+ 
+-The safest approach is to fix state and solve invariants before tuning constitutive behavior.
++## Phase 1 — Complete quad/Coulomb coupling
+ 
+-## Phase 1 — Make failure visible and deterministic
++1. Port C# `Quad.ComputeDN` and its dependencies.
++2. Associate the correct masonry material and element volume.
++3. Capture `sigmaInitial` at the same analysis/step point as C#.
++4. Update quad `Status.f` consistently with C#.
++5. Compare step-2 Newton residuals and selected spring states iteration by iteration.
+ 
+-1. Return the actual nonlinear exit code.
+-2. Convert sparse rank warnings and nonfinite results into explicit errors.
+-3. Remove unsafe production debug indexing.
+-4. Reject unknown method, integrator, load, and coefficient names.
++**Exit criterion:** analysis 1 reproduces all five C# steps within agreed displacement, force, tangent, and phase tolerances.
+ 
+-**Exit criterion:** every failure path returns a nonzero code and leaves a diagnostic message without crashing in logging code.
++## Phase 2 — Implement database restart
+ 
+-## Phase 2 — Centralize constrained linear algebra
++1. Read global vectors from `DynamicVectorsState`.
++2. Read quad/interface local states for the requested analysis/combination/step.
++3. Map `SpringStates` to each spring purpose/local index and restore every committed field.
++4. Restore pseudo-time/load factor and verify internal-force equilibrium before continuing.
+ 
+-1. Implement one `solve_constrained(K, b, fixed_dofs)` function.
+-2. Use it in linear, LoadControl, ArcLength, and line-search paths.
+-3. Separate matrix zeroing from RHS/solution zeroing.
+-4. Distinguish explicit restraints, inactive DOFs, and mechanisms.
++**Exit criterion:** analysis 22 begins with the exact final state of analysis 1 and its initial residual matches C#.
+ 
+-**Exit criterion:** analytical constrained systems and singular mechanism tests pass.
++## Phase 3 — Validate ArcLength
+ 
+-## Phase 3 — Redesign state ownership and transactions
++Compare all stored analysis-22 steps:
+ 
+-Introduce an `AnalysisContext` containing:
++- lambda and control displacement;
++- selected correction roots and eta;
++- spring phases and force histories;
++- final global/local state.
+ 
+-```text
+-u_total
+-u_committed
+-du_step
+-F_reference
+-F_external
+-F_pdelta
+-pseudo_time
+-load_factor / lambda
+-```
++## Phase 4 — Broaden load support
+ 
+-Add snapshot/restore operations that include every element and spring trial state. Line-search and ALS trials must be transactional.
++Port or explicitly specify unsupported behavior for non-self-weight actions, Psi factors, reaction extraction, and P-Delta.
+ 
+-**Exit criterion:** failed Newton, line-search, and ALS trials restore byte-for-byte equivalent numerical state.
++## Phase 5 — Improve diagnostics/performance
+ 
+-## Phase 4 — Repair nonlinear algorithms
++- line-search stagnation and repeated-eta detection;
++- per-iteration timing and residual diagnostics;
++- optional matrix factorization reuse;
++- remove process-global `ModelManager` vectors;
++- add typed result and state objects.
+ 
+-1. Preserve true tangent assembly for Standard Newton.
+-2. Repair convergence reference initialization.
+-3. Rewrite Regula Falsi around state snapshots and a valid bracket.
+-4. Ensure ArcLength always has a valid initial matrix and explicit reference load.
+-5. Correct total/step/iteration displacement separation.
++## Phase 6 — Engineering acceptance
+ 
+-**Exit criterion:** one-DOF and small multi-DOF nonlinear benchmarks match independent analytical/reference solutions.
+-
+-## Phase 5 — Complete loading semantics
+-
+-1. Parse load-function items.
+-2. Correct loading and unloading discretization.
+-3. Implement or reject every load action.
+-4. Implement Psi factors.
+-5. Normalize and implement P-Delta modes.
+-
+-**Exit criterion:** assembled load vectors match hand calculations for every supported load type and combination coefficient.
+-
+-## Phase 6 — Validate constitutive models
+-
+-Build isolated cyclic tests for `SpringHysteretic` and `SpringCoulomb03`:
+-
+-- monotonic positive and negative envelopes;
+-- unloading/reloading and reversal points;
+-- tangent continuity where intended;
+-- committed/trial restoration;
+-- energy dissipation;
+-- contact opening/closing and friction limits.
+-
+-**Exit criterion:** force-deformation histories match the source .NET implementation or published benchmark curves.
+-
+-## Phase 7 — API and maintainability cleanup
+-
+-- Replace `Any` with protocols/dataclasses.
+-- Remove duplicate definitions and factory copies.
+-- Standardize progress to `0.0..1.0`.
+-- Replace result dictionaries with typed result dataclasses.
+-- Keep compatibility re-exports but mark them deprecated.
++Create small analytical fixtures and retain the supplied bridge model as a larger regression. Require reproducible tolerances for displacements, reactions, element forces, spring histories, and energy before declaring parity.
+--- a/histra/histra_documentation/SOLVER_FLOW.md
++++ b/histra/histra_documentation/SOLVER_FLOW.md
+@@ -1,148 +1,67 @@
+-# Solver Flow
++# Solver flow
+ 
+-## Linear static helper
++## Loading a model
+ 
+-The intended linear path is:
++`load_model()` streams the HRX and builds `Model.collections`. It also:
+ 
+-```mermaid
+-sequenceDiagram
+-    participant Caller
+-    participant Solver as solve_linear
+-    participant Assembler
+-    participant SciPy
+-    Caller->>Solver: Model + analysis/load settings
+-    Solver->>Assembler: assemble_global_k
+-    Solver->>Assembler: assemble_load_vector
+-    Solver->>Assembler: get restraints / reduce K,b
+-    Solver->>SciPy: spsolve(K_free, b_free)
+-    Solver-->>Caller: full displacement vector
+-```
++- retains the absolute `Model.source_path`;
++- joins `LoadFunctionItem` records to `LoadFunction`;
++- parses `InitialAnalysisKey` and `InitialCombinationAnalysisKey`;
++- attaches the selected load function to each analysis.
+ 
+-The current helper mixes the stiffness `alfa` argument with the load `analysis_key`; see `ISSUE-17`.
++The HRX may contain saved solved state. Loading is not the same as initializing a new analysis.
+ 
+-## Nonlinear static workflow
++## Nonlinear initialization
+ 
+-`solve_static_nonlinear()` performs these stages:
+-
+-1. Create `Program` and `LinearSystem` with `model.gdl` entries.
+-2. Initialize reference, external, P-Delta, and total-displacement vectors.
+-3. Build the selected integrator, Newton algorithm, line search, and convergence test.
+-4. Reset element trial states and assemble the reference load pattern.
+-5. Repeat load/arc-length steps:
+-   1. initialize the new step and apply its predictor;
+-   2. form the residual;
+-   3. perform Newton corrections until converged or failed;
+-   4. optionally subdivide a failed LoadControl increment with ALS;
+-   5. commit element and spring states;
+-   6. record step results and decide whether to continue.
+-6. Return an exit code and per-step data.
++The C# flow chooses between virgin initialization and prior-analysis restoration.
+ 
+ ```mermaid
+ flowchart TD
+-    S[Initialize analysis] --> P[Apply step predictor / load increment]
+-    P --> R[Form residual]
+-    R --> T[Build or reuse tangent K]
+-    T --> D[Solve for correction]
+-    D --> U[Update elements and springs]
+-    U --> C{Converged?}
+-    C -- No --> T
+-    C -- Max iterations --> A{ALS enabled?}
+-    A -- Yes --> P2[Restore and subdivide increment]
+-    A -- No --> F[Fail and revert]
+-    C -- Yes --> M[Commit state]
+-    M --> E{Analysis complete?}
+-    E -- No --> P
+-    E -- Yes --> O[Return results]
++    A[Select Analysis] --> B{InitialAnalysisKey < 0?}
++    B -- Yes --> C[Reset global vectors, element local state, springs]
++    B -- No --> D[Restore prior committed database state]
++    D --> E[Currently rejected in Python]
++    C --> F[Assemble reference load]
++    F --> G[Assemble initial/tangent stiffness]
++    G --> H[Start integrator]
+ ```
+ 
+-The diagram shows the intended restore-before-ALS behavior. The current implementation does not fully restore the failed trial state; see `ISSUE-12`.
++Python implements the virgin branch for the supported quad/interface model. It rejects the restart branch until all history variables can be restored correctly.
+ 
+-## Residual convention
++## LoadControl/Newton sequence
+ 
+-`ModelManager.get_resisting_force()` zeros `ls.b` and scatters internal resisting forces with a negative sign. `form_unbalance()` then adds accumulated external loads (and intended P-Delta loads). Therefore the solver uses a residual equivalent to:
++1. Determine the next pseudo-time and load-multiplier increment.
++2. Add the external load increment.
++3. Form `R = F_external - F_internal` (plus supported additions).
++4. For Standard methods, rebuild tangent stiffness; Modified methods reuse initial stiffness.
++5. Solve for the global correction.
++6. Add the correction to global and element-local trial state.
++7. Update constitutive springs.
++8. Re-form residual.
++9. Optionally perform line-search trial corrections.
++10. Test force, displacement, or work convergence.
++11. Commit accepted element/spring state, or rollback on failure.
+ 
+-```text
+-R = F_external + F_PDelta - F_internal
+-```
++## First-step C# alignment
+ 
+-The correction solve is intended to be:
++Virgin-state reset is essential. Without it, the first correction is added to the solved state stored in HRX. With the reset, the first analysis-1 step matches the C# database closely.
+ 
+-```text
+-K_tangent · Δu = R
+-```
++## Remaining divergence point
+ 
+-Every implementation and convergence test must preserve this sign convention.
++C# `Quad.UpdateDomain` computes normal-force change and initial normal stress before updating `SpringCoulomb03`. Python currently omits that computation. Later nonlinear steps therefore do not yet follow the same constitutive path.
+ 
+-## LoadControl
++## ALS
+ 
+-`LoadControl` reads the active load function, computes a pseudo-time increment `dt` and multiplier increment `df`, and updates:
++On a failed LoadControl step, the implementation:
+ 
+-```text
+-mult  ← mult + df
+-Fext  ← Fext + df · Ptarget
+-```
++1. removes the failed full load increment;
++2. reverts to the last committed state;
++3. tries reduced subincrements;
++4. commits each successful substep;
++5. reverts a failed substep before reducing again.
+ 
+-During Newton iterations it uses the base `compute_increment()` path. That path currently solves the full system without enforcing restrained DOFs (`ISSUE-05`).
++This follows the inspected C# sequence, but it still depends on correct element constitutive state.
+ 
+ ## ArcLength
+ 
+-The ArcLength integrator tracks a load factor `lambda` and a step displacement accumulator. It calculates:
+-
+-```text
+-duP     = K⁻¹ Ptarget
+-du_star = K⁻¹ R
+-du      = du_star + d_lambda · duP
+-```
+-
+-`d_lambda` is selected from the quadratic arc-length constraint. `PSI=0` gives the current cylindrical form; `PSI=1` would include a spherical load term.
+-
+-The first predictor requires an already assembled, nonsingular `K`. The current Standard ArcLength startup does not guarantee that (`ISSUE-08`).
+-
+-## Newton-Raphson
+-
+-For each iteration:
+-
+-1. optionally update tangent stiffness for the standard method;
+-2. solve for `ls.x`;
+-3. update trial element/spring state;
+-4. re-form the residual;
+-5. evaluate `ConvergenceTest`.
+-
+-Modified Newton should reuse a fixed matrix while Standard Newton rebuilds a true tangent. The current assembly path always requests `alfa=0` during global assembly (`ISSUE-04`).
+-
+-## Newton with line search
+-
+-The line-search algorithm applies a full Newton step, evaluates the residual, and then searches for a scale `eta`. Correct implementation requires each trial to represent exactly:
+-
+-```text
+-u_trial = u_before + eta · Δu_Newton
+-```
+-
+-and requires all spring/element history to be restored or incrementally advanced to the same eta. The current Regula Falsi bracket and final update violate that invariant (`ISSUE-01`).
+-
+-## Convergence and exit codes
+-
+-`ConvergenceTest.test()` returns:
+-
+-| Code | Meaning |
+-|---:|---|
+-| `>= 0` | Converged; value is the current iteration number |
+-| `-1` | Continue iterating |
+-| `-2` | Maximum iterations exceeded |
+-| `-3` | Maximum displacement exceeded |
+-| `-4` | Stop/NaN path used by algorithms |
+-| `<= -10` | Integrator or line-search failure family |
+-
+-The top-level nonlinear solver currently replaces failed outcomes with return code zero after leaving the step loop (`ISSUE-02`).
+-
+-## Commit and revert contract
+-
+-A converged step must commit:
+-
+-- total/global displacement;
+-- integrator pseudo-time and multiplier/lambda;
+-- external and P-Delta load state;
+-- every element state;
+-- every constitutive spring history.
+-
+-A failed step or trial line-search point must restore all of those values. Restoring only `u` is insufficient because force, tangent, energy, and loading-phase histories are path-dependent.
++The C#-aligned ArcLength implementation uses residual and reference-load solutions, accumulated step displacement, a control/all-DOF constraint, and load-function direction. End-to-end validation is blocked because the supplied ArcLength analyses restart from earlier analyses whose complete database state is not yet restorable.
+--- a/histra/histra_documentation/TESTING_AND_VALIDATION.md
++++ b/histra/histra_documentation/TESTING_AND_VALIDATION.md
+@@ -1,104 +1,73 @@
+-# Testing and Validation Guide
++# Testing and validation
+ 
+-## Current baseline
++## Current automated baseline
+ 
+-The package compiles and imports, but no automated tests or example HRX benchmark models were included. Numerical solver code requires both software tests and independent mechanics validation.
++Run from the extracted repository root:
+ 
+-## Test layers
+-
+-### 1. Pure utility tests
+-
+-- `Point.from_str`, XML `_attr`, enum values.
+-- `LoadCombination.get_coefficient`.
+-- `LinearSystem` vector operations.
+-- spring registry dispatch and unknown-type handling.
+-
+-### 2. Constitutive unit tests
+-
+-For every spring law, test force, tangent, trial/commit/revert, reversal, and energy. Tests should assert both the returned values and internal state invariants.
+-
+-### 3. Element tests
+-
+-- Local stiffness symmetry where expected.
+-- Rigid-body modes and equilibrium.
+-- Afference scattering against a hand-built dense matrix.
+-- Local/global displacement transformation.
+-- Resisting-force sign convention.
+-- Commit and revert across all embedded springs.
+-
+-### 4. Assembly tests
+-
+-- One element with known global stiffness.
+-- Two elements sharing DOFs.
+-- Explicit restraints.
+-- Inactive zero rows versus mechanisms.
+-- Self-weight and each supported load type.
+-- Load-combination coefficients.
+-
+-### 5. Solver algorithm tests
+-
+-| Test | Expected invariant |
+-|---|---|
+-| One-DOF linear spring | Exact displacement and reaction |
+-| Two-DOF restrained system | Fixed DOF remains exactly zero |
+-| Two LoadControl steps | Total displacement equals sum of accepted increments |
+-| Standard vs Modified Newton | Standard rebuilds tangent; Modified reuses matrix |
+-| Forced nonconvergence | Negative exit code and complete rollback |
+-| Line search | Final state equals `u0 + eta*du` |
+-| ALS | Accepted subincrements sum exactly to failed original increment |
+-| ArcLength snap-through benchmark | Correct branch and load-displacement path |
+-
+-### 6. End-to-end HRX tests
+-
+-Maintain small checked-in fixtures:
+-
+-1. empty/invalid model for validation errors;
+-2. one elastic quad;
+-3. one interface;
+-4. mixed quad/interface model;
+-5. cyclic load function;
+-6. nonlinear benchmark with stored reference results.
+-
+-## Numerical assertions
+-
+-Use combined tolerances rather than exact equality:
+-
+-```python
+-np.testing.assert_allclose(actual, expected, rtol=1e-8, atol=1e-10)
++```bash
++PYTHONPATH=. python -m pytest -q
+ ```
+ 
+-Also assert structural invariants:
+-
+-- all solution and state arrays are finite;
+-- fixed DOFs are zero;
+-- `K` is symmetric when the formulation is expected to be symmetric;
+-- global residual is below tolerance at convergence;
+-- accepted total displacement equals the sum of accepted increments;
+-- failed trials do not change committed state;
+-- energy is nonnegative or follows the constitutive sign convention.
+-
+-## Reference validation
+-
+-For a port, the strongest reference is a side-by-side run against the original .NET implementation using the same HRX input. Compare:
+-
+-- assembled matrix nonzeros and values;
+-- reference load vector;
+-- each Newton increment and residual norm;
+-- spring trial/committed histories;
+-- load factor and displacement per step;
+-- final reactions and energy.
+-
+-Differences should be localized before accepting aggregate final agreement.
+-
+-## CI recommendations
+-
+-Run on every change:
++Audited result:
+ 
+ ```text
+-python -m compileall -q histra
+-pytest -q
+-ruff check histra tests
+-mypy histra
++96 passed in 10.49s
+ ```
+ 
+-Add deterministic seeds if randomized property tests are introduced. Treat warnings from SciPy sparse solves as test failures.
++The collection is controlled by `pytest.ini`; manual scripts are not imported as tests.
++
++## What the suite covers
++
++- XML/model parsing and compatibility imports;
++- points, afference, matrices/vectors, and linear-system behavior;
++- elastic, hysteretic, multilinear, Coulomb, and Coulomb03 spring behavior;
++- quad/interface construction and selected mechanics;
++- solver factories, convergence criteria, rollback, load control, line search, and ArcLength components;
++- C#-alignment regression checks;
++- supplied-model inventory and restart-key parsing;
++- first nonlinear load step against C# `model.Results`.
++
++## C# benchmark assertion
++
++`test_benchmark_alignment.py` runs analysis 1 over its first load interval and checks:
++
++```text
++relative displacement error < 5e-5
++maximum absolute DOF error < 3e-7
++```
++
++Observed values are approximately `2.282e-5` and `2.212e-7`.
++
++## Checks that are still missing
++
++1. Step-by-step equality for all five analysis-1 steps.
++2. Complete `SpringCoulomb03` history comparison at selected quads.
++3. Restart from analysis 1 into analysis 22.
++4. ArcLength force-displacement path through all 61 stored steps.
++5. Global reactions and graph output.
++6. Energy comparison.
++7. P-Delta and non-self-weight loads.
++8. Matrix-entry comparison, not only shape/nonzero count.
++
++## Recommended reference harness
++
++For each accepted C# step, store/compare:
++
++- global `U` and `V` from `DynamicVectorsState` when available;
++- every quad/interface local `U`;
++- selected spring `U`, `F`, tangent, phase, extrema, and energy;
++- external/reference load and residual;
++- Newton correction, eta, and convergence criterion;
++- tangent matrix checksums or selected rows;
++- committed load factor and pseudo-time.
++
++A mismatch should be localized at the first differing iteration rather than diagnosed only from final displacement.
++
++## CI commands
++
++```bash
++python -m compileall -q histra
++PYTHONPATH=. python -m pytest -q
++```
++
++Optional static tools should be added after the current large direct-port modules have a defined formatting/type policy.
+--- a/histra/histra_documentation/modules/histra_io_hr_loader.md
++++ b/histra/histra_documentation/modules/histra_io_hr_loader.md
+@@ -1,47 +1,14 @@
+ # `histra.io.hr_loader`
+ 
+-**Source:** `histra/io/hr_loader.py`  
+-**Size:** 214 lines  
+-**Layer:** Model input and results-database reading.
++Streaming HRX parser.
+ 
+-## Purpose
++Key behaviors:
+ 
+-Streams an HRX XML file and constructs the complete in-memory `Model` and entity collections.
++- parses core nodes, constraints, quads, interfaces, restraints, loads, materials, and analyses;
++- distinguishes top-level keyed interfaces from nested references;
++- joins separate `LoadFunctionItem` records to their parent function;
++- parses `InitialAnalysisKey` and `InitialCombinationAnalysisKey`;
++- stores the absolute input path on `Model.source_path`;
++- recovers `model.gdl` from afference only if the HRX header is zero.
+ 
+-### Source docstring
+-
+-HiStrA .hrx file loader — single-pass streaming XML parser.
+-
+-## Dependencies
+-
+-**Internal:** `histra.model.interface`, `histra.model.load`, `histra.model.masonry_material`, `histra.model.model`, `histra.model.node`, `histra.model.quad`, `histra.model.restraint`  
+-**Python/third-party:** `pathlib`, `typing`, `xml`  
+-
+-## API and implementation units
+-
+-### Module functions
+-
+-| Function | Description |
+-|---|---|
+-| `def load_model(path: Union[str, Path]) -> Model` | Load a ``.hrx`` file and return a fully populated Model. |
+-| `def _parse_load_combination(elem: ET.Element) -> LoadCombination` | Parse load combination. |
+-| `def _safe_int(value: str, default: int = 0) -> int` | Safe int. |
+-
+-## Runtime behavior
+-
+-- Uses `xml.etree.ElementTree.iterparse` with end events to keep memory usage low.
+-- Builds keyed dictionaries in `Collections` and attaches them to `Model` after parsing.
+-- Clears consumed XML elements after constructing the corresponding dataclass or runtime element.
+-
+-## Known issues affecting this module
+-
+-- **ISSUE-09 — Load-function points are not represented or parsed** (High). See [ISSUES.md](../ISSUES.md#issue-09).
+-- **ISSUE-11 — P-Delta configuration uses incompatible string and integer representations and has no computed load vector** (High). See [ISSUES.md](../ISSUES.md#issue-11).
+-- **ISSUE-24 — Load support is limited to self-weight while parsing suggests broader load-condition support** (High). See [ISSUES.md](../ISSUES.md#issue-24).
+-
+-## Related documentation
+-
+-- [Architecture](../ARCHITECTURE.md)
+-- [Solver flow](../SOLVER_FLOW.md)
+-- [Module index](../MODULE_INDEX.md)
+-- [Issues report](../ISSUES.md)
++Loading preserves serialized element state. Virgin-state reset occurs in the nonlinear solver, not in the parser.
+--- a/histra/histra_documentation/modules/histra_io_results_reader.md
++++ b/histra/histra_documentation/modules/histra_io_results_reader.md
+@@ -1,35 +1,12 @@
+ # `histra.io.results_reader`
+ 
+-**Source:** `histra/io/results_reader.py`  
+-**Size:** 64 lines  
+-**Layer:** Model input and results-database reading.
++Reads selected state from the C# SQLite `.Results` database.
+ 
+-## Purpose
++Functions:
+ 
+-Reads stored quadrilateral displacements and available steps from a HiStrA SQLite `.Results` database.
++- `available_steps`: lists stored quad-state steps;
++- `read_quad_states`: returns local `U1..U7` by quad key;
++- `read_dynamic_vectors`: returns global `U` and `V` from `DynamicVectorsState`, converting one-based database DOFs to zero-based arrays;
++- `find_results_path`: locates a sibling `.Results` file.
+ 
+-### Source docstring
+-
+-Reader for the HiStrA .Results SQLite database.
+-
+-## Dependencies
+-
+-**Python/third-party:** `pathlib`, `sqlite3`, `typing`  
+-
+-## API and implementation units
+-
+-### Module functions
+-
+-| Function | Description |
+-|---|---|
+-| `def _connect(results_path: str \| Path) -> sqlite3.Connection` | Connect. |
+-| `def available_steps(conn: sqlite3.Connection, analysis_key: int, combination: int = 1) -> List[int]` | Return ordered list of Step integers present for the given analysis/combination. |
+-| `def read_quad_states(results_path: str \| Path, analysis_key: int, combination: int = 1, step: Optional[int] = None) -> Dict[int, List[float]]` | Read Quad U1..U7 from the .Results DB. |
+-| `def find_results_path(hrx_path: str \| Path) -> Optional[Path]` | Heuristic: sibling .Results file of the HRX model. |
+-
+-## Related documentation
+-
+-- [Architecture](../ARCHITECTURE.md)
+-- [Solver flow](../SOLVER_FLOW.md)
+-- [Module index](../MODULE_INDEX.md)
+-- [Issues report](../ISSUES.md)
++This module does not yet restore the complete committed analysis state. Chained restart additionally needs interface and spring-history deserialization.
+--- a/histra/histra_documentation/modules/histra_model_load.md
++++ b/histra/histra_documentation/modules/histra_model_load.md
+@@ -1,137 +1,12 @@
+ # `histra.model.load`
+ 
+-**Source:** `histra/model/load.py`  
+-**Size:** 113 lines  
+-**Layer:** Schema-oriented dataclasses and compatibility re-exports.
++Defines load combinations, load conditions, load-function points/functions, and `Analysis`.
+ 
+-## Purpose
++`Analysis` includes solver settings plus restart provenance:
+ 
+-Defines load conditions, combination coefficients, load functions, and nonlinear analysis settings parsed from HRX.
++- `initial_analysis_key`;
++- `initial_combination_analysis_key`.
+ 
+-### Source docstring
++A negative initial-analysis key identifies a virgin analysis. A nonnegative key requires restoring the complete committed state of a prior result.
+ 
+-Load combination dataclasses matching .hrx schema.
+-
+-## Dependencies
+-
+-**Python/third-party:** `dataclasses`, `typing`  
+-
+-## API and implementation units
+-
+-### `LoadCombinationItem`
+-
+-One coefficient entry in a load combination.
+-
+-**Declared state fields**
+-
+-| Field | Type | Default |
+-|---|---|---|
+-| `column_key` | `int` | `0` |
+-| `row_key` | `int` | `0` |
+-| `name` | `str` | `''` |
+-| `type_data` | `str` | `'Number'` |
+-| `secondary_type_data` | `str` | `'Number'` |
+-| `val` | `float` | `0.0` |
+-| `combination` | `int` | `0` |
+-
+-### `LoadCombination`
+-
+-A load combination: coefficient table for load conditions.
+-
+-**Declared state fields**
+-
+-| Field | Type | Default |
+-|---|---|---|
+-| `key` | `int` | `0` |
+-| `name` | `str` | `''` |
+-| `limit_state` | `str` | `''` |
+-| `items` | `List[LoadCombinationItem]` | `field(default_factory=list)` |
+-
+-**Methods**
+-
+-| Method | Description |
+-|---|---|
+-| `def get_coefficient(row_key: int, col_key: int) -> LoadCombinationItem \| None` | Get coefficient. |
+-
+-### `LoadCondition`
+-
+-A load condition type (gravity, variable, etc.).
+-
+-**Declared state fields**
+-
+-| Field | Type | Default |
+-|---|---|---|
+-| `id` | `int` | `0` |
+-| `name` | `str` | `''` |
+-| `description` | `str` | `''` |
+-| `mass_in_dir_x` | `float` | `1.0` |
+-| `mass_in_dir_y` | `float` | `1.0` |
+-| `mass_in_dir_z` | `float` | `1.0` |
+-| `is_main_load` | `bool` | `False` |
+-| `is_favourable` | `bool` | `False` |
+-| `is_un_favourable` | `bool` | `True` |
+-| `gamma_fav_str` | `float` | `1.0` |
+-| `gamma_unfav_str` | `float` | `1.0` |
+-| `gamma_fav_geo` | `float` | `1.0` |
+-| `gamma_unfav_geo` | `float` | `1.0` |
+-| `action` | `int` | `0` |
+-
+-**Methods**
+-
+-| Method | Description |
+-|---|---|
+-| `def is_gravity() -> bool` | Is gravity. |
+-
+-### `LoadFunction`
+-
+-A function (typically linear) for load application.
+-
+-**Declared state fields**
+-
+-| Field | Type | Default |
+-|---|---|---|
+-| `key` | `int` | `0` |
+-| `name` | `str` | `''` |
+-| `type_discr` | `bool` | `False` |
+-| `discr_val` | `float` | `0.1` |
+-
+-### `Analysis`
+-
+-An analysis definition.
+-
+-**Declared state fields**
+-
+-| Field | Type | Default |
+-|---|---|---|
+-| `key` | `int` | `0` |
+-| `name` | `str` | `''` |
+-| `analysis_type` | `int` | `0` |
+-| `load_combination_key` | `int` | `0` |
+-| `load_function_key` | `int` | `0` |
+-| `dir_x` | `float` | `0.0` |
+-| `dir_y` | `float` | `0.0` |
+-| `dir_z` | `float` | `-1.0` |
+-| `is_seismic` | `bool` | `False` |
+-| `mult` | `float` | `1.0` |
+-| `integration_method` | `str` | `'LoadControl'` |
+-| `method` | `str` | `'StandardNewtonRaphson'` |
+-| `convergence_tolerance` | `float` | `0.0001` |
+-| `max_iterations` | `int` | `1000` |
+-| `max_u` | `float` | `100.0` |
+-| `pdelta_effect` | `str` | `'None'` |
+-| `als` | `bool` | `False` |
+-| `max_number_als` | `int` | `10` |
+-| `load_factor_als` | `int` | `2` |
+-| `master_point` | `int` | `-10` |
+-
+-## Known issues affecting this module
+-
+-- **ISSUE-09 — Load-function points are not represented or parsed** (High). See [ISSUES.md](../ISSUES.md#issue-09).
+-- **ISSUE-11 — P-Delta configuration uses incompatible string and integer representations and has no computed load vector** (High). See [ISSUES.md](../ISSUES.md#issue-11).
+-
+-## Related documentation
+-
+-- [Architecture](../ARCHITECTURE.md)
+-- [Solver flow](../SOLVER_FLOW.md)
+-- [Module index](../MODULE_INDEX.md)
+-- [Issues report](../ISSUES.md)
++`LoadFunctionItem` records are stored separately in HRX and attached to their `LoadFunction` by the loader.
+--- a/histra/histra_documentation/modules/histra_model_model.md
++++ b/histra/histra_documentation/modules/histra_model_model.md
+@@ -1,60 +1,11 @@
+ # `histra.model.model`
+ 
+-**Source:** `histra/model/model.py`  
+-**Size:** 39 lines  
+-**Layer:** Schema-oriented dataclasses and compatibility re-exports.
++Defines the top-level `Model` and its `Collections` dictionaries.
+ 
+-## Purpose
++Important fields:
+ 
+-Defines the top-level `Model` and the keyed `Collections` container that owns every parsed entity.
++- `gdl`: active generalized-DOF count stored in HRX;
++- `source_path`: absolute source HRX path, used to locate related result data;
++- `collections`: nodes, NodeCs, quads, interfaces, restraints, loads, analyses, and materials.
+ 
+-### Source docstring
+-
+-Top-level Model container and Collections holder.
+-
+-## Dependencies
+-
+-**Internal:** `histra.model.interface`, `histra.model.load`, `histra.model.masonry_material`, `histra.model.node`, `histra.model.quad`, `histra.model.restraint`  
+-**Python/third-party:** `dataclasses`, `typing`  
+-
+-## API and implementation units
+-
+-### `Collections`
+-
+-Named collections of all structural entities.
+-
+-**Declared state fields**
+-
+-| Field | Type | Default |
+-|---|---|---|
+-| `nodes` | `Dict[int, Node]` | `field(default_factory=dict)` |
+-| `node_c` | `Dict[int, NodeC]` | `field(default_factory=dict)` |
+-| `quads` | `Dict[int, Quad]` | `field(default_factory=dict)` |
+-| `interfaces` | `Dict[int, Interface]` | `field(default_factory=dict)` |
+-| `restraints` | `Dict[int, Restraint]` | `field(default_factory=dict)` |
+-| `load_combinations` | `Dict[int, LoadCombination]` | `field(default_factory=dict)` |
+-| `load_conditions` | `Dict[int, LoadCondition]` | `field(default_factory=dict)` |
+-| `load_functions` | `Dict[int, LoadFunction]` | `field(default_factory=dict)` |
+-| `analyses` | `Dict[int, Analysis]` | `field(default_factory=dict)` |
+-| `materials` | `Dict[int, MasonryMaterial]` | `field(default_factory=dict)` |
+-
+-### `Model`
+-
+-Top-level HiStrA model.
+-
+-**Declared state fields**
+-
+-| Field | Type | Default |
+-|---|---|---|
+-| `version` | `str` | `''` |
+-| `gdl` | `int` | `0` |
+-| `wizard_type` | `str` | `''` |
+-| `is_locked` | `bool` | `False` |
+-| `collections` | `Optional[Collections]` | `None` |
+-
+-## Related documentation
+-
+-- [Architecture](../ARCHITECTURE.md)
+-- [Solver flow](../SOLVER_FLOW.md)
+-- [Module index](../MODULE_INDEX.md)
+-- [Issues report](../ISSUES.md)
++The model is mutable because element and spring state changes during analysis.
+--- a/histra/histra_documentation/modules/histra_solver_solve.md
++++ b/histra/histra_documentation/modules/histra_solver_solve.md
+@@ -1,47 +1,17 @@
+ # `histra.solver.solve`
+ 
+-**Source:** `histra/solver/solve.py`  
+-**Size:** 383 lines  
+-**Layer:** Assembly, integration, equilibrium algorithms, convergence, and analysis orchestration.
++Main static nonlinear orchestration.
+ 
+-## Purpose
++Responsibilities:
+ 
+-Top-level nonlinear static analysis workflow: initialize, step, iterate, optional ALS, commit, record results, and stop.
++1. validate supported analysis features;
++2. create `Program` and `LinearSystem`;
++3. initialize a virgin state when `InitialAnalysisKey < 0`;
++4. reject chained restart until full result-state deserialization exists;
++5. assemble reference load and initial/tangent stiffness;
++6. execute LoadControl or ArcLength steps with Newton/line search;
++7. run ALS or ArcLength retry paths where applicable;
++8. commit or rollback element/spring state;
++9. return the real exit code and per-step records.
+ 
+-## Dependencies
+-
+-**Internal:** `histra.model.model`, `histra.solver.arc_length`, `histra.solver.assembler`, `histra.solver.incremental_integrator`, `histra.solver.line_search`, `histra.solver.load_control`, `histra.solver.model_manager`, `histra.solver.newton_line_search`, `histra.solver.newton_raphson`, `histra.solver.program`, `histra.solver.solution_algorithm`, `histra.types.linear_system`  
+-**Python/third-party:** `logging`, `numpy`, `scipy`, `typing`  
+-
+-## API and implementation units
+-
+-### Module functions
+-
+-| Function | Description |
+-|---|---|
+-| `def solve_static_nonlinear(model: Model, analysis: Any, combination: int = 1, *, on_log: Callable[[str], None] \| None = None, on_progress: Callable[[float], None] \| None = None) -> tuple[int, list[dict[str, Any]]]` | Port of StaticNonLinearAnalysis.Execute. |
+-| `def _is_load_control(an: Any) -> bool` | Return True if the integrator is LoadControl (not ArcLength). |
+-| `def _commit_state(model: Model, ls: LinearSystem) -> None` | Port of CommonOperations.Commit _ commit each element's state. |
+-| `def _als_loop(p: Program, ls: LinearSystem, model: Model, an: Any, combination: int, step: int, alfa: float, the_integrator: StaticIntegrator, equi_soln_algo: EquiSolnAlgo) -> int` | Automatic Load Stepping (ALS) _ port of the ALS block in |
+-
+-## Runtime behavior
+-
+-- Creates one `Program`, `LinearSystem`, integrator, algorithm, and convergence test per analysis call.
+-- Each step applies a predictor/load increment, solves equilibrium, optionally retries with ALS, then commits element states.
+-- Returns a numeric exit code and a list of per-step dictionaries containing displacement vectors and iteration metadata.
+-
+-## Known issues affecting this module
+-
+-- **ISSUE-02 — Nonlinear analysis reports exit code zero after a failed step** (Critical). See [ISSUES.md](../ISSUES.md#issue-02).
+-- **ISSUE-08 — Standard ArcLength predictor can solve against an unassembled zero matrix** (Critical). See [ISSUES.md](../ISSUES.md#issue-08).
+-- **ISSUE-12 — Automatic Load Stepping starts from failed trial state and double-counts progress** (Critical). See [ISSUES.md](../ISSUES.md#issue-12).
+-- **ISSUE-15 — Reported load factor and displacement-based stopping metric use placeholder/wrong values** (High). See [ISSUES.md](../ISSUES.md#issue-15).
+-- **ISSUE-20 — Production solver contains unsafe model-specific debug indexing** (High). See [ISSUES.md](../ISSUES.md#issue-20).
+-- **ISSUE-25 — ArcLength silently substitutes analysis key 1 for reference-load assembly** (High). See [ISSUES.md](../ISSUES.md#issue-25).
+-
+-## Related documentation
+-
+-- [Architecture](../ARCHITECTURE.md)
+-- [Solver flow](../SOLVER_FLOW.md)
+-- [Module index](../MODULE_INDEX.md)
+-- [Issues report](../ISSUES.md)
++`_set_initial_state` is the translated supported subset of C# `CommonOperations.SetInitial`.
+--- a/histra/io/hr_loader.py
++++ b/histra/io/hr_loader.py
+@@ -47,11 +47,12 @@
+ def load_model(path: Union[str, Path]) -> Model:
+     """Load a ``.hrx`` file into the translated Python model."""
+ 
+-    model = Model()
++    source_path = Path(path).resolve()
++    model = Model(source_path=str(source_path))
+     collections = Collections()
+     load_function_items: list[LoadFunctionItem] = []
+ 
+-    context = ET.iterparse(str(path), events=("end",))
++    context = ET.iterparse(str(source_path), events=("end",))
+ 
+     for _event, elem in context:
+         tag = elem.tag
+@@ -211,6 +212,12 @@
+                 load_function_key=_safe_int(
+                     _attr(elem, "LoadFunctionKey", default="0")
+                 ),
++                initial_analysis_key=_safe_int(
++                    _attr(elem, "InitialAnalysisKey", default="-100"), -100
++                ),
++                initial_combination_analysis_key=_safe_int(
++                    _attr(elem, "InitialCombinationAnalysisKey", default="1"), 1
++                ),
+                 dir_x=_safe_float(_attr(elem, "DirX", default="0")),
+                 dir_y=_safe_float(_attr(elem, "DirY", default="0")),
+                 dir_z=_safe_float(_attr(elem, "DirZ", default="-1"), -1.0),
+--- a/histra/io/results_reader.py
++++ b/histra/io/results_reader.py
+@@ -62,3 +62,50 @@
+         if cand.exists():
+             return cand
+     return None
++
++
++def read_dynamic_vectors(
++    results_path: str | Path,
++    analysis_key: int,
++    combination: int = 1,
++    step: Optional[int] = None,
++    *,
++    size: Optional[int] = None,
++):
++    """Read global displacement and velocity vectors from C# results.
++
++    When ``step`` is omitted, the latest step present in
++    ``DynamicVectorsState`` is selected.  DOF identifiers in the database are
++    one-based and are converted to zero-based array positions.
++    """
++    import numpy as np
++
++    conn = _connect(results_path)
++    try:
++        if step is None:
++            row = conn.execute(
++                "SELECT MAX(Step) FROM DynamicVectorsState "
++                "WHERE AnalysisKey=? AND Combination=?",
++                (analysis_key, combination),
++            ).fetchone()
++            if row is None or row[0] is None:
++                return np.zeros(size or 0), np.zeros(size or 0), None
++            step = int(row[0])
++
++        rows = conn.execute(
++            "SELECT Dof, U, V FROM DynamicVectorsState "
++            "WHERE AnalysisKey=? AND Combination=? AND Step=? ORDER BY Dof",
++            (analysis_key, combination, step),
++        ).fetchall()
++        inferred_size = max((int(row[0]) for row in rows), default=0)
++        n = max(int(size or 0), inferred_size)
++        u = np.zeros(n)
++        v = np.zeros(n)
++        for dof, u_value, v_value in rows:
++            index = int(dof) - 1
++            if 0 <= index < n:
++                u[index] = float(u_value or 0.0)
++                v[index] = float(v_value or 0.0)
++        return u, v, step
++    finally:
++        conn.close()
+--- a/histra/model/load.py
++++ b/histra/model/load.py
+@@ -94,6 +94,8 @@
+     analysis_type: int = 0
+     load_combination_key: int = 0
+     load_function_key: int = 0
++    initial_analysis_key: int = -100
++    initial_combination_analysis_key: int = 1
+     dir_x: float = 0.0
+     dir_y: float = 0.0
+     dir_z: float = -1.0
+--- a/histra/model/model.py
++++ b/histra/model/model.py
+@@ -36,4 +36,5 @@
+     gdl: int = 0
+     wizard_type: str = ""
+     is_locked: bool = False
++    source_path: Optional[str] = None
+     collections: Optional[Collections] = None
+--- a/histra/solver/solve.py
++++ b/histra/solver/solve.py
+@@ -43,6 +43,23 @@
+     p.ls = ls
+     p.u = np.zeros(n)
+     p.v = np.zeros(n)
++
++    # C# ModelManager.SetStatus/CommonOperations.SetInitial initializes a
++    # virgin analysis independently of any solved state serialized in the HRX.
++    # Without this reset, the first Python increment is added to the saved local
++    # element displacements, producing a completely different residual path.
++    initial_analysis_key = int(getattr(analysis, "initial_analysis_key", -100))
++    if initial_analysis_key < 0:
++        _set_initial_state(model, p.u, p.v, ls)
++    else:
++        raise NotImplementedError(
++            "This analysis restarts from analysis "
++            f"{initial_analysis_key}, combination "
++            f"{getattr(analysis, 'initial_combination_analysis_key', 1)}. "
++            "Restoring the complete prior C# database state (global vectors, "
++            "element-local states, and all committed spring history variables) "
++            "is not yet implemented; starting from zero would be incorrect."
++        )
+ 
+     ModelManager._ptarget = np.zeros(n)
+     ModelManager._fext = np.zeros(n)
+@@ -188,6 +205,49 @@
+     return final_code, step_data
+ 
+ 
++def _set_initial_state(
++    model: Model, u: np.ndarray, v: np.ndarray, ls: LinearSystem
++) -> None:
++    """Reset the supported model entities to the C# virgin state.
++
++    This is the translated subset of ``CommonOperations.SetInitial`` for the
++    element types implemented by this Python package.  Applied loads stored in
++    ``Quad.status.p`` are deliberately preserved; they are regenerated later by
++    ``ModelManager.assemble_load``.
++    """
++    ls.set_zero_displacement()
++    u.fill(0.0)
++    v.fill(0.0)
++
++    for quad in model.collections.quads.values():
++        quad.status.u[:] = [0.0] * len(quad.status.u)
++        quad.status.f = 0.0
++        if quad.spring is not None:
++            quad.spring.k_tang = quad.spring.k
++            quad.spring.revert_to_start()
++            quad.spring.revert_to_last_commit()
++
++    for intf in model.collections.interfaces.values():
++        state = intf.status
++        state.evd = 0.0
++        state.u[:] = [0.0] * len(state.u)
++        state.v[:] = [0.0] * len(state.v)
++        state.fd[:] = [0.0] * len(state.fd)
++        state.forces = (0.0, 0.0, 0.0)
++        state.bending_moments = (0.0, 0.0, 0.0)
++        intf.f[:] = [0.0] * len(intf.f)
++
++        for spring_group in (
++            intf.trasv_1, intf.trasv_2, intf.slid, intf.slid_out_plan
++        ):
++            for spring in spring_group:
++                if spring is None:
++                    continue
++                spring.revert_to_start()
++                spring.revert_to_last_commit()
++
++
++
+ def _is_load_control(an: Any) -> bool:
+     return "ArcLength" not in str(getattr(an, "integration_method", "LoadControl"))
+ 
+--- a/histra/tests/run_solver_test.py
++++ b/histra/tests/run_solver_test.py
+@@ -1,52 +1,28 @@
+-import sys, os, threading
+-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
++"""Manual nonlinear-solver runner; not an automated pytest module."""
++from __future__ import annotations
++
++import argparse
++from pathlib import Path
+ 
+ from histra.io.hr_loader import load_model
+-from histra.solver.nonlinear_solver import (
+-    solve_static_nonlinear, EquiSolnAlgo, NewtonRaphson, ArcLength,
+-    RegulaFalsiLineSearch, StaticIntegrator, ConvergenceTest,
+-)
++from histra.solver.solve import solve_static_nonlinear
+ 
+-hrx_path = r"model-output\model.hrx"
+-model = load_model(hrx_path)
+ 
+-analysis_key = 22
+-analysis = model.collections.analyses[analysis_key]
++def main() -> int:
++    parser = argparse.ArgumentParser()
++    parser.add_argument(
++        "model", nargs="?",
++        default=str(Path(__file__).resolve().parents[2] / "model-output" / "model.hrx"),
++    )
++    parser.add_argument("--analysis", type=int, default=1)
++    args = parser.parse_args()
+ 
+-if analysis.load_function_key in model.collections.load_functions:
+-    lf = model.collections.load_functions[analysis.load_function_key]
+-    analysis.load_function = lf
++    model = load_model(args.model)
++    analysis = model.collections.analyses[args.analysis]
++    code, steps = solve_static_nonlinear(model, analysis, on_log=print)
++    print(f"exit_code={code}, committed_steps={sum(s['status'] == 'OK' for s in steps)}")
++    return 0 if code == 0 else 1
+ 
+-# Use StandardNewtonRaphson (full Newton) for ArcLength
+-analysis.method = "ModifiedNewtonRaphson"
+ 
+-def on_log(msg):
+-    print(f"  {msg}")
+-
+-result = [None]
+-def run():
+-    try:
+-        result[0] = solve_static_nonlinear(model, analysis, combination=1, on_log=on_log)
+-    except Exception as e:
+-        result[0] = e
+-
+-t = threading.Thread(target=run, daemon=True)
+-t.start()
+-t.join(timeout=120)
+-
+-if t.is_alive():
+-    print("TIMEOUT after 120s")
+-else:
+-    r = result[0]
+-    if isinstance(r, Exception):
+-        import traceback
+-        traceback.print_exception(type(r), r, r.__traceback__)
+-    else:
+-        exit_code, step_data = r
+-        print(f"\nSolver finished with exit_code={exit_code}")
+-        for i, sd in enumerate(step_data):
+-            s = sd.get('status','?')
+-            e = sd.get('exit_code','?')
+-            it = sd.get('iterations','?')
+-            lam = sd.get('load_factor','?')
+-            print(f"  Step {i+1}: {s}, exit={e}, iters={it}, lambda={lam:.6f}")
++if __name__ == "__main__":
++    raise SystemExit(main())
+--- a/histra/tests/test_benchmark_alignment.py
++++ b/histra/tests/test_benchmark_alignment.py
+@@ -0,0 +1,71 @@
++"""Focused comparison against the supplied C# SQLite result database."""
++from __future__ import annotations
++
++import copy
++from pathlib import Path
++
++import numpy as np
++import pytest
++
++from histra.io.hr_loader import load_model
++from histra.model.load import LoadFunction, LoadFunctionItem
++from histra.solver.assembler import extract_displacements
++from histra.solver.solve import solve_static_nonlinear
++
++ROOT = Path(__file__).resolve().parents[2]
++HRX = ROOT / "model-output" / "model.hrx"
++RESULTS = ROOT / "model-output" / "model.Results"
++
++
++def _single_csharp_step_analysis(model):
++    analysis = copy.deepcopy(model.collections.analyses[1])
++    analysis.load_function_key = 999
++    analysis.load_function = LoadFunction(
++        key=999,
++        discr_val=0.2,
++        items=[
++            LoadFunctionItem(pseudo_time=0.0, multiplier=0.0),
++            LoadFunctionItem(pseudo_time=0.2, multiplier=0.2),
++        ],
++    )
++    model.collections.load_functions[999] = analysis.load_function
++    return analysis
++
++
++def test_first_nonlinear_step_matches_csharp_database():
++    model = load_model(HRX)
++    analysis = _single_csharp_step_analysis(model)
++    code, steps = solve_static_nonlinear(model, analysis)
++    assert code == 0
++    assert len(steps) == 1
++    assert steps[0]["status"] == "OK"
++
++    python_u = steps[0]["u"]
++    csharp_u = extract_displacements(
++        model,
++        results_path=str(RESULTS),
++        analysis_key=1,
++        combination=1,
++        step=1,
++    )
++    relative_error = np.linalg.norm(python_u - csharp_u) / np.linalg.norm(csharp_u)
++    assert relative_error < 5e-5
++    assert np.max(np.abs(python_u - csharp_u)) < 3e-7
++
++
++def test_chained_analysis_is_rejected_until_full_state_restore_exists():
++    model = load_model(HRX)
++    analysis = model.collections.analyses[22]
++    with pytest.raises(NotImplementedError, match="restarts from analysis 1"):
++        solve_static_nonlinear(model, analysis)
++
++
++def test_csharp_global_dynamic_vector_is_readable():
++    from histra.io.results_reader import read_dynamic_vectors
++
++    u, v, step = read_dynamic_vectors(RESULTS, analysis_key=1, size=2142)
++    assert step == 5
++    assert u.shape == (2142,)
++    assert v.shape == (2142,)
++    assert np.all(np.isfinite(u))
++    assert np.all(np.isfinite(v))
+--- a/histra/tests/test_coulomb03_state_machine.py
++++ b/histra/tests/test_coulomb03_state_machine.py
+@@ -44,7 +44,6 @@
+     assert s.t_phase in (PhaseEnum.Plastic_t, PhaseEnum.Elastic), f"Expected plastic or elastic, got {PhaseEnum(s.t_phase).name}"
+ 
+     print("[PASS] Elastic → yield transition works")
+-    return True
+ 
+ 
+ def test_unload_reload():
+@@ -66,7 +65,6 @@
+     print(f"Re-increase to 0.025: stress={s._tstress:.6f}, k_tang={s.k_tang:.6f}, phase={PhaseEnum(s.t_phase).name}")
+ 
+     print("[PASS] Unload/reload works")
+-    return True
+ 
+ 
+ def test_negative_yield():
+@@ -85,7 +83,6 @@
+     assert s.t_phase in (PhaseEnum.Plastic_c, PhaseEnum.Elastic)
+ 
+     print("[PASS] Negative yielding works")
+-    return True
+ 
+ 
+ def test_slip():
+@@ -110,7 +107,6 @@
+     assert s._tstress == 0.0
+ 
+     print("[PASS] Slip works")
+-    return True
+ 
+ 
+ if __name__ == "__main__":
+--- a/histra/tests/test_sample.py
++++ b/histra/tests/test_sample.py
+@@ -1,227 +1,17 @@
+-"""Quick integration test for the .hrx loader."""
+-
+-import tempfile, os, sys
+-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
++"""Small self-contained smoke tests for the current HRX loader."""
++from pathlib import Path
+ 
+ from histra.io.hr_loader import load_model
+ from histra.model.model import Model
+-from histra.model.node import Node, NodeC
+-from histra.model.quad import Quad
+-from histra.model.interface import Interface
+-from histra.model.restraint import Restraint
+-from histra.model.load import LoadCombination, LoadCombinationItem
+-from histra.model.spring import Spring, SpringCoulomb03, SpringElastic, _SPRING_REGISTRY
+-
+-SAMPLE_HRX = """<?xml version="1.0" encoding="utf-8"?>
+-<HiStrA version="2026.1.0" GDL="2142" WizardType="RailBridge" IsLocked="true">
+-  <!-- Nodes -->
+-  <Node Key="1" Point="0.0;0.0;0.0" Label="N1"/>
+-  <Node Key="2" Point="5.0;0.0;0.0" Label="N2"/>
+-  <Node Key="3" Point="10.0;0.0;0.0" Label="N3"/>
+-
+-  <!-- Node constraints -->
+-  <NodeC Key="1" NodeKey="1">
+-    <MasterElements>
+-      <MasterElement SlaveKey="1" SlaveType="Quad"/>
+-      <MasterElement SlaveKey="2" SlaveType="Quad"/>
+-    </MasterElements>
+-  </NodeC>
+-
+-  <!-- Quad elements -->
+-    <Quad Key="1" Name="Q1" Material="Concrete" Thickness="0.25">
+-    <Spring TypeOf="HiStrA.Objects.SpringCoulomb03" K="1000" Mu="0.5" C="10" K_tang="500" Kn="2000"/>
+-    <Interfaces1><Interface Value="1"/><Interface Value="2"/></Interfaces1>
+-    <Interfaces2><Interface Value="3"/></Interfaces2>
+-    <AfferenceMatrices>
+-      <AfferenceMatrix>
+-        <Alfa><item Value="1"/><item Value="2"/><item Value="3"/></Alfa>
+-        <Gdl><item Value="7"/><item Value="8"/><item Value="9"/></Gdl>
+-      </AfferenceMatrix>
+-    </AfferenceMatrices>
+-    <ReferenceSystem E1="1;0;0" E2="0;1;0" E3="0;0;1" Origin="0;0;0"/>
+-  </Quad>
+-
+-  <Quad Key="2" Name="Q2" Material="Steel" Thickness="0.02">
+-    <Spring TypeOf="HiStrA.Objects.SpringElastic" K="5000"/>
+-    <Interfaces1><Interface Value="1"/></Interfaces1>
+-    <AfferenceMatrices>
+-      <AfferenceMatrix>
+-        <Alfa><item Value="1"/></Alfa>
+-        <Gdl><item Value="7"/></Gdl>
+-      </AfferenceMatrix>
+-    </AfferenceMatrices>
+-  </Quad>
+-
+-  <!-- Interface elements -->
+-  <Interface Key="1" InterfaceType="Rigid">
+-    <Trasv1><Spring TypeOf="HiStrA.Objects.SpringCoulomb03" K="2000" Mu="0.3" C="5" Kt="800" Kn="3000"/></Trasv1>
+-    <Slid><Spring TypeOf="HiStrA.Objects.SpringElastic" K="1500"/></Slid>
+-    <SlidOutPlan><Spring TypeOf="HiStrA.Objects.SpringCoulomb03" K="1000" Mu="0.6" C="2" Kt="400" Kn="1500"/></SlidOutPlan>
+-    <ReferenceSystem E1="1;0;0" E2="0;1;0" E3="0;0;1" Origin="0;0;0"/>
+-  </Interface>
+-
+-  <!-- Restraints -->
+-  <Restraint Key="1" NodeKey="1" K1="-1" K2="0" K3="0" K4="-1" K5="-1" K6="0"/>
+-  <Restraint Key="2" NodeKey="3" K1="0" K2="0" K3="0" K4="-1" K5="-1" K6="-1"/>
+-
+-  <!-- Load combinations -->
+-  <LoadCombination Key="1" Name="SLS">
+-    <CombinationCoefficient Key="1" Coefficient="1.0"/>
+-    <CombinationCoefficient Key="2" Coefficient="0.6"/>
+-  </LoadCombination>
+-  <LoadCombination Key="2" Name="ULS">
+-    <CombinationCoefficient Key="1" Coefficient="1.35"/>
+-    <CombinationCoefficient Key="3" Coefficient="1.5"/>
+-  </LoadCombination>
+-</HiStrA>
+-"""
+ 
+ 
+-def test_loader():
+-    with tempfile.NamedTemporaryFile(
+-        mode="w", suffix=".hrx", delete=False, encoding="utf-8"
+-    ) as f:
+-        f.write(SAMPLE_HRX)
+-        tmp_path = f.name
+-
+-    try:
+-        model = load_model(tmp_path)
+-        assert isinstance(model, Model), "Expected Model instance"
+-        assert model.version == "2026.1.0", f"version: {model.version}"
+-        assert model.gdl == 2142, f"gdl: {model.gdl}"
+-        assert model.wizard_type == "RailBridge"
+-        assert model.is_locked is True
+-
+-        col = model.collections
+-        assert col is not None
+-
+-        # Nodes
+-        assert len(col.nodes) == 3, f"nodes: {len(col.nodes)}"
+-        assert col.nodes[1].key == 1
+-        assert tuple(col.nodes[1].point) == (0.0, 0.0, 0.0)
+-        assert tuple(col.nodes[2].point) == (5.0, 0.0, 0.0)
+-        assert tuple(col.nodes[3].point) == (10.0, 0.0, 0.0)
+-        # Extra attribute Label
+-        assert col.nodes[1].name == "N1"
+-
+-        # NodeC
+-        assert len(col.node_c) == 1
+-        nc = col.node_c[1]
+-        assert nc.key == 1
+-        assert nc.node_key == 1
+-        assert len(nc.master_elements) == 2
+-        assert nc.master_elements[0].slave_key == 1
+-        assert nc.master_elements[0].slave_type == "Quad"
+-        assert nc.master_elements[1].slave_key == 2
+-
+-        # Quads
+-        assert len(col.quads) == 2, f"quads: {len(col.quads)}"
+-        q1 = col.quads[1]
+-        assert q1.key == 1
+-        assert q1.name == "Q1"
+-        assert q1.extra.get("Material") == "Concrete"
+-        assert q1.extra.get("Thickness") == "0.25"
+-
+-        # Springs on Quad 1
+-        assert len(q1.springs) == 1
+-        s1 = q1.springs[0]
+-        assert isinstance(s1, SpringCoulomb03), f"type: {type(s1)}"
+-        assert s1.k == 1000.0
+-        assert s1.mu == 0.5
+-        assert s1.c == 10.0
+-        assert s1.k_tang == 1000.0
+-
+-        # Interface groups on Quad
+-        assert "Interfaces1" in q1.interfaces
+-        assert len(q1.interfaces["Interfaces1"]) == 2
+-        assert q1.interfaces["Interfaces1"][0].value == 1
+-        assert q1.interfaces["Interfaces1"][1].value == 2
+-        assert "Interfaces2" in q1.interfaces
+-        assert q1.interfaces["Interfaces2"][0].value == 3
+-
+-        # Afference matrices
+-        assert len(q1.afference_matrices) == 1
+-        am = q1.afference_matrices[0]
+-        assert am.alfa == [1, 2, 3]
+-        assert am.gdl == [7, 8, 9]
+-
+-        # Reference system
+-        rs = q1.reference_system
+-        assert rs is not None
+-        assert rs.e1 == (1.0, 0.0, 0.0)
+-        assert rs.e2 == (0.0, 1.0, 0.0)
+-        assert rs.e3 == (0.0, 0.0, 1.0)
+-        assert rs.origin == (0.0, 0.0, 0.0)
+-
+-        # Quad 2 with elastic spring
+-        q2 = col.quads[2]
+-        assert q2.key == 2
+-        assert len(q2.springs) == 1
+-        assert isinstance(q2.springs[0], SpringElastic)
+-        assert q2.springs[0].k == 5000.0
+-
+-        # Interfaces
+-        assert len(col.interfaces) == 1
+-        ifc = col.interfaces[1]
+-        assert ifc.key == 1
+-        assert ifc.extra.get("InterfaceType") == "Rigid"
+-
+-        # Springs on interface
+-        assert ifc.trasv1 is not None
+-        assert isinstance(ifc.trasv1, SpringCoulomb03)
+-        assert ifc.trasv1.k == 2000.0
+-        assert ifc.trasv1.mu == 0.3
+-
+-        assert ifc.slid is not None
+-        assert isinstance(ifc.slid, SpringElastic)
+-        assert ifc.slid.k == 1500.0
+-
+-        assert ifc.slid_out_plan is not None
+-        assert isinstance(ifc.slid_out_plan, SpringCoulomb03)
+-        assert ifc.slid_out_plan.k == 1000.0
+-
+-        # RS on interface
+-        assert ifc.reference_system is not None
+-
+-        # Restraints
+-        assert len(col.restraints) == 2
+-        r1 = col.restraints[1]
+-        assert r1.key == 1
+-        assert r1.node_key == 1
+-        assert r1.k1 == -1.0
+-        assert r1.k2 == 0.0
+-        assert r1.k3 == 0.0
+-
+-        r2 = col.restraints[2]
+-        assert r2.key == 2
+-        assert r2.node_key == 3
+-        assert r2.k1 == 0.0
+-
+-        # Load combinations
+-        assert len(col.load_combinations) == 2
+-        lc1 = col.load_combinations[1]
+-        assert lc1.key == 1
+-        assert lc1.name == "SLS"
+-        assert len(lc1.coefficients) == 2
+-        assert lc1.coefficients[0].key == 1
+-        assert lc1.coefficients[0].coefficient == 1.0
+-        assert lc1.coefficients[1].key == 2
+-        assert lc1.coefficients[1].coefficient == 0.6
+-
+-        lc2 = col.load_combinations[2]
+-        assert lc2.key == 2
+-        assert lc2.name == "ULS"
+-        assert len(lc2.coefficients) == 2
+-
+-        print("ALL TESTS PASSED")
+-    except Exception:
+-        pass
+-    finally:
+-        try:
+-            os.unlink(tmp_path)
+-        except Exception:
+-            pass
+-
+-
+-if __name__ == "__main__":
+-    test_loader()
++def test_load_supplied_model():
++    path = Path(__file__).resolve().parents[2] / "model-output" / "model.hrx"
++    model = load_model(path)
++    assert isinstance(model, Model)
++    assert model.gdl == 2142
++    assert model.source_path == str(path.resolve())
++    assert len(model.collections.quads) == 306
++    assert len(model.collections.interfaces) == 555
++    assert model.collections.analyses[1].initial_analysis_key == -100
++    assert model.collections.analyses[22].initial_analysis_key == 1
+--- a/histra/tests/test_spring_hysteretic.py
++++ b/histra/tests/test_spring_hysteretic.py
+@@ -8,6 +8,7 @@
+ """
+ 
+ import os, sys, math
++from pathlib import Path
+ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+ 
+ import xml.etree.ElementTree as ET
+@@ -17,8 +18,7 @@
+ )
+ 
+ 
+-MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+-                          "model-output", "model.hrx")
++MODEL_PATH = str(Path(__file__).resolve().parents[2] / "model-output" / "model.hrx")
+ 
+ 
+ def parse_spring_hysteretic_from_hrx() -> SpringHysteretic:
+--- a/histra/tests/unit/test_solver.py
++++ b/histra/tests/unit/test_solver.py
+@@ -1,6 +1,8 @@
+ """Tests for solver components — correct constructors (no-arg defaults)."""
+ import unittest
+-from histra.solver.line_search import LineSearch, RegulaFalsiLineSearch
++from histra.solver.line_search import (
++    InitialInterpolatedLineSearch, LineSearch, RegulaFalsiLineSearch,
++)
+ from histra.solver.load_control import LoadControl
+ from histra.solver.arc_length import ArcLength
+ from histra.solver.newton_raphson import NewtonRaphson
+@@ -27,10 +29,10 @@
+         line_search_min_eta = 0.2
+         line_search_max_iterations = 50
+ 
+-    def test_produces_regula_falsi(self):
++    def test_produces_initial_interpolated(self):
+         an = self.FakeAnalysis()
+         ls = _new_line_search(an)
+-        self.assertIsInstance(ls, RegulaFalsiLineSearch)
++        self.assertIsInstance(ls, InitialInterpolatedLineSearch)
+         self.assertEqual(ls.tolerance, 0.5)
+         self.assertEqual(ls.max_eta, 5.0)
+         self.assertEqual(ls.min_eta, 0.2)
+--- a/histra/tests/unit/test_types.py
++++ b/histra/tests/unit/test_types.py
+@@ -1,5 +1,8 @@
+ """Tests for histra.types — lowest-level types."""
+ import unittest
++
++from histra.model.model import Collections, Model
++from histra.solver.program import Program
+ import numpy as np
+ from histra.types.point import Point
+ from histra.types.afference_entry import AfferenceEntry
+@@ -93,17 +96,25 @@
+ 
+ 
+ class TestConvergenceTest(unittest.TestCase):
++    @staticmethod
++    def _context(values):
++        ls = LinearSystem(len(values))
++        ls.b[:] = values
++        return Program(gdl=len(values), ls=ls), Model(collections=Collections()), ls
++
+     def test_converges_on_small_residual(self):
+         ct = ConvergenceTest(tolerance=1e-6, max_iter=10)
+-        b = [1e-10] * 5  # very small residual
+-        result = ct.test(b, len(b), 1e-6, 1.0)
+-        self.assertEqual(result, 0)  # converged
++        p, model, ls = self._context([1e-10] * 5)
++        ct.start()
++        result = ct.test(p, model, ls)
++        self.assertGreaterEqual(result, 0)
+ 
+-    def test_fails_on_large_residual(self):
++    def test_continues_on_large_residual(self):
+         ct = ConvergenceTest(tolerance=1e-6, max_iter=10)
+-        b = [1.0] * 5  # large residual
+-        result = ct.test(b, len(b), 1e-6, 1.0)
+-        self.assertEqual(result, 1)  # not converged
++        p, model, ls = self._context([1.0] * 5)
++        ct.start()
++        result = ct.test(p, model, ls)
++        self.assertEqual(result, -1)
+ 
+ 
+ class TestLinearSystem(unittest.TestCase):
+--- a/model-output/README.md
++++ b/model-output/README.md
+@@ -0,0 +1,8 @@
++# Supplied model and result files
++
++- `model.hrx`: model definition plus serialized application/element state.
++- `model.Results`: SQLite database containing C# result states. This is the authoritative numerical reference used by the audit.
++- `results.json`: historical parser/assembly snapshot. It is **not** an independent nonlinear-solver result and contains stale metadata (`n_interfaces` and `K_nnz`).
++
++The Python test `histra/tests/test_benchmark_alignment.py` compares the first analysis-1 load step with `QuadStates` in `model.Results`.
++- `audit_metrics.json`: machine-readable inventory, test count, C# database row counts, and measured first-step comparison from the final audit.
+--- a/model-output/audit_metrics.json
++++ b/model-output/audit_metrics.json
+@@ -0,0 +1,33 @@
++{
++  "audit_date": "2026-07-27",
++  "model": {
++    "gdl": 2142,
++    "quads": 306,
++    "interfaces": 555,
++    "nodes": 388,
++    "node_cs": 18,
++    "restraints": 14,
++    "k_nnz": 42252
++  },
++  "tests": {
++    "passed": 96
++  },
++  "csharp_database_rows": {
++    "QuadStates": 20808,
++    "InterfaceStates": 37740,
++    "DynamicVectorsState": 4284,
++    "SpringStates": 93852
++  },
++  "analysis_1_step_1": {
++    "python_exit_code": 0,
++    "iterations": 2,
++    "load_factor": 0.2,
++    "runtime_seconds": 2.290557037000326,
++    "python_u_norm": 0.04390119390629716,
++    "csharp_u_norm": 0.04390119109491215,
++    "relative_l2_error": 2.2820197595032118e-05,
++    "max_abs_error": 2.2123213242721706e-07,
++    "mean_abs_error": 4.461131077004831e-09
++  },
++  "full_analysis_status": "Step 1 matches; complete five-step C# path not yet reproduced. See documentation/ISSUES.md."
++}
+--- a/pytest.ini
++++ b/pytest.ini
+@@ -0,0 +1,4 @@
++[pytest]
++python_files = test_*.py
++testpaths = histra/tests
++addopts = -ra

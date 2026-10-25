@@ -1,0 +1,141 @@
+{
+  "cases": [
+    {
+      "Algorithm": "RegulaFalsi",
+      "Case": "current-constrained-direction",
+      "S0": -2.0,
+      "S1": -1.0,
+      "Tolerance": 0.1,
+      "MinEta": 0.0,
+      "MaxEta": 10.0,
+      "Direction": 2.0,
+      "FinalIncrement": 4.0,
+      "FinalPosition": 4.0,
+      "MaxIterations": 5,
+      "Failure": 0,
+      "ReturnCode": 0,
+      "Residuals": [
+        0.1
+      ],
+      "Corrections": [
+        2.0
+      ]
+    },
+    {
+      "Algorithm": "RegulaFalsi",
+      "Case": "initial-acceptance-keeps-constrained-increment",
+      "S0": -2.0,
+      "S1": -0.1,
+      "Tolerance": 0.8,
+      "MinEta": 0.0,
+      "MaxEta": 10.0,
+      "Direction": 2.0,
+      "FinalIncrement": 2.0,
+      "FinalPosition": 2.0,
+      "MaxIterations": 5,
+      "Failure": 0,
+      "ReturnCode": 0,
+      "Residuals": [
+        0.0
+      ],
+      "Corrections": []
+    },
+    {
+      "Algorithm": "RegulaFalsi",
+      "Case": "integrator-failure-code",
+      "S0": -2.0,
+      "S1": -1.0,
+      "Tolerance": 0.1,
+      "MinEta": 0.0,
+      "MaxEta": 10.0,
+      "Direction": 1.0,
+      "FinalIncrement": 1.0,
+      "FinalPosition": 1.0,
+      "MaxIterations": 5,
+      "Failure": -7,
+      "ReturnCode": -7,
+      "Residuals": [
+        0.0
+      ],
+      "Corrections": [
+        1.0
+      ]
+    },
+    {
+      "Algorithm": "RegulaFalsi",
+      "Case": "tiny-nonzero-residual",
+      "S0": 1E-35,
+      "S1": 5E-35,
+      "Tolerance": 0.8,
+      "MinEta": 0.1,
+      "MaxEta": 10.0,
+      "Direction": 1.0,
+      "FinalIncrement": 0.1,
+      "FinalPosition": 0.09999999999999998,
+      "MaxIterations": 5,
+      "Failure": 0,
+      "ReturnCode": 0,
+      "Residuals": [
+        0.0
+      ],
+      "Corrections": [
+        -0.9
+      ]
+    },
+    {
+      "Algorithm": "RegulaFalsi",
+      "Case": "worse-trial-fallback",
+      "S0": -2.0,
+      "S1": -1.0,
+      "Tolerance": 0.1,
+      "MinEta": 0.0,
+      "MaxEta": 10.0,
+      "Direction": 1.0,
+      "FinalIncrement": 1.0,
+      "FinalPosition": 1.0,
+      "MaxIterations": 5,
+      "Failure": 0,
+      "ReturnCode": 0,
+      "Residuals": [
+        3.0,
+        2.0,
+        2.0
+      ],
+      "Corrections": [
+        1.0,
+        -1.0,
+        0.0
+      ]
+    },
+    {
+      "Algorithm": "RegulaFalsi",
+      "Case": "bracket-and-iteration-cap",
+      "S0": -2.0,
+      "S1": -1.0,
+      "Tolerance": 0.01,
+      "MinEta": 0.0,
+      "MaxEta": 10.0,
+      "Direction": 1.0,
+      "FinalIncrement": 1.7492260061919505,
+      "FinalPosition": 1.7492260061919505,
+      "MaxIterations": 3,
+      "Failure": 0,
+      "ReturnCode": 0,
+      "Residuals": [
+        0.9,
+        -0.8,
+        0.9
+      ],
+      "Corrections": [
+        1.0,
+        -0.47368421052631593,
+        0.22291021671826639
+      ]
+    }
+  ],
+  "provenance": "Compiled unmodified dnSpy-exported C# 2026.1.1 RegulaFalsiLineSearch with minimal vector/integrator doubles. Isolated algorithm traces; not a full engine run.",
+  "source_hashes": {
+    "RegulaFalsiOracle.cs": "61C9BCE37F2E48786E42A29073EAAA6FCC653763B285CAC163B18C0A14084E23",
+    "RegulaFalsiLineSearch.cs": "381C286A0910A9FE16A1064DD5816E3157D1CAB3ED7F7144CCADF506CCB82503"
+  }
+}

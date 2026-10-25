@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-14",
+  "source_commit": "92f4b10",
+  "generator": "invoke_spring_distance.ps1: original Interface.ComputeDistSpring; Operations.sqrt returns Single",
+  "cases": [
+    {
+      "length": 400,
+      "thickness": 120,
+      "expected": [
+        0.34401923697688497,
+        0.655980763023115
+      ]
+    },
+    {
+      "length": 120,
+      "thickness": 400,
+      "expected": [
+        -0.019935876743716663,
+        1.0199358767437166
+      ]
+    },
+    {
+      "length": 231.125,
+      "thickness": 250,
+      "expected": [
+        0.12692047755698832,
+        0.8730795224430117
+      ]
+    },
+    {
+      "length": 1000,
+      "thickness": 1.25,
+      "expected": [
+        0.49927859640239364,
+        0.5007214035976064
+      ]
+    },
+    {
+      "length": 91.4375,
+      "thickness": 26.125,
+      "expected": [
+        0.35062489044304357,
+        0.6493751095569564
+      ]
+    },
+    {
+      "length": 250,
+      "thickness": 250,
+      "expected": [
+        0.14881155525517004,
+        0.8511884447448299
+      ]
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+﻿{
+    "refinement":  2,
+    "ordering":  1,
+    "source":  "Original MatrixManager.SparseMatrix.InitializeControl with installed libumfpack.dll",
+    "strategy":  3
+}

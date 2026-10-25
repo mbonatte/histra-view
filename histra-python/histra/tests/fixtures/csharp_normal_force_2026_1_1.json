@@ -1,0 +1,35 @@
+﻿{
+    "cases":  [
+                  {
+                      "reconstructed_committed":  0,
+                      "committed":  1,
+                      "trial":  1E+16,
+                      "increment":  1E+16
+                  },
+                  {
+                      "reconstructed_committed":  0,
+                      "committed":  -1,
+                      "trial":  -1E+16,
+                      "increment":  -1E+16
+                  },
+                  {
+                      "reconstructed_committed":  0.273435095827634,
+                      "committed":  0.273435095827634,
+                      "trial":  0.137656839215837,
+                      "increment":  -0.135778256611797
+                  },
+                  {
+                      "reconstructed_committed":  0.25,
+                      "committed":  0.25,
+                      "trial":  0.25,
+                      "increment":  0
+                  },
+                  {
+                      "reconstructed_committed":  0,
+                      "committed":  0,
+                      "trial":  -0.25,
+                      "increment":  -0.25
+                  }
+              ],
+    "source":  "Original SpringHysteretic.GetForce/GetIncrForce, used literally by Quad.ComputeDN"
+}

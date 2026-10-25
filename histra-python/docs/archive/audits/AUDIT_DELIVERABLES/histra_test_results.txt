@@ -1,0 +1,10 @@
+$ python -m compileall -q histra
+compileall: PASS
+
+$ python -c "import histra; print(histra.__file__)"
+import: PASS /mnt/data/histra_fixed/histra/__init__.py
+
+$ python -m pytest -q
+.................................s...................................... [ 62%]
+...........................................                              [100%]
+114 passed, 1 skipped in 10.66s

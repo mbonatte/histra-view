@@ -1,0 +1,341 @@
+{
+  "source": "Original ModelLibrary.dll 2026.1.1 SpringHysteretic.SetInitial and SpringCoulomb03.Commit",
+  "cases": [
+    {
+      "phase": 0,
+      "plastic_t": false,
+      "plastic_c": false,
+      "tangent": 12.5,
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0.01,
+        0.01
+      ],
+      "k": 100.0,
+      "initial_reload_tangent": 0.01
+    },
+    {
+      "phase": 0,
+      "plastic_t": true,
+      "plastic_c": false,
+      "tangent": 12.5,
+      "expected": [
+        0,
+        0,
+        1,
+        0,
+        0.01,
+        0.01
+      ],
+      "k": 100.0,
+      "initial_reload_tangent": 0.01
+    },
+    {
+      "phase": 0,
+      "plastic_t": false,
+      "plastic_c": true,
+      "tangent": 12.5,
+      "expected": [
+        0,
+        0,
+        0,
+        1,
+        0.01,
+        0.01
+      ],
+      "k": 100.0,
+      "initial_reload_tangent": 0.01
+    },
+    {
+      "phase": 1,
+      "plastic_t": false,
+      "plastic_c": false,
+      "tangent": 12.5,
+      "expected": [
+        1,
+        0,
+        0,
+        0,
+        0.01,
+        0.01
+      ],
+      "k": 100.0,
+      "initial_reload_tangent": 0.01
+    },
+    {
+      "phase": 1,
+      "plastic_t": true,
+      "plastic_c": false,
+      "tangent": 12.5,
+      "expected": [
+        1,
+        0,
+        1,
+        0,
+        0.01,
+        0.01
+      ],
+      "k": 100.0,
+      "initial_reload_tangent": 0.01
+    },
+    {
+      "phase": 1,
+      "plastic_t": false,
+      "plastic_c": true,
+      "tangent": 12.5,
+      "expected": [
+        1,
+        0,
+        0,
+        1,
+        0.01,
+        0.01
+      ],
+      "k": 100.0,
+      "initial_reload_tangent": 0.01
+    },
+    {
+      "phase": 2,
+      "plastic_t": false,
+      "plastic_c": false,
+      "tangent": 12.5,
+      "expected": [
+        0,
+        2,
+        0,
+        0,
+        0.01,
+        0.01
+      ],
+      "k": 100.0,
+      "initial_reload_tangent": 0.01
+    },
+    {
+      "phase": 2,
+      "plastic_t": true,
+      "plastic_c": false,
+      "tangent": 12.5,
+      "expected": [
+        0,
+        2,
+        1,
+        0,
+        0.01,
+        0.01
+      ],
+      "k": 100.0,
+      "initial_reload_tangent": 0.01
+    },
+    {
+      "phase": 2,
+      "plastic_t": false,
+      "plastic_c": true,
+      "tangent": 12.5,
+      "expected": [
+        0,
+        2,
+        0,
+        1,
+        0.01,
+        0.01
+      ],
+      "k": 100.0,
+      "initial_reload_tangent": 0.01
+    },
+    {
+      "phase": 3,
+      "plastic_t": false,
+      "plastic_c": false,
+      "tangent": 12.5,
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0.01,
+        0.01
+      ],
+      "k": 100.0,
+      "initial_reload_tangent": 0.01
+    },
+    {
+      "phase": 3,
+      "plastic_t": true,
+      "plastic_c": false,
+      "tangent": 12.5,
+      "expected": [
+        0,
+        0,
+        1,
+        0,
+        0.01,
+        0.01
+      ],
+      "k": 100.0,
+      "initial_reload_tangent": 0.01
+    },
+    {
+      "phase": 3,
+      "plastic_t": false,
+      "plastic_c": true,
+      "tangent": 12.5,
+      "expected": [
+        0,
+        0,
+        0,
+        1,
+        0.01,
+        0.01
+      ],
+      "k": 100.0,
+      "initial_reload_tangent": 0.01
+    },
+    {
+      "phase": 4,
+      "plastic_t": false,
+      "plastic_c": false,
+      "tangent": 12.5,
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0.01,
+        0.01
+      ],
+      "k": 100.0,
+      "initial_reload_tangent": 0.01
+    },
+    {
+      "phase": 4,
+      "plastic_t": true,
+      "plastic_c": false,
+      "tangent": 12.5,
+      "expected": [
+        0,
+        0,
+        1,
+        0,
+        0.01,
+        0.01
+      ],
+      "k": 100.0,
+      "initial_reload_tangent": 0.01
+    },
+    {
+      "phase": 4,
+      "plastic_t": false,
+      "plastic_c": true,
+      "tangent": 12.5,
+      "expected": [
+        0,
+        0,
+        0,
+        1,
+        0.01,
+        0.01
+      ],
+      "k": 100.0,
+      "initial_reload_tangent": 0.01
+    },
+    {
+      "phase": 5,
+      "plastic_t": false,
+      "plastic_c": false,
+      "tangent": 12.5,
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        12.5,
+        0.01
+      ],
+      "k": 100.0,
+      "initial_reload_tangent": 0.01
+    },
+    {
+      "phase": 5,
+      "plastic_t": true,
+      "plastic_c": false,
+      "tangent": 12.5,
+      "expected": [
+        5,
+        0,
+        1,
+        0,
+        12.5,
+        0.01
+      ],
+      "k": 100.0,
+      "initial_reload_tangent": 0.01
+    },
+    {
+      "phase": 5,
+      "plastic_t": false,
+      "plastic_c": true,
+      "tangent": 12.5,
+      "expected": [
+        5,
+        0,
+        1,
+        1,
+        12.5,
+        0.01
+      ],
+      "k": 100.0,
+      "initial_reload_tangent": 0.01
+    },
+    {
+      "phase": 6,
+      "plastic_t": false,
+      "plastic_c": false,
+      "tangent": 12.5,
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0.01,
+        12.5
+      ],
+      "k": 100.0,
+      "initial_reload_tangent": 0.01
+    },
+    {
+      "phase": 6,
+      "plastic_t": true,
+      "plastic_c": false,
+      "tangent": 12.5,
+      "expected": [
+        0,
+        6,
+        1,
+        1,
+        0.01,
+        12.5
+      ],
+      "k": 100.0,
+      "initial_reload_tangent": 0.01
+    },
+    {
+      "phase": 6,
+      "plastic_t": false,
+      "plastic_c": true,
+      "tangent": 12.5,
+      "expected": [
+        0,
+        6,
+        0,
+        1,
+        0.01,
+        12.5
+      ],
+      "k": 100.0,
+      "initial_reload_tangent": 0.01
+    }
+  ]
+}

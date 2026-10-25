@@ -1,0 +1,69 @@
+{
+  "provenance": {
+    "version": "2026.1.1",
+    "routine": "SpringStateDBclass.SetSpring(ref Spring,false)",
+    "serialization": "Native SerializeXmlWriter.WriteToString omits CmomMax",
+    "reference": "Dhir Vert step 10, Quad 2189",
+    "python_behavior": "Intentional lossless restoration, correcting native omission"
+  },
+  "saved_state": {
+    "Id": 2189,
+    "AnalysisKey": 1,
+    "Combination": 1,
+    "Step": 10,
+    "ParentKey": 2189,
+    "ParentType": 106,
+    "SpringPurpose": 30,
+    "SpringType": 12,
+    "IdLocal": 0,
+    "U": -0.0014826879227043937,
+    "F": -79.03732043204272,
+    "K_tang": 53306.781030414146,
+    "Fy1": 903.0639672791581,
+    "Fy2": -903.0639672791581,
+    "Phase": 4.0,
+    "Up1": -1.0842021724855044e-19,
+    "Up2": -1.0842021724855044e-19,
+    "Uy1": 0.0,
+    "Uy2": 0.0,
+    "Umax1": 0.016940883501555187,
+    "Umax2": -0.0016726010135899559,
+    "Uu1": 0.0,
+    "Uu2": -2.168404344971009e-19,
+    "N": 840.5392988209338,
+    "E": null,
+    "Ed": null,
+    "Eel": null,
+    "LoadIndicator": 1,
+    "ContactArea": 18999.99999999995,
+    "F0": 0.0,
+    "CmomMin": -89.16097598268853,
+    "CmomMax": 903.0639672791581,
+    "CrotLimNu": 0.0,
+    "CrotLimPu": 0.0,
+    "CrotYn": -0.016940883501555187,
+    "CrotYp": 0.0,
+    "CPhaseUnload_t": 0,
+    "CPhaseUnload_c": 0,
+    "TangentReload_c": 5.330678103041414,
+    "TangentReload_t": 5.330678103041414,
+    "CplasticTensionIndicator": 0,
+    "CplasticCompressionIndicator": 0
+  },
+  "native_calls": [
+    {
+      "Parent": 2189,
+      "SavedCmomMax": 903.0639672791581,
+      "InitialCmomMax": 0,
+      "RestoredCmomMax": 0,
+      "RestoredCmomMin": -89.16097598268853
+    },
+    {
+      "Parent": 2189,
+      "SavedCmomMax": 903.0639672791581,
+      "InitialCmomMax": 123,
+      "RestoredCmomMax": 123,
+      "RestoredCmomMin": -89.16097598268853
+    }
+  ]
+}

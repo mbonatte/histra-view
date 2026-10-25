@@ -1,0 +1,47 @@
+﻿{
+    "cases":  [
+                  {
+                      "face":  0,
+                      "second_is_dir3":  false,
+                      "first_side_E":  15,
+                      "second_is_vertical":  true,
+                      "second_side_E":  16
+                  },
+                  {
+                      "face":  1,
+                      "second_is_dir3":  false,
+                      "first_side_E":  15,
+                      "second_is_vertical":  true,
+                      "second_side_E":  16
+                  },
+                  {
+                      "face":  2,
+                      "second_is_dir3":  false,
+                      "first_side_E":  15,
+                      "second_is_vertical":  true,
+                      "second_side_E":  16
+                  },
+                  {
+                      "face":  3,
+                      "second_is_dir3":  false,
+                      "first_side_E":  15,
+                      "second_is_vertical":  true,
+                      "second_side_E":  16
+                  },
+                  {
+                      "face":  4,
+                      "second_is_dir3":  true,
+                      "first_side_E":  17,
+                      "second_is_vertical":  false,
+                      "second_side_E":  17
+                  },
+                  {
+                      "face":  5,
+                      "second_is_dir3":  true,
+                      "first_side_E":  17,
+                      "second_is_vertical":  false,
+                      "second_side_E":  17
+                  }
+              ],
+    "source":  "Original node-based Interface.SetSpring, zero transverse cells to isolate law selection; not a physical analysis"
+}

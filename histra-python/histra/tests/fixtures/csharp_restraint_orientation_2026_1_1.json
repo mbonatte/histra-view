@@ -1,0 +1,1237 @@
+﻿{
+    "assembly_sha256":  "a981364ef5b6e3fde2c65d7994eb4a0f60132ded61cf8edac9a98a061b1a5a9b",
+    "cases":  [
+                  {
+                      "restraint_e1_bits":  [
+                                                "4607182418800017408",
+                                                "0",
+                                                "0"
+                                            ],
+                      "interface_e1":  [
+                                           1,
+                                           0,
+                                           0
+                                       ],
+                      "p2":  [
+                                 100,
+                                 0,
+                                 0
+                             ],
+                      "properties":  {
+                                         "DuctComprRockingVer":  4.7,
+                                         "CohesionSlidingVert":  0.7,
+                                         "SlidingYieldingDomainVert":  "Coulomb",
+                                         "CriterioSnervamento":  "Coulomb",
+                                         "CompressiveCurveTypeVertical":  "Parabolic",
+                                         "IsDuctTraz":  false,
+                                         "DuctTrazRockingVer":  6.3,
+                                         "scorrhor":  true,
+                                         "SlidingMaxTensileRatioVer":  0.8,
+                                         "AlfaShearUser":  0.8,
+                                         "scorrvert":  true,
+                                         "GtVer":  0.07,
+                                         "IsDuctCompr":  false,
+                                         "Gd":  184,
+                                         "SlidingPlasticStiffnessRatioVer":  0.002,
+                                         "Ever":  17.7,
+                                         "FtmVer":  0.31,
+                                         "TensileCurveTypeVertical":  "Exponential",
+                                         "SlidingFractureEnergyVer":  false,
+                                         "FmVer":  4.3,
+                                         "BetaUnloadTractionRockingHor":  0.2,
+                                         "CompressiveCurveType":  "LinearHardening",
+                                         "Gc":  0.05,
+                                         "SlidingPlasticStiffnessRatioHor":  0.001,
+                                         "BetaUnloadTractionRockingVer":  0.4,
+                                         "DuctTrazRockingHor":  5.2,
+                                         "BetaUnloadCompressionRockingVer":  0.5,
+                                         "Gt":  0.03,
+                                         "TensileCurveType":  "LinearSoftening",
+                                         "SlidingYieldingDomainHor":  "Coulomb",
+                                         "DuctComprRockingHor":  3.1,
+                                         "SlidingFractureEnergy":  false,
+                                         "FrictionRatioSlidingHor":  0.3,
+                                         "CohesionSlidingHor":  0.2,
+                                         "RatioEtCompression":  0.0001,
+                                         "FrictionRatioSlidingVert":  0.6,
+                                         "RatioEtTraction":  0.001,
+                                         "FtmHor":  0.23,
+                                         "GcVer":  0.11,
+                                         "FmHor":  2.7,
+                                         "Ehor":  5.3,
+                                         "SlidingMaxTensileRatioHor":  0.4,
+                                         "BetaUnloadCompressionRockingHor":  0.3
+                                     },
+                      "expected":  {
+                                       "OutOfPlaneSlidingHorizontal":  {
+                                                                           "E":  "4640677941028585472",
+                                                                           "type":  "ConstitutiveLawCoulomb",
+                                                                           "U_r":  "4906019910204099648",
+                                                                           "Fy_0":  "4596373779801702400",
+                                                                           "secondary_plastic_ratio":  "4566758108763783168",
+                                                                           "is_ductility_fixed":  false,
+                                                                           "PlasticStiffnessRatio":  "4562254509136412672",
+                                                                           "Mu":  "4599075939685498880"
+                                                                       },
+                                       "InplaneSlidingHorizontal":  {
+                                                                        "E":  "4655807221563654144",
+                                                                        "type":  "ConstitutiveLawCoulomb",
+                                                                        "U_r":  "4906019910204099648",
+                                                                        "Fy_0":  "4596373779801702400",
+                                                                        "secondary_plastic_ratio":  "4566758108763783168",
+                                                                        "is_ductility_fixed":  false,
+                                                                        "PlasticStiffnessRatio":  "4562254509136412672",
+                                                                        "Mu":  "4599075939685498880"
+                                                                    },
+                                       "HorizontalFlexional":  {
+                                                                   "RatioEtcomp":  "4547007121832542208",
+                                                                   "type":  "ConstitutiveLawHysteretic",
+                                                                   "Alfa_r":  [
+                                                                                  "4607182418800017408",
+                                                                                  "4607182418800017408"
+                                                                              ],
+                                                                   "Eps_u_c":  "4609791107291629646",
+                                                                   "Alfa_u":  [
+                                                                                  "4596373779801702400",
+                                                                                  "4599075939685498880"
+                                                                              ],
+                                                                   "Eps_u_t":  "4597298291778288394",
+                                                                   "Fy_t":  "4597454643755220992",
+                                                                   "G":  [
+                                                                             "4584304132499701760",
+                                                                             "4587366580546961408"
+                                                                         ],
+                                                                   "E":  "4617653288148402176",
+                                                                   "CompressiveCurveType":  "LinearHardening",
+                                                                   "TensileCurveType":  "LinearSoftening",
+                                                                   "Fy_c":  "4613262278404341760",
+                                                                   "RatioEttrac":  "4562254509136412672"
+                                                               }
+                                   },
+                      "p1":  [
+                                 0,
+                                 0,
+                                 0
+                             ]
+                  },
+                  {
+                      "restraint_e1_bits":  [
+                                                "4607182418800017408",
+                                                "0",
+                                                "0"
+                                            ],
+                      "interface_e1":  [
+                                           1,
+                                           0,
+                                           0
+                                       ],
+                      "p2":  [
+                                 100,
+                                 0,
+                                 0
+                             ],
+                      "properties":  {
+                                         "DuctComprRockingVer":  4.7,
+                                         "CohesionSlidingVert":  0.7,
+                                         "SlidingYieldingDomainVert":  "Coulomb",
+                                         "CriterioSnervamento":  "Coulomb",
+                                         "CompressiveCurveTypeVertical":  "Parabolic",
+                                         "IsDuctTraz":  false,
+                                         "DuctTrazRockingVer":  6.3,
+                                         "scorrhor":  false,
+                                         "SlidingMaxTensileRatioVer":  0.8,
+                                         "AlfaShearUser":  0.8,
+                                         "scorrvert":  true,
+                                         "GtVer":  0.07,
+                                         "IsDuctCompr":  false,
+                                         "Gd":  184,
+                                         "SlidingPlasticStiffnessRatioVer":  0.002,
+                                         "Ever":  17.7,
+                                         "FtmVer":  0.31,
+                                         "TensileCurveTypeVertical":  "Exponential",
+                                         "SlidingFractureEnergyVer":  false,
+                                         "FmVer":  4.3,
+                                         "BetaUnloadTractionRockingHor":  0.2,
+                                         "CompressiveCurveType":  "Elastic",
+                                         "Gc":  0.05,
+                                         "SlidingPlasticStiffnessRatioHor":  0.001,
+                                         "BetaUnloadTractionRockingVer":  0.4,
+                                         "DuctTrazRockingHor":  5.2,
+                                         "BetaUnloadCompressionRockingVer":  0.5,
+                                         "Gt":  0.03,
+                                         "TensileCurveType":  "Elastic",
+                                         "SlidingYieldingDomainHor":  "Coulomb",
+                                         "DuctComprRockingHor":  3.1,
+                                         "SlidingFractureEnergy":  false,
+                                         "FrictionRatioSlidingHor":  0.3,
+                                         "CohesionSlidingHor":  0.2,
+                                         "RatioEtCompression":  0.0001,
+                                         "FrictionRatioSlidingVert":  0.6,
+                                         "RatioEtTraction":  0.001,
+                                         "FtmHor":  0.23,
+                                         "GcVer":  0.11,
+                                         "FmHor":  2.7,
+                                         "Ehor":  5.3,
+                                         "SlidingMaxTensileRatioHor":  0.4,
+                                         "BetaUnloadCompressionRockingHor":  0.3
+                                     },
+                      "expected":  {
+                                       "OutOfPlaneSlidingHorizontal":  {
+                                                                           "E":  "4640677941028585472",
+                                                                           "secondary_plastic_ratio":  "4566758108763783168",
+                                                                           "type":  "ConstitutiveLawElastic"
+                                                                       },
+                                       "InplaneSlidingHorizontal":  {
+                                                                        "E":  "4655807221563654144",
+                                                                        "secondary_plastic_ratio":  "4566758108763783168",
+                                                                        "type":  "ConstitutiveLawElastic"
+                                                                    },
+                                       "HorizontalFlexional":  {
+                                                                   "type":  "ConstitutiveLawElastic",
+                                                                   "E":  "4617653288148402176"
+                                                               }
+                                   },
+                      "p1":  [
+                                 0,
+                                 0,
+                                 0
+                             ]
+                  },
+                  {
+                      "restraint_e1_bits":  [
+                                                "4607182418800017408",
+                                                "0",
+                                                "0"
+                                            ],
+                      "interface_e1":  [
+                                           1,
+                                           0,
+                                           0
+                                       ],
+                      "p2":  [
+                                 100,
+                                 0,
+                                 0
+                             ],
+                      "properties":  {
+                                         "DuctComprRockingVer":  4.7,
+                                         "CohesionSlidingVert":  0.7,
+                                         "SlidingYieldingDomainVert":  "Coulomb",
+                                         "CriterioSnervamento":  "Coulomb",
+                                         "CompressiveCurveTypeVertical":  "Elastic",
+                                         "IsDuctTraz":  false,
+                                         "DuctTrazRockingVer":  6.3,
+                                         "scorrhor":  true,
+                                         "SlidingMaxTensileRatioVer":  0.8,
+                                         "AlfaShearUser":  0.8,
+                                         "scorrvert":  false,
+                                         "GtVer":  0.07,
+                                         "IsDuctCompr":  false,
+                                         "Gd":  184,
+                                         "SlidingPlasticStiffnessRatioVer":  0.002,
+                                         "Ever":  17.7,
+                                         "FtmVer":  0.31,
+                                         "TensileCurveTypeVertical":  "Elastic",
+                                         "SlidingFractureEnergyVer":  false,
+                                         "FmVer":  4.3,
+                                         "BetaUnloadTractionRockingHor":  0.2,
+                                         "CompressiveCurveType":  "LinearHardening",
+                                         "Gc":  0.05,
+                                         "SlidingPlasticStiffnessRatioHor":  0.001,
+                                         "BetaUnloadTractionRockingVer":  0.4,
+                                         "DuctTrazRockingHor":  5.2,
+                                         "BetaUnloadCompressionRockingVer":  0.5,
+                                         "Gt":  0.03,
+                                         "TensileCurveType":  "LinearSoftening",
+                                         "SlidingYieldingDomainHor":  "Coulomb",
+                                         "DuctComprRockingHor":  3.1,
+                                         "SlidingFractureEnergy":  false,
+                                         "FrictionRatioSlidingHor":  0.3,
+                                         "CohesionSlidingHor":  0.2,
+                                         "RatioEtCompression":  0.0001,
+                                         "FrictionRatioSlidingVert":  0.6,
+                                         "RatioEtTraction":  0.001,
+                                         "FtmHor":  0.23,
+                                         "GcVer":  0.11,
+                                         "FmHor":  2.7,
+                                         "Ehor":  5.3,
+                                         "SlidingMaxTensileRatioHor":  0.4,
+                                         "BetaUnloadCompressionRockingHor":  0.3
+                                     },
+                      "expected":  {
+                                       "OutOfPlaneSlidingHorizontal":  {
+                                                                           "E":  "4640677941028585472",
+                                                                           "type":  "ConstitutiveLawCoulomb",
+                                                                           "U_r":  "4906019910204099648",
+                                                                           "Fy_0":  "4596373779801702400",
+                                                                           "Mu":  "4599075939685498880",
+                                                                           "is_ductility_fixed":  false,
+                                                                           "PlasticStiffnessRatio":  "4562254509136412672"
+                                                                       },
+                                       "InplaneSlidingHorizontal":  {
+                                                                        "E":  "4655807221563654144",
+                                                                        "type":  "ConstitutiveLawCoulomb",
+                                                                        "U_r":  "4906019910204099648",
+                                                                        "Fy_0":  "4596373779801702400",
+                                                                        "Mu":  "4599075939685498880",
+                                                                        "is_ductility_fixed":  false,
+                                                                        "PlasticStiffnessRatio":  "4562254509136412672"
+                                                                    },
+                                       "HorizontalFlexional":  {
+                                                                   "RatioEtcomp":  "4547007121832542208",
+                                                                   "type":  "ConstitutiveLawHysteretic",
+                                                                   "Alfa_r":  [
+                                                                                  "4607182418800017408",
+                                                                                  "4607182418800017408"
+                                                                              ],
+                                                                   "Eps_u_c":  "4609791107291629646",
+                                                                   "Alfa_u":  [
+                                                                                  "4596373779801702400",
+                                                                                  "4599075939685498880"
+                                                                              ],
+                                                                   "Eps_u_t":  "4597298291778288394",
+                                                                   "Fy_t":  "4597454643755220992",
+                                                                   "G":  [
+                                                                             "4584304132499701760",
+                                                                             "4587366580546961408"
+                                                                         ],
+                                                                   "E":  "4617653288148402176",
+                                                                   "CompressiveCurveType":  "LinearHardening",
+                                                                   "TensileCurveType":  "LinearSoftening",
+                                                                   "Fy_c":  "4613262278404341760",
+                                                                   "RatioEttrac":  "4562254509136412672"
+                                                               }
+                                   },
+                      "p1":  [
+                                 0,
+                                 0,
+                                 0
+                             ]
+                  },
+                  {
+                      "restraint_e1_bits":  [
+                                                "0",
+                                                "4607182418800017408",
+                                                "0"
+                                            ],
+                      "interface_e1":  [
+                                           0,
+                                           1,
+                                           0
+                                       ],
+                      "p2":  [
+                                 0,
+                                 100,
+                                 0
+                             ],
+                      "properties":  {
+                                         "DuctComprRockingVer":  4.7,
+                                         "CohesionSlidingVert":  0.7,
+                                         "SlidingYieldingDomainVert":  "Coulomb",
+                                         "CriterioSnervamento":  "Coulomb",
+                                         "CompressiveCurveTypeVertical":  "Parabolic",
+                                         "IsDuctTraz":  false,
+                                         "DuctTrazRockingVer":  6.3,
+                                         "scorrhor":  true,
+                                         "SlidingMaxTensileRatioVer":  0.8,
+                                         "AlfaShearUser":  0.8,
+                                         "scorrvert":  true,
+                                         "GtVer":  0.07,
+                                         "IsDuctCompr":  false,
+                                         "Gd":  184,
+                                         "SlidingPlasticStiffnessRatioVer":  0.002,
+                                         "Ever":  17.7,
+                                         "FtmVer":  0.31,
+                                         "TensileCurveTypeVertical":  "Exponential",
+                                         "SlidingFractureEnergyVer":  false,
+                                         "FmVer":  4.3,
+                                         "BetaUnloadTractionRockingHor":  0.2,
+                                         "CompressiveCurveType":  "LinearHardening",
+                                         "Gc":  0.05,
+                                         "SlidingPlasticStiffnessRatioHor":  0.001,
+                                         "BetaUnloadTractionRockingVer":  0.4,
+                                         "DuctTrazRockingHor":  5.2,
+                                         "BetaUnloadCompressionRockingVer":  0.5,
+                                         "Gt":  0.03,
+                                         "TensileCurveType":  "LinearSoftening",
+                                         "SlidingYieldingDomainHor":  "Coulomb",
+                                         "DuctComprRockingHor":  3.1,
+                                         "SlidingFractureEnergy":  false,
+                                         "FrictionRatioSlidingHor":  0.3,
+                                         "CohesionSlidingHor":  0.2,
+                                         "RatioEtCompression":  0.0001,
+                                         "FrictionRatioSlidingVert":  0.6,
+                                         "RatioEtTraction":  0.001,
+                                         "FtmHor":  0.23,
+                                         "GcVer":  0.11,
+                                         "FmHor":  2.7,
+                                         "Ehor":  5.3,
+                                         "SlidingMaxTensileRatioHor":  0.4,
+                                         "BetaUnloadCompressionRockingHor":  0.3
+                                     },
+                      "expected":  {
+                                       "OutOfPlaneSlidingHorizontal":  {
+                                                                           "E":  "4640677941028585472",
+                                                                           "type":  "ConstitutiveLawCoulomb",
+                                                                           "U_r":  "4906019910204099648",
+                                                                           "Fy_0":  "4596373779801702400",
+                                                                           "secondary_plastic_ratio":  "4566758108763783168",
+                                                                           "is_ductility_fixed":  false,
+                                                                           "PlasticStiffnessRatio":  "4562254509136412672",
+                                                                           "Mu":  "4599075939685498880"
+                                                                       },
+                                       "InplaneSlidingHorizontal":  {
+                                                                        "E":  "4655807221563654144",
+                                                                        "type":  "ConstitutiveLawCoulomb",
+                                                                        "U_r":  "4906019910204099648",
+                                                                        "Fy_0":  "4596373779801702400",
+                                                                        "secondary_plastic_ratio":  "4566758108763783168",
+                                                                        "is_ductility_fixed":  false,
+                                                                        "PlasticStiffnessRatio":  "4562254509136412672",
+                                                                        "Mu":  "4599075939685498880"
+                                                                    },
+                                       "HorizontalFlexional":  {
+                                                                   "RatioEtcomp":  "4547007121832542208",
+                                                                   "type":  "ConstitutiveLawHysteretic",
+                                                                   "Alfa_r":  [
+                                                                                  "4607182418800017408",
+                                                                                  "4607182418800017408"
+                                                                              ],
+                                                                   "Eps_u_c":  "4609791107291629646",
+                                                                   "Alfa_u":  [
+                                                                                  "4596373779801702400",
+                                                                                  "4599075939685498880"
+                                                                              ],
+                                                                   "Eps_u_t":  "4597298291778288394",
+                                                                   "Fy_t":  "4597454643755220992",
+                                                                   "G":  [
+                                                                             "4584304132499701760",
+                                                                             "4587366580546961408"
+                                                                         ],
+                                                                   "E":  "4617653288148402176",
+                                                                   "CompressiveCurveType":  "LinearHardening",
+                                                                   "TensileCurveType":  "LinearSoftening",
+                                                                   "Fy_c":  "4613262278404341760",
+                                                                   "RatioEttrac":  "4562254509136412672"
+                                                               }
+                                   },
+                      "p1":  [
+                                 0,
+                                 0,
+                                 0
+                             ]
+                  },
+                  {
+                      "restraint_e1_bits":  [
+                                                "0",
+                                                "4607182418800017408",
+                                                "0"
+                                            ],
+                      "interface_e1":  [
+                                           0,
+                                           1,
+                                           0
+                                       ],
+                      "p2":  [
+                                 0,
+                                 100,
+                                 0
+                             ],
+                      "properties":  {
+                                         "DuctComprRockingVer":  4.7,
+                                         "CohesionSlidingVert":  0.7,
+                                         "SlidingYieldingDomainVert":  "Coulomb",
+                                         "CriterioSnervamento":  "Coulomb",
+                                         "CompressiveCurveTypeVertical":  "Parabolic",
+                                         "IsDuctTraz":  false,
+                                         "DuctTrazRockingVer":  6.3,
+                                         "scorrhor":  false,
+                                         "SlidingMaxTensileRatioVer":  0.8,
+                                         "AlfaShearUser":  0.8,
+                                         "scorrvert":  true,
+                                         "GtVer":  0.07,
+                                         "IsDuctCompr":  false,
+                                         "Gd":  184,
+                                         "SlidingPlasticStiffnessRatioVer":  0.002,
+                                         "Ever":  17.7,
+                                         "FtmVer":  0.31,
+                                         "TensileCurveTypeVertical":  "Exponential",
+                                         "SlidingFractureEnergyVer":  false,
+                                         "FmVer":  4.3,
+                                         "BetaUnloadTractionRockingHor":  0.2,
+                                         "CompressiveCurveType":  "Elastic",
+                                         "Gc":  0.05,
+                                         "SlidingPlasticStiffnessRatioHor":  0.001,
+                                         "BetaUnloadTractionRockingVer":  0.4,
+                                         "DuctTrazRockingHor":  5.2,
+                                         "BetaUnloadCompressionRockingVer":  0.5,
+                                         "Gt":  0.03,
+                                         "TensileCurveType":  "Elastic",
+                                         "SlidingYieldingDomainHor":  "Coulomb",
+                                         "DuctComprRockingHor":  3.1,
+                                         "SlidingFractureEnergy":  false,
+                                         "FrictionRatioSlidingHor":  0.3,
+                                         "CohesionSlidingHor":  0.2,
+                                         "RatioEtCompression":  0.0001,
+                                         "FrictionRatioSlidingVert":  0.6,
+                                         "RatioEtTraction":  0.001,
+                                         "FtmHor":  0.23,
+                                         "GcVer":  0.11,
+                                         "FmHor":  2.7,
+                                         "Ehor":  5.3,
+                                         "SlidingMaxTensileRatioHor":  0.4,
+                                         "BetaUnloadCompressionRockingHor":  0.3
+                                     },
+                      "expected":  {
+                                       "OutOfPlaneSlidingHorizontal":  {
+                                                                           "E":  "4640677941028585472",
+                                                                           "secondary_plastic_ratio":  "4566758108763783168",
+                                                                           "type":  "ConstitutiveLawElastic"
+                                                                       },
+                                       "InplaneSlidingHorizontal":  {
+                                                                        "E":  "4655807221563654144",
+                                                                        "secondary_plastic_ratio":  "4566758108763783168",
+                                                                        "type":  "ConstitutiveLawElastic"
+                                                                    },
+                                       "HorizontalFlexional":  {
+                                                                   "type":  "ConstitutiveLawElastic",
+                                                                   "E":  "4617653288148402176"
+                                                               }
+                                   },
+                      "p1":  [
+                                 0,
+                                 0,
+                                 0
+                             ]
+                  },
+                  {
+                      "restraint_e1_bits":  [
+                                                "0",
+                                                "4607182418800017408",
+                                                "0"
+                                            ],
+                      "interface_e1":  [
+                                           0,
+                                           1,
+                                           0
+                                       ],
+                      "p2":  [
+                                 0,
+                                 100,
+                                 0
+                             ],
+                      "properties":  {
+                                         "DuctComprRockingVer":  4.7,
+                                         "CohesionSlidingVert":  0.7,
+                                         "SlidingYieldingDomainVert":  "Coulomb",
+                                         "CriterioSnervamento":  "Coulomb",
+                                         "CompressiveCurveTypeVertical":  "Elastic",
+                                         "IsDuctTraz":  false,
+                                         "DuctTrazRockingVer":  6.3,
+                                         "scorrhor":  true,
+                                         "SlidingMaxTensileRatioVer":  0.8,
+                                         "AlfaShearUser":  0.8,
+                                         "scorrvert":  false,
+                                         "GtVer":  0.07,
+                                         "IsDuctCompr":  false,
+                                         "Gd":  184,
+                                         "SlidingPlasticStiffnessRatioVer":  0.002,
+                                         "Ever":  17.7,
+                                         "FtmVer":  0.31,
+                                         "TensileCurveTypeVertical":  "Elastic",
+                                         "SlidingFractureEnergyVer":  false,
+                                         "FmVer":  4.3,
+                                         "BetaUnloadTractionRockingHor":  0.2,
+                                         "CompressiveCurveType":  "LinearHardening",
+                                         "Gc":  0.05,
+                                         "SlidingPlasticStiffnessRatioHor":  0.001,
+                                         "BetaUnloadTractionRockingVer":  0.4,
+                                         "DuctTrazRockingHor":  5.2,
+                                         "BetaUnloadCompressionRockingVer":  0.5,
+                                         "Gt":  0.03,
+                                         "TensileCurveType":  "LinearSoftening",
+                                         "SlidingYieldingDomainHor":  "Coulomb",
+                                         "DuctComprRockingHor":  3.1,
+                                         "SlidingFractureEnergy":  false,
+                                         "FrictionRatioSlidingHor":  0.3,
+                                         "CohesionSlidingHor":  0.2,
+                                         "RatioEtCompression":  0.0001,
+                                         "FrictionRatioSlidingVert":  0.6,
+                                         "RatioEtTraction":  0.001,
+                                         "FtmHor":  0.23,
+                                         "GcVer":  0.11,
+                                         "FmHor":  2.7,
+                                         "Ehor":  5.3,
+                                         "SlidingMaxTensileRatioHor":  0.4,
+                                         "BetaUnloadCompressionRockingHor":  0.3
+                                     },
+                      "expected":  {
+                                       "OutOfPlaneSlidingHorizontal":  {
+                                                                           "E":  "4640677941028585472",
+                                                                           "type":  "ConstitutiveLawCoulomb",
+                                                                           "U_r":  "4906019910204099648",
+                                                                           "Fy_0":  "4596373779801702400",
+                                                                           "Mu":  "4599075939685498880",
+                                                                           "is_ductility_fixed":  false,
+                                                                           "PlasticStiffnessRatio":  "4562254509136412672"
+                                                                       },
+                                       "InplaneSlidingHorizontal":  {
+                                                                        "E":  "4655807221563654144",
+                                                                        "type":  "ConstitutiveLawCoulomb",
+                                                                        "U_r":  "4906019910204099648",
+                                                                        "Fy_0":  "4596373779801702400",
+                                                                        "Mu":  "4599075939685498880",
+                                                                        "is_ductility_fixed":  false,
+                                                                        "PlasticStiffnessRatio":  "4562254509136412672"
+                                                                    },
+                                       "HorizontalFlexional":  {
+                                                                   "RatioEtcomp":  "4547007121832542208",
+                                                                   "type":  "ConstitutiveLawHysteretic",
+                                                                   "Alfa_r":  [
+                                                                                  "4607182418800017408",
+                                                                                  "4607182418800017408"
+                                                                              ],
+                                                                   "Eps_u_c":  "4609791107291629646",
+                                                                   "Alfa_u":  [
+                                                                                  "4596373779801702400",
+                                                                                  "4599075939685498880"
+                                                                              ],
+                                                                   "Eps_u_t":  "4597298291778288394",
+                                                                   "Fy_t":  "4597454643755220992",
+                                                                   "G":  [
+                                                                             "4584304132499701760",
+                                                                             "4587366580546961408"
+                                                                         ],
+                                                                   "E":  "4617653288148402176",
+                                                                   "CompressiveCurveType":  "LinearHardening",
+                                                                   "TensileCurveType":  "LinearSoftening",
+                                                                   "Fy_c":  "4613262278404341760",
+                                                                   "RatioEttrac":  "4562254509136412672"
+                                                               }
+                                   },
+                      "p1":  [
+                                 0,
+                                 0,
+                                 0
+                             ]
+                  },
+                  {
+                      "restraint_e1_bits":  [
+                                                "4603579539312869376",
+                                                "4605380979056443392",
+                                                "0"
+                                            ],
+                      "interface_e1":  [
+                                           1,
+                                           0,
+                                           0
+                                       ],
+                      "p2":  [
+                                 3,
+                                 4,
+                                 0
+                             ],
+                      "properties":  {
+                                         "DuctComprRockingVer":  4.7,
+                                         "CohesionSlidingVert":  0.7,
+                                         "SlidingYieldingDomainVert":  "Coulomb",
+                                         "CriterioSnervamento":  "Coulomb",
+                                         "CompressiveCurveTypeVertical":  "Parabolic",
+                                         "IsDuctTraz":  false,
+                                         "DuctTrazRockingVer":  6.3,
+                                         "scorrhor":  true,
+                                         "SlidingMaxTensileRatioVer":  0.8,
+                                         "AlfaShearUser":  0.8,
+                                         "scorrvert":  true,
+                                         "GtVer":  0.07,
+                                         "IsDuctCompr":  false,
+                                         "Gd":  184,
+                                         "SlidingPlasticStiffnessRatioVer":  0.002,
+                                         "Ever":  17.7,
+                                         "FtmVer":  0.31,
+                                         "TensileCurveTypeVertical":  "Exponential",
+                                         "SlidingFractureEnergyVer":  false,
+                                         "FmVer":  4.3,
+                                         "BetaUnloadTractionRockingHor":  0.2,
+                                         "CompressiveCurveType":  "LinearHardening",
+                                         "Gc":  0.05,
+                                         "SlidingPlasticStiffnessRatioHor":  0.001,
+                                         "BetaUnloadTractionRockingVer":  0.4,
+                                         "DuctTrazRockingHor":  5.2,
+                                         "BetaUnloadCompressionRockingVer":  0.5,
+                                         "Gt":  0.03,
+                                         "TensileCurveType":  "LinearSoftening",
+                                         "SlidingYieldingDomainHor":  "Coulomb",
+                                         "DuctComprRockingHor":  3.1,
+                                         "SlidingFractureEnergy":  false,
+                                         "FrictionRatioSlidingHor":  0.3,
+                                         "CohesionSlidingHor":  0.2,
+                                         "RatioEtCompression":  0.0001,
+                                         "FrictionRatioSlidingVert":  0.6,
+                                         "RatioEtTraction":  0.001,
+                                         "FtmHor":  0.23,
+                                         "GcVer":  0.11,
+                                         "FmHor":  2.7,
+                                         "Ehor":  5.3,
+                                         "SlidingMaxTensileRatioHor":  0.4,
+                                         "BetaUnloadCompressionRockingHor":  0.3
+                                     },
+                      "expected":  {
+                                       "OutOfPlaneSlidingHorizontal":  {
+                                                                           "E":  "4640677941028585472",
+                                                                           "type":  "ConstitutiveLawCoulomb",
+                                                                           "U_r":  "4906019910204099648",
+                                                                           "Fy_0":  "4602858962969836914",
+                                                                           "secondary_plastic_ratio":  "4566758108763783168",
+                                                                           "is_ductility_fixed":  false,
+                                                                           "PlasticStiffnessRatio":  "4562254509136412672",
+                                                                           "Mu":  "4602534704182139542"
+                                                                       },
+                                       "InplaneSlidingHorizontal":  {
+                                                                        "E":  "4655807221563654144",
+                                                                        "type":  "ConstitutiveLawCoulomb",
+                                                                        "U_r":  "4906019910204099648",
+                                                                        "Fy_0":  "4602858962969836914",
+                                                                        "secondary_plastic_ratio":  "4566758108763783168",
+                                                                        "is_ductility_fixed":  false,
+                                                                        "PlasticStiffnessRatio":  "4562254509136412672",
+                                                                        "Mu":  "4602534704182139542"
+                                                                    },
+                                       "HorizontalFlexional":  {
+                                                                   "RatioEtcomp":  "4547007121832542208",
+                                                                   "type":  "ConstitutiveLawHysteretic",
+                                                                   "Alfa_r":  [
+                                                                                  "4607182418800017408",
+                                                                                  "4607182418800017408"
+                                                                              ],
+                                                                   "Eps_u_c":  "4608530280055194415",
+                                                                   "Alfa_u":  [
+                                                                                  "4596373779801702400",
+                                                                                  "4599075939685498880"
+                                                                              ],
+                                                                   "Eps_u_t":  "4594639161859042946",
+                                                                   "Fy_t":  "4598737268792086652",
+                                                                   "G":  [
+                                                                             "4588173625320583822",
+                                                                             "4591034311844262262"
+                                                                         ],
+                                                                   "E":  "4623640823752059506",
+                                                                   "CompressiveCurveType":  "Parabolic",
+                                                                   "TensileCurveType":  "Exponential",
+                                                                   "Fy_c":  "4615568121516634658",
+                                                                   "RatioEttrac":  "4562254509136412672"
+                                                               }
+                                   },
+                      "p1":  [
+                                 0,
+                                 0,
+                                 0
+                             ]
+                  },
+                  {
+                      "restraint_e1_bits":  [
+                                                "4603579539312869376",
+                                                "4605380979056443392",
+                                                "0"
+                                            ],
+                      "interface_e1":  [
+                                           1,
+                                           0,
+                                           0
+                                       ],
+                      "p2":  [
+                                 3,
+                                 4,
+                                 0
+                             ],
+                      "properties":  {
+                                         "DuctComprRockingVer":  4.7,
+                                         "CohesionSlidingVert":  0.7,
+                                         "SlidingYieldingDomainVert":  "Coulomb",
+                                         "CriterioSnervamento":  "Coulomb",
+                                         "CompressiveCurveTypeVertical":  "Parabolic",
+                                         "IsDuctTraz":  false,
+                                         "DuctTrazRockingVer":  6.3,
+                                         "scorrhor":  false,
+                                         "SlidingMaxTensileRatioVer":  0.8,
+                                         "AlfaShearUser":  0.8,
+                                         "scorrvert":  true,
+                                         "GtVer":  0.07,
+                                         "IsDuctCompr":  false,
+                                         "Gd":  184,
+                                         "SlidingPlasticStiffnessRatioVer":  0.002,
+                                         "Ever":  17.7,
+                                         "FtmVer":  0.31,
+                                         "TensileCurveTypeVertical":  "Exponential",
+                                         "SlidingFractureEnergyVer":  false,
+                                         "FmVer":  4.3,
+                                         "BetaUnloadTractionRockingHor":  0.2,
+                                         "CompressiveCurveType":  "Elastic",
+                                         "Gc":  0.05,
+                                         "SlidingPlasticStiffnessRatioHor":  0.001,
+                                         "BetaUnloadTractionRockingVer":  0.4,
+                                         "DuctTrazRockingHor":  5.2,
+                                         "BetaUnloadCompressionRockingVer":  0.5,
+                                         "Gt":  0.03,
+                                         "TensileCurveType":  "Elastic",
+                                         "SlidingYieldingDomainHor":  "Coulomb",
+                                         "DuctComprRockingHor":  3.1,
+                                         "SlidingFractureEnergy":  false,
+                                         "FrictionRatioSlidingHor":  0.3,
+                                         "CohesionSlidingHor":  0.2,
+                                         "RatioEtCompression":  0.0001,
+                                         "FrictionRatioSlidingVert":  0.6,
+                                         "RatioEtTraction":  0.001,
+                                         "FtmHor":  0.23,
+                                         "GcVer":  0.11,
+                                         "FmHor":  2.7,
+                                         "Ehor":  5.3,
+                                         "SlidingMaxTensileRatioHor":  0.4,
+                                         "BetaUnloadCompressionRockingHor":  0.3
+                                     },
+                      "expected":  {
+                                       "OutOfPlaneSlidingHorizontal":  {
+                                                                           "E":  "4640677941028585472",
+                                                                           "secondary_plastic_ratio":  "4566758108763783168",
+                                                                           "type":  "ConstitutiveLawElastic"
+                                                                       },
+                                       "InplaneSlidingHorizontal":  {
+                                                                        "E":  "4655807221563654144",
+                                                                        "secondary_plastic_ratio":  "4566758108763783168",
+                                                                        "type":  "ConstitutiveLawElastic"
+                                                                    },
+                                       "HorizontalFlexional":  {
+                                                                   "type":  "ConstitutiveLawElastic",
+                                                                   "E":  "4623640823752059506"
+                                                               }
+                                   },
+                      "p1":  [
+                                 0,
+                                 0,
+                                 0
+                             ]
+                  },
+                  {
+                      "restraint_e1_bits":  [
+                                                "4603579539312869376",
+                                                "4605380979056443392",
+                                                "0"
+                                            ],
+                      "interface_e1":  [
+                                           1,
+                                           0,
+                                           0
+                                       ],
+                      "p2":  [
+                                 3,
+                                 4,
+                                 0
+                             ],
+                      "properties":  {
+                                         "DuctComprRockingVer":  4.7,
+                                         "CohesionSlidingVert":  0.7,
+                                         "SlidingYieldingDomainVert":  "Coulomb",
+                                         "CriterioSnervamento":  "Coulomb",
+                                         "CompressiveCurveTypeVertical":  "Elastic",
+                                         "IsDuctTraz":  false,
+                                         "DuctTrazRockingVer":  6.3,
+                                         "scorrhor":  true,
+                                         "SlidingMaxTensileRatioVer":  0.8,
+                                         "AlfaShearUser":  0.8,
+                                         "scorrvert":  false,
+                                         "GtVer":  0.07,
+                                         "IsDuctCompr":  false,
+                                         "Gd":  184,
+                                         "SlidingPlasticStiffnessRatioVer":  0.002,
+                                         "Ever":  17.7,
+                                         "FtmVer":  0.31,
+                                         "TensileCurveTypeVertical":  "Elastic",
+                                         "SlidingFractureEnergyVer":  false,
+                                         "FmVer":  4.3,
+                                         "BetaUnloadTractionRockingHor":  0.2,
+                                         "CompressiveCurveType":  "LinearHardening",
+                                         "Gc":  0.05,
+                                         "SlidingPlasticStiffnessRatioHor":  0.001,
+                                         "BetaUnloadTractionRockingVer":  0.4,
+                                         "DuctTrazRockingHor":  5.2,
+                                         "BetaUnloadCompressionRockingVer":  0.5,
+                                         "Gt":  0.03,
+                                         "TensileCurveType":  "LinearSoftening",
+                                         "SlidingYieldingDomainHor":  "Coulomb",
+                                         "DuctComprRockingHor":  3.1,
+                                         "SlidingFractureEnergy":  false,
+                                         "FrictionRatioSlidingHor":  0.3,
+                                         "CohesionSlidingHor":  0.2,
+                                         "RatioEtCompression":  0.0001,
+                                         "FrictionRatioSlidingVert":  0.6,
+                                         "RatioEtTraction":  0.001,
+                                         "FtmHor":  0.23,
+                                         "GcVer":  0.11,
+                                         "FmHor":  2.7,
+                                         "Ehor":  5.3,
+                                         "SlidingMaxTensileRatioHor":  0.4,
+                                         "BetaUnloadCompressionRockingHor":  0.3
+                                     },
+                      "expected":  {
+                                       "OutOfPlaneSlidingHorizontal":  {
+                                                                           "E":  "4640677941028585472",
+                                                                           "type":  "ConstitutiveLawCoulomb",
+                                                                           "U_r":  "4906019910204099648",
+                                                                           "Fy_0":  "4596373779801702400",
+                                                                           "Mu":  "4599075939685498880",
+                                                                           "is_ductility_fixed":  false,
+                                                                           "PlasticStiffnessRatio":  "4562254509136412672"
+                                                                       },
+                                       "InplaneSlidingHorizontal":  {
+                                                                        "E":  "4655807221563654144",
+                                                                        "type":  "ConstitutiveLawCoulomb",
+                                                                        "U_r":  "4906019910204099648",
+                                                                        "Fy_0":  "4596373779801702400",
+                                                                        "Mu":  "4599075939685498880",
+                                                                        "is_ductility_fixed":  false,
+                                                                        "PlasticStiffnessRatio":  "4562254509136412672"
+                                                                    },
+                                       "HorizontalFlexional":  {
+                                                                   "RatioEtcomp":  "4547007121832542208",
+                                                                   "type":  "ConstitutiveLawHysteretic",
+                                                                   "Alfa_r":  [
+                                                                                  "4607182418800017408",
+                                                                                  "4607182418800017408"
+                                                                              ],
+                                                                   "Eps_u_c":  "4609791107291629646",
+                                                                   "Alfa_u":  [
+                                                                                  "4596373779801702400",
+                                                                                  "4599075939685498880"
+                                                                              ],
+                                                                   "Eps_u_t":  "4597298291778288394",
+                                                                   "Fy_t":  "4597454643755220992",
+                                                                   "G":  [
+                                                                             "4584304132499701760",
+                                                                             "4587366580546961408"
+                                                                         ],
+                                                                   "E":  "4623640823752059506",
+                                                                   "CompressiveCurveType":  "LinearHardening",
+                                                                   "TensileCurveType":  "LinearSoftening",
+                                                                   "Fy_c":  "4613262278404341760",
+                                                                   "RatioEttrac":  "4562254509136412672"
+                                                               }
+                                   },
+                      "p1":  [
+                                 0,
+                                 0,
+                                 0
+                             ]
+                  },
+                  {
+                      "restraint_e1_bits":  [
+                                                "4598777080828657664",
+                                                "4603025409074790400",
+                                                "4605322868148928512"
+                                            ],
+                      "interface_e1":  [
+                                           0.6,
+                                           0.8,
+                                           0
+                                       ],
+                      "p2":  [
+                                 0.1234567,
+                                 0.2345678,
+                                 0.3456789
+                             ],
+                      "properties":  {
+                                         "DuctComprRockingVer":  4.7,
+                                         "CohesionSlidingVert":  0.7,
+                                         "SlidingYieldingDomainVert":  "Coulomb",
+                                         "CriterioSnervamento":  "Coulomb",
+                                         "CompressiveCurveTypeVertical":  "Parabolic",
+                                         "IsDuctTraz":  false,
+                                         "DuctTrazRockingVer":  6.3,
+                                         "scorrhor":  true,
+                                         "SlidingMaxTensileRatioVer":  0.8,
+                                         "AlfaShearUser":  0.8,
+                                         "scorrvert":  true,
+                                         "GtVer":  0.07,
+                                         "IsDuctCompr":  false,
+                                         "Gd":  184,
+                                         "SlidingPlasticStiffnessRatioVer":  0.002,
+                                         "Ever":  17.7,
+                                         "FtmVer":  0.31,
+                                         "TensileCurveTypeVertical":  "Exponential",
+                                         "SlidingFractureEnergyVer":  false,
+                                         "FmVer":  4.3,
+                                         "BetaUnloadTractionRockingHor":  0.2,
+                                         "CompressiveCurveType":  "LinearHardening",
+                                         "Gc":  0.05,
+                                         "SlidingPlasticStiffnessRatioHor":  0.001,
+                                         "BetaUnloadTractionRockingVer":  0.4,
+                                         "DuctTrazRockingHor":  5.2,
+                                         "BetaUnloadCompressionRockingVer":  0.5,
+                                         "Gt":  0.03,
+                                         "TensileCurveType":  "LinearSoftening",
+                                         "SlidingYieldingDomainHor":  "Coulomb",
+                                         "DuctComprRockingHor":  3.1,
+                                         "SlidingFractureEnergy":  false,
+                                         "FrictionRatioSlidingHor":  0.3,
+                                         "CohesionSlidingHor":  0.2,
+                                         "RatioEtCompression":  0.0001,
+                                         "FrictionRatioSlidingVert":  0.6,
+                                         "RatioEtTraction":  0.001,
+                                         "FtmHor":  0.23,
+                                         "GcVer":  0.11,
+                                         "FmHor":  2.7,
+                                         "Ehor":  5.3,
+                                         "SlidingMaxTensileRatioHor":  0.4,
+                                         "BetaUnloadCompressionRockingHor":  0.3
+                                     },
+                      "expected":  {
+                                       "OutOfPlaneSlidingHorizontal":  {
+                                                                           "E":  "4640677941028585472",
+                                                                           "type":  "ConstitutiveLawCoulomb",
+                                                                           "U_r":  "4906019910204099648",
+                                                                           "Fy_0":  "4602854477859080405",
+                                                                           "secondary_plastic_ratio":  "4566758108763783168",
+                                                                           "is_ductility_fixed":  false,
+                                                                           "PlasticStiffnessRatio":  "4562254509136412672",
+                                                                           "Mu":  "4602529322048857464"
+                                                                       },
+                                       "InplaneSlidingHorizontal":  {
+                                                                        "E":  "4655807221563654144",
+                                                                        "type":  "ConstitutiveLawCoulomb",
+                                                                        "U_r":  "4906019910204099648",
+                                                                        "Fy_0":  "4602854477859080405",
+                                                                        "secondary_plastic_ratio":  "4566758108763783168",
+                                                                        "is_ductility_fixed":  false,
+                                                                        "PlasticStiffnessRatio":  "4562254509136412672",
+                                                                        "Mu":  "4602529322048857464"
+                                                                    },
+                                       "HorizontalFlexional":  {
+                                                                   "RatioEtcomp":  "4547007121832542208",
+                                                                   "type":  "ConstitutiveLawHysteretic",
+                                                                   "Alfa_r":  [
+                                                                                  "4607182418800017408",
+                                                                                  "4607182418800017408"
+                                                                              ],
+                                                                   "Eps_u_c":  "4608532242010175380",
+                                                                   "Alfa_u":  [
+                                                                                  "4596373779801702400",
+                                                                                  "4599075939685498880"
+                                                                              ],
+                                                                   "Eps_u_t":  "4594643299692553624",
+                                                                   "Fy_t":  "4598735833556633876",
+                                                                   "G":  [
+                                                                             "4588167884378505384",
+                                                                             "4591030006137903933"
+                                                                         ],
+                                                                   "E":  "4623633871829858933",
+                                                                   "CompressiveCurveType":  "Parabolic",
+                                                                   "TensileCurveType":  "Exponential",
+                                                                   "Fy_c":  "4615564533427601717",
+                                                                   "RatioEttrac":  "4562254509136412672"
+                                                               }
+                                   },
+                      "p1":  [
+                                 0,
+                                 0,
+                                 0
+                             ]
+                  },
+                  {
+                      "restraint_e1_bits":  [
+                                                "4598777080828657664",
+                                                "4603025409074790400",
+                                                "4605322868148928512"
+                                            ],
+                      "interface_e1":  [
+                                           0.6,
+                                           0.8,
+                                           0
+                                       ],
+                      "p2":  [
+                                 0.1234567,
+                                 0.2345678,
+                                 0.3456789
+                             ],
+                      "properties":  {
+                                         "DuctComprRockingVer":  4.7,
+                                         "CohesionSlidingVert":  0.7,
+                                         "SlidingYieldingDomainVert":  "Coulomb",
+                                         "CriterioSnervamento":  "Coulomb",
+                                         "CompressiveCurveTypeVertical":  "Parabolic",
+                                         "IsDuctTraz":  false,
+                                         "DuctTrazRockingVer":  6.3,
+                                         "scorrhor":  false,
+                                         "SlidingMaxTensileRatioVer":  0.8,
+                                         "AlfaShearUser":  0.8,
+                                         "scorrvert":  true,
+                                         "GtVer":  0.07,
+                                         "IsDuctCompr":  false,
+                                         "Gd":  184,
+                                         "SlidingPlasticStiffnessRatioVer":  0.002,
+                                         "Ever":  17.7,
+                                         "FtmVer":  0.31,
+                                         "TensileCurveTypeVertical":  "Exponential",
+                                         "SlidingFractureEnergyVer":  false,
+                                         "FmVer":  4.3,
+                                         "BetaUnloadTractionRockingHor":  0.2,
+                                         "CompressiveCurveType":  "Elastic",
+                                         "Gc":  0.05,
+                                         "SlidingPlasticStiffnessRatioHor":  0.001,
+                                         "BetaUnloadTractionRockingVer":  0.4,
+                                         "DuctTrazRockingHor":  5.2,
+                                         "BetaUnloadCompressionRockingVer":  0.5,
+                                         "Gt":  0.03,
+                                         "TensileCurveType":  "Elastic",
+                                         "SlidingYieldingDomainHor":  "Coulomb",
+                                         "DuctComprRockingHor":  3.1,
+                                         "SlidingFractureEnergy":  false,
+                                         "FrictionRatioSlidingHor":  0.3,
+                                         "CohesionSlidingHor":  0.2,
+                                         "RatioEtCompression":  0.0001,
+                                         "FrictionRatioSlidingVert":  0.6,
+                                         "RatioEtTraction":  0.001,
+                                         "FtmHor":  0.23,
+                                         "GcVer":  0.11,
+                                         "FmHor":  2.7,
+                                         "Ehor":  5.3,
+                                         "SlidingMaxTensileRatioHor":  0.4,
+                                         "BetaUnloadCompressionRockingHor":  0.3
+                                     },
+                      "expected":  {
+                                       "OutOfPlaneSlidingHorizontal":  {
+                                                                           "E":  "4640677941028585472",
+                                                                           "secondary_plastic_ratio":  "4566758108763783168",
+                                                                           "type":  "ConstitutiveLawElastic"
+                                                                       },
+                                       "InplaneSlidingHorizontal":  {
+                                                                        "E":  "4655807221563654144",
+                                                                        "secondary_plastic_ratio":  "4566758108763783168",
+                                                                        "type":  "ConstitutiveLawElastic"
+                                                                    },
+                                       "HorizontalFlexional":  {
+                                                                   "type":  "ConstitutiveLawElastic",
+                                                                   "E":  "4623633871829858933"
+                                                               }
+                                   },
+                      "p1":  [
+                                 0,
+                                 0,
+                                 0
+                             ]
+                  },
+                  {
+                      "restraint_e1_bits":  [
+                                                "4598777080828657664",
+                                                "4603025409074790400",
+                                                "4605322868148928512"
+                                            ],
+                      "interface_e1":  [
+                                           0.6,
+                                           0.8,
+                                           0
+                                       ],
+                      "p2":  [
+                                 0.1234567,
+                                 0.2345678,
+                                 0.3456789
+                             ],
+                      "properties":  {
+                                         "DuctComprRockingVer":  4.7,
+                                         "CohesionSlidingVert":  0.7,
+                                         "SlidingYieldingDomainVert":  "Coulomb",
+                                         "CriterioSnervamento":  "Coulomb",
+                                         "CompressiveCurveTypeVertical":  "Elastic",
+                                         "IsDuctTraz":  false,
+                                         "DuctTrazRockingVer":  6.3,
+                                         "scorrhor":  true,
+                                         "SlidingMaxTensileRatioVer":  0.8,
+                                         "AlfaShearUser":  0.8,
+                                         "scorrvert":  false,
+                                         "GtVer":  0.07,
+                                         "IsDuctCompr":  false,
+                                         "Gd":  184,
+                                         "SlidingPlasticStiffnessRatioVer":  0.002,
+                                         "Ever":  17.7,
+                                         "FtmVer":  0.31,
+                                         "TensileCurveTypeVertical":  "Elastic",
+                                         "SlidingFractureEnergyVer":  false,
+                                         "FmVer":  4.3,
+                                         "BetaUnloadTractionRockingHor":  0.2,
+                                         "CompressiveCurveType":  "LinearHardening",
+                                         "Gc":  0.05,
+                                         "SlidingPlasticStiffnessRatioHor":  0.001,
+                                         "BetaUnloadTractionRockingVer":  0.4,
+                                         "DuctTrazRockingHor":  5.2,
+                                         "BetaUnloadCompressionRockingVer":  0.5,
+                                         "Gt":  0.03,
+                                         "TensileCurveType":  "LinearSoftening",
+                                         "SlidingYieldingDomainHor":  "Coulomb",
+                                         "DuctComprRockingHor":  3.1,
+                                         "SlidingFractureEnergy":  false,
+                                         "FrictionRatioSlidingHor":  0.3,
+                                         "CohesionSlidingHor":  0.2,
+                                         "RatioEtCompression":  0.0001,
+                                         "FrictionRatioSlidingVert":  0.6,
+                                         "RatioEtTraction":  0.001,
+                                         "FtmHor":  0.23,
+                                         "GcVer":  0.11,
+                                         "FmHor":  2.7,
+                                         "Ehor":  5.3,
+                                         "SlidingMaxTensileRatioHor":  0.4,
+                                         "BetaUnloadCompressionRockingHor":  0.3
+                                     },
+                      "expected":  {
+                                       "OutOfPlaneSlidingHorizontal":  {
+                                                                           "E":  "4640677941028585472",
+                                                                           "type":  "ConstitutiveLawCoulomb",
+                                                                           "U_r":  "4906019910204099648",
+                                                                           "Fy_0":  "4596373779801702400",
+                                                                           "Mu":  "4599075939685498880",
+                                                                           "is_ductility_fixed":  false,
+                                                                           "PlasticStiffnessRatio":  "4562254509136412672"
+                                                                       },
+                                       "InplaneSlidingHorizontal":  {
+                                                                        "E":  "4655807221563654144",
+                                                                        "type":  "ConstitutiveLawCoulomb",
+                                                                        "U_r":  "4906019910204099648",
+                                                                        "Fy_0":  "4596373779801702400",
+                                                                        "Mu":  "4599075939685498880",
+                                                                        "is_ductility_fixed":  false,
+                                                                        "PlasticStiffnessRatio":  "4562254509136412672"
+                                                                    },
+                                       "HorizontalFlexional":  {
+                                                                   "RatioEtcomp":  "4547007121832542208",
+                                                                   "type":  "ConstitutiveLawHysteretic",
+                                                                   "Alfa_r":  [
+                                                                                  "4607182418800017408",
+                                                                                  "4607182418800017408"
+                                                                              ],
+                                                                   "Eps_u_c":  "4609791107291629646",
+                                                                   "Alfa_u":  [
+                                                                                  "4596373779801702400",
+                                                                                  "4599075939685498880"
+                                                                              ],
+                                                                   "Eps_u_t":  "4597298291778288394",
+                                                                   "Fy_t":  "4597454643755220992",
+                                                                   "G":  [
+                                                                             "4584304132499701760",
+                                                                             "4587366580546961408"
+                                                                         ],
+                                                                   "E":  "4623633871829858933",
+                                                                   "CompressiveCurveType":  "LinearHardening",
+                                                                   "TensileCurveType":  "LinearSoftening",
+                                                                   "Fy_c":  "4613262278404341760",
+                                                                   "RatioEttrac":  "4562254509136412672"
+                                                               }
+                                   },
+                      "p1":  [
+                                 0,
+                                 0,
+                                 0
+                             ]
+                  }
+              ],
+    "generated_at":  "2026-10-15T08:53:01.5020759Z",
+    "source":  "Original line-Restraint constructor; native material law builders; ConstitutiveLawBase.PropOrthotropyParameter(Element,Element,law)",
+    "schema_version":  1,
+    "generator":  "tools/csharp-diagnostics/Invoke-RestraintOrientationOracle.ps1"
+}

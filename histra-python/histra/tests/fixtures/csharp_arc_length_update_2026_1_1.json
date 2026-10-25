@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-17T08:26:10.2482145Z",
+  "source": "Original SolverRuntime.Integrator.ArcLength.Update; identity native UMFPACK system",
+  "benchmark_id": "native-arclength-identity-update-2026.1.1",
+  "cases": [
+    {
+      "step": 0.01,
+      "hat": 1.1,
+      "bar": 0.3,
+      "lambda_bits": "-4624787399161556618",
+      "code": 0,
+      "alpha2": 0,
+      "du_bits": "-4854880398305394688"
+    },
+    {
+      "step": 0.01,
+      "hat": 0.0037,
+      "bar": 1.8e-08,
+      "lambda_bits": "-4696014592279691908",
+      "code": 0,
+      "alpha2": 0,
+      "du_bits": "4336944554004447232"
+    },
+    {
+      "step": 0.4,
+      "hat": 1.1,
+      "bar": -0.3,
+      "lambda_bits": "4598307626865318900",
+      "code": 0,
+      "alpha2": 0.2,
+      "du_bits": "-4642839424875306800"
+    },
+    {
+      "step": -0.02,
+      "hat": 1.3,
+      "bar": -0.7,
+      "lambda_bits": "4603025249913213883",
+      "code": 0,
+      "alpha2": 0,
+      "du_bits": "4384817187198599168"
+    },
+    {
+      "step": 0.1,
+      "hat": 1,
+      "bar": 1,
+      "lambda_bits": "4607182418800017408",
+      "code": 0,
+      "alpha2": 1,
+      "du_bits": "4611686018427387904"
+    },
+    {
+      "step": 0.1,
+      "hat": 1e-16,
+      "bar": 0.3,
+      "lambda_bits": "-4385009636686233603",
+      "code": 0,
+      "alpha2": 0,
+      "du_bits": "4370743438363066368"
+    },
+    {
+      "step": 0.1,
+      "hat": 0,
+      "bar": 0.3,
+      "lambda_bits": "0",
+      "code": -10,
+      "alpha2": 0,
+      "du_bits": "0"
+    },
+    {
+      "step": 0,
+      "hat": 1,
+      "bar": 1,
+      "lambda_bits": "0",
+      "code": -10,
+      "alpha2": 1,
+      "du_bits": "0"
+    },
+    {
+      "step": 0.02,
+      "hat": 2,
+      "bar": 0.5,
+      "lambda_bits": "-4625196817309499397",
+      "code": 0,
+      "alpha2": 0,
+      "du_bits": "4374121138083594240"
+    },
+    {
+      "step": 0.05,
+      "hat": 1.5,
+      "bar": -0.2,
+      "lambda_bits": "4593971859893063953",
+      "code": 0,
+      "alpha2": 1,
+      "du_bits": "0"
+    },
+    {
+      "step": -0.01,
+      "hat": 3,
+      "bar": 1.2,
+      "lambda_bits": "4600877379321698714",
+      "code": 0,
+      "alpha2": 0.5,
+      "du_bits": "4612586738352862004"
+    }
+  ],
+  "generator": "tools/csharp-diagnostics/Invoke-ArcLengthUpdateOracle.ps1",
+  "assembly_sha256": "042588ca92cc15aaf8b76467a67951aeb56394f3758cb38b6f458b2bcbd3b0bf",
+  "source_commit": "f5a49f45b731c06b080a46073264322b6640751e"
+}

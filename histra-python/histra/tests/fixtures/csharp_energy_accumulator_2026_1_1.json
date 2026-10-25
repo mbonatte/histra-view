@@ -1,0 +1,25 @@
+﻿{
+    "cases":  [
+                  {
+                      "plastic_bits":  "4613937818241073152",
+                      "seed":  0,
+                      "elastic_bits":  "4613937818241073152"
+                  },
+                  {
+                      "plastic_bits":  "4616189618054758400",
+                      "seed":  1,
+                      "elastic_bits":  "4616189618054758400"
+                  },
+                  {
+                      "plastic_bits":  "4846369599423283200",
+                      "seed":  1E+16,
+                      "elastic_bits":  "4846369599423283200"
+                  },
+                  {
+                      "plastic_bits":  "-4377002437431492608",
+                      "seed":  -1E+16,
+                      "elastic_bits":  "-4377002437431492608"
+                  }
+              ],
+    "source":  "Original ModelManager.ComputeEnergy -\u003e Quad.ComputeEnergy -\u003e Spring.ComputeEnergy; three controlled unit increments, nonzero initial totals"
+}

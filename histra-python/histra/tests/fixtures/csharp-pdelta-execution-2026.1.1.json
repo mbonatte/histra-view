@@ -1,0 +1,1855 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-16T09:27:31.422815+00:00",
+  "source_commit": "97a8cd5fc6a71295d4b1dfda1136f00869b6c8bc",
+  "generator": "tools/benchmarks/export_pdelta_execution_reference.py",
+  "benchmark_id": "native-pdelta-full-execution-2026.1.1",
+  "cases": {
+    "EachStep-save1": {
+      "mode": "EachStep",
+      "step_save": 1,
+      "input_lf_sha256": "9c31e6f09276ebc5759a40ec59bb3b152613820c70c8e17d4aa0fcd1de97fae0",
+      "results_sha256": "7a388c5aebd549e5cb2a0fa35be47a00396410c2216beca295c3320708c08c33",
+      "native_execution": {
+        "schema_version": 1,
+        "model_sha256": "c23d5ca99a9cf7712c0e7d474b90d312a696c1daa74e28e41466d2c1febded75",
+        "generated_at": "2026-10-16T09:19:20.8913010Z",
+        "benchmark_id": "independent-native-analysis-2026.1.1",
+        "generator": "tools/csharp-diagnostics/Invoke-NativeAnalysisOracle.ps1",
+        "assembly_sha256": "042588ca92cc15aaf8b76467a67951aeb56394f3758cb38b6f458b2bcbd3b0bf",
+        "analyses": [
+          {
+            "step": 10,
+            "key": 1,
+            "exit": "Converged",
+            "state": "ExecutedCompleted"
+          },
+          {
+            "step": 7,
+            "key": 2,
+            "exit": "Converged",
+            "state": "ExecutedCompleted"
+          }
+        ],
+        "source_commit": "97a8cd5fc6a71295d4b1dfda1136f00869b6c8bc"
+      },
+      "states": [
+        {
+          "analysis": 1,
+          "step": 1,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "5fbc7fca075c3f8aa0a6c642a94db091b222340224de886c20bfa32b83b7842b"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 2,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "d4315bd0e93601ef1e3b7bea684ff0a25da846b199c78a86493e9153f1d31e49"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 3,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "e48469dcfc8ea68a2b7ddd20d1c72e4d6d7ea8f55ca911df3c70f1e20f397f0f"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 4,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "afdc39d9bd7595ac1cb3ccf504dc74a4fd5df2cd72b836ce7e2ce2910feadec1"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 5,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "3a9181cafc23d7a25f44d3775273000386bb2a95403ea00b800cdeb0f34ddb58"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 6,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "938af0142881e5da59b18d14088bbc1665102819d5d074dfc9db691d98b2dc78"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 7,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "8c25fb3469a9398690c8b6d9625531467ea92deb0183f1af47d14703b621b1f8"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 8,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "3a8b07f8ac572bc568a7d6dead15ebb983ab7b38ede97294705cfe01a9be91da"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 9,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "a140cdd33dc38cb9f323b3ab9d5336f277a9761adb3431922849db36c6fb890c"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 10,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "5aa064d690aed42ba0ff4bacf2bdda620a63aa4dfe35199003b9153fe5b362e0"
+            },
+            "SpringStates": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType",
+                "K_tang",
+                "Uy1",
+                "Uy2",
+                "Umax1",
+                "Umax2",
+                "Uu1",
+                "Uu2",
+                "LoadIndicator",
+                "ContactArea",
+                "F0",
+                "CmomMin",
+                "CmomMax",
+                "CrotLimNu",
+                "CrotLimPu",
+                "CrotYn",
+                "CrotYp",
+                "CPhaseUnload_t",
+                "CPhaseUnload_c",
+                "TangentReload_c",
+                "TangentReload_t",
+                "CplasticTensionIndicator",
+                "CplasticCompressionIndicator"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "d88b6841bb70ebd62bce6bd0c043e685b4d12d80aa4916517fe2a00d4ba64ff9"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "step": 1,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "0c570f6c77f2f02d68f946ed87de7ef863a45da02d2afe2c62c4f83aed9ac031"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "step": 2,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "fb3c9e8e8f924c204d1b85e7d159ec37392c2f07e64d9b1dbfbab57a9f4e7bf7"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "step": 3,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "ed495646affc62128f326b8ca3ca9d0a33ec35468a0a4c9e5e0498520603b26c"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "step": 4,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "4912dc208c966fcd24c5c63e662c1a0672566bff453824815d61cf928a17cf45"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "step": 5,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "1efa0584c0622b7a06d480724aeaaee9847d22d7f87f0a36861a4ff60c183a56"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "step": 6,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "9c96e103bd70344b4cf02d0593fe8e45cd10861063c24ad1330f031d2d7beaa6"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "step": 7,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "a261fd8340c9e6d5ca94c2f967a332df26afa88fb237627b06314f7407ee12cc"
+            },
+            "SpringStates": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType",
+                "K_tang",
+                "Uy1",
+                "Uy2",
+                "Umax1",
+                "Umax2",
+                "Uu1",
+                "Uu2",
+                "LoadIndicator",
+                "ContactArea",
+                "F0",
+                "CmomMin",
+                "CmomMax",
+                "CrotLimNu",
+                "CrotLimPu",
+                "CrotYn",
+                "CrotYp",
+                "CPhaseUnload_t",
+                "CPhaseUnload_c",
+                "TangentReload_c",
+                "TangentReload_t",
+                "CplasticTensionIndicator",
+                "CplasticCompressionIndicator"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "93e917f7be0fbffbf62ffe1a51e46729bce48c5bb11a91062349bce81f97b1a6"
+            }
+          }
+        }
+      ],
+      "committed_steps": {
+        "1": 10,
+        "2": 7
+      }
+    },
+    "EachStep-save2": {
+      "mode": "EachStep",
+      "step_save": 2,
+      "input_lf_sha256": "8472ee9b01d57a77fb17905cbb839a1fcce333580af417f99ba56679073e7199",
+      "results_sha256": "11012e08b93d9be553352e6cfcb77c4dd05106f5e5a4aa6170e0deb08559d31c",
+      "native_execution": {
+        "schema_version": 1,
+        "model_sha256": "694e56e852b641a31b17fbfd00e1ff5831b689500a87615c2860927460056398",
+        "analyses": [
+          {
+            "step": 10,
+            "key": 1,
+            "exit": "Converged",
+            "state": "ExecutedCompleted"
+          },
+          {
+            "step": 6,
+            "key": 2,
+            "exit": "Converged",
+            "state": "ExecutedCompleted"
+          }
+        ],
+        "source_commit": "97a8cd5fc6a71295d4b1dfda1136f00869b6c8bc",
+        "assembly_sha256": "042588ca92cc15aaf8b76467a67951aeb56394f3758cb38b6f458b2bcbd3b0bf",
+        "generated_at": "2026-10-16T09:25:43.6265973Z",
+        "generator": "tools/csharp-diagnostics/Invoke-NativeAnalysisOracle.ps1",
+        "benchmark_id": "independent-native-analysis-2026.1.1",
+        "process_id": 2356
+      },
+      "states": [
+        {
+          "analysis": 1,
+          "step": 1,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "5fbc7fca075c3f8aa0a6c642a94db091b222340224de886c20bfa32b83b7842b"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 2,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "d4315bd0e93601ef1e3b7bea684ff0a25da846b199c78a86493e9153f1d31e49"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 3,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "e48469dcfc8ea68a2b7ddd20d1c72e4d6d7ea8f55ca911df3c70f1e20f397f0f"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 4,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "afdc39d9bd7595ac1cb3ccf504dc74a4fd5df2cd72b836ce7e2ce2910feadec1"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 5,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "3a9181cafc23d7a25f44d3775273000386bb2a95403ea00b800cdeb0f34ddb58"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 6,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "938af0142881e5da59b18d14088bbc1665102819d5d074dfc9db691d98b2dc78"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 7,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "8c25fb3469a9398690c8b6d9625531467ea92deb0183f1af47d14703b621b1f8"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 8,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "3a8b07f8ac572bc568a7d6dead15ebb983ab7b38ede97294705cfe01a9be91da"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 9,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "a140cdd33dc38cb9f323b3ab9d5336f277a9761adb3431922849db36c6fb890c"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 10,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "5aa064d690aed42ba0ff4bacf2bdda620a63aa4dfe35199003b9153fe5b362e0"
+            },
+            "SpringStates": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType",
+                "K_tang",
+                "Uy1",
+                "Uy2",
+                "Umax1",
+                "Umax2",
+                "Uu1",
+                "Uu2",
+                "LoadIndicator",
+                "ContactArea",
+                "F0",
+                "CmomMin",
+                "CmomMax",
+                "CrotLimNu",
+                "CrotLimPu",
+                "CrotYn",
+                "CrotYp",
+                "CPhaseUnload_t",
+                "CPhaseUnload_c",
+                "TangentReload_c",
+                "TangentReload_t",
+                "CplasticTensionIndicator",
+                "CplasticCompressionIndicator"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "d88b6841bb70ebd62bce6bd0c043e685b4d12d80aa4916517fe2a00d4ba64ff9"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "step": 2,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "96c45b1436a68dfee9cd07c9659c72a24e45bdba46ddce9d1752213bc490353b"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "step": 4,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "6b1175540c41f3ccb9e046f190327708849bd2e3f37e623890cb497ec317da00"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "step": 6,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "9fd7a29c52eb7f82b9f54bc2224214115ae79a850dff4aa26bb10bb56a565527"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "step": 7,
+          "tables": {
+            "SpringStates": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType",
+                "K_tang",
+                "Uy1",
+                "Uy2",
+                "Umax1",
+                "Umax2",
+                "Uu1",
+                "Uu2",
+                "LoadIndicator",
+                "ContactArea",
+                "F0",
+                "CmomMin",
+                "CmomMax",
+                "CrotLimNu",
+                "CrotLimPu",
+                "CrotYn",
+                "CrotYp",
+                "CPhaseUnload_t",
+                "CPhaseUnload_c",
+                "TangentReload_c",
+                "TangentReload_t",
+                "CplasticTensionIndicator",
+                "CplasticCompressionIndicator"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "caaecf819ef71a1894ca114b4d2ea78ddda4ab9671bc579775e7b3b73ec802bd"
+            }
+          }
+        }
+      ],
+      "committed_steps": {
+        "1": 10,
+        "2": 7
+      }
+    },
+    "EachIteration-save1": {
+      "mode": "EachIteration",
+      "step_save": 1,
+      "input_lf_sha256": "f8086e25828423654f238b0781cc3e031050e6b76eacd838fbfbb084546d137e",
+      "results_sha256": "c8c9fae9d21ed6a3fe6bff2e1c2bd481e40a4e0e56df06760b08c0a0dc810e33",
+      "native_execution": {
+        "schema_version": 1,
+        "model_sha256": "7682e241f311d2dca4702ef458a1603d67d5ddfc1603f024c02b5f09dd4cb370",
+        "generated_at": "2026-10-16T09:19:25.7497966Z",
+        "benchmark_id": "independent-native-analysis-2026.1.1",
+        "generator": "tools/csharp-diagnostics/Invoke-NativeAnalysisOracle.ps1",
+        "assembly_sha256": "042588ca92cc15aaf8b76467a67951aeb56394f3758cb38b6f458b2bcbd3b0bf",
+        "analyses": [
+          {
+            "step": 10,
+            "key": 1,
+            "exit": "Converged",
+            "state": "ExecutedCompleted"
+          },
+          {
+            "step": 7,
+            "key": 2,
+            "exit": "Converged",
+            "state": "ExecutedCompleted"
+          }
+        ],
+        "source_commit": "97a8cd5fc6a71295d4b1dfda1136f00869b6c8bc"
+      },
+      "states": [
+        {
+          "analysis": 1,
+          "step": 1,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "5fbc7fca075c3f8aa0a6c642a94db091b222340224de886c20bfa32b83b7842b"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 2,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "d4315bd0e93601ef1e3b7bea684ff0a25da846b199c78a86493e9153f1d31e49"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 3,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "e48469dcfc8ea68a2b7ddd20d1c72e4d6d7ea8f55ca911df3c70f1e20f397f0f"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 4,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "afdc39d9bd7595ac1cb3ccf504dc74a4fd5df2cd72b836ce7e2ce2910feadec1"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 5,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "3a9181cafc23d7a25f44d3775273000386bb2a95403ea00b800cdeb0f34ddb58"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 6,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "938af0142881e5da59b18d14088bbc1665102819d5d074dfc9db691d98b2dc78"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 7,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "8c25fb3469a9398690c8b6d9625531467ea92deb0183f1af47d14703b621b1f8"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 8,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "3a8b07f8ac572bc568a7d6dead15ebb983ab7b38ede97294705cfe01a9be91da"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 9,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "a140cdd33dc38cb9f323b3ab9d5336f277a9761adb3431922849db36c6fb890c"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 10,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "5aa064d690aed42ba0ff4bacf2bdda620a63aa4dfe35199003b9153fe5b362e0"
+            },
+            "SpringStates": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType",
+                "K_tang",
+                "Uy1",
+                "Uy2",
+                "Umax1",
+                "Umax2",
+                "Uu1",
+                "Uu2",
+                "LoadIndicator",
+                "ContactArea",
+                "F0",
+                "CmomMin",
+                "CmomMax",
+                "CrotLimNu",
+                "CrotLimPu",
+                "CrotYn",
+                "CrotYp",
+                "CPhaseUnload_t",
+                "CPhaseUnload_c",
+                "TangentReload_c",
+                "TangentReload_t",
+                "CplasticTensionIndicator",
+                "CplasticCompressionIndicator"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "d88b6841bb70ebd62bce6bd0c043e685b4d12d80aa4916517fe2a00d4ba64ff9"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "step": 1,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "0c570f6c77f2f02d68f946ed87de7ef863a45da02d2afe2c62c4f83aed9ac031"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "step": 2,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "10c01aa347d7c1f73ff0d42ab14d89cbc2557b200ac1e648811d90f9d3e0e29c"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "step": 3,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "b82f567d39f53b90f01eb0e0ef93f9522614270c290bef39caf7760262ba0fdb"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "step": 4,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "125a4d3ed94bdf6ccf67beb79e418fa80788b4616d7b57a77a751ae7b5e0763b"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "step": 5,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "8296242d15193df72bec07d506ebc7f04751904faa317618ae8e35a3858d80af"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "step": 6,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "22d7ca1b743d5257f038ec26a188c211959921fb101615bf299619f813d5a100"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "step": 7,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "315ab2d3d6d36ce62f190f47bb05f87df0f7d4502457356faac5c0a60766efc1"
+            },
+            "SpringStates": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType",
+                "K_tang",
+                "Uy1",
+                "Uy2",
+                "Umax1",
+                "Umax2",
+                "Uu1",
+                "Uu2",
+                "LoadIndicator",
+                "ContactArea",
+                "F0",
+                "CmomMin",
+                "CmomMax",
+                "CrotLimNu",
+                "CrotLimPu",
+                "CrotYn",
+                "CrotYp",
+                "CPhaseUnload_t",
+                "CPhaseUnload_c",
+                "TangentReload_c",
+                "TangentReload_t",
+                "CplasticTensionIndicator",
+                "CplasticCompressionIndicator"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "58df54390c9a12a7831e68a68eb600840cf2d1540368928165807e736c97ab1f"
+            }
+          }
+        }
+      ],
+      "committed_steps": {
+        "1": 10,
+        "2": 7
+      }
+    },
+    "EachIteration-save2": {
+      "mode": "EachIteration",
+      "step_save": 2,
+      "input_lf_sha256": "bebdac662189be764678d7148952e638ed5f59630042df0683dd86b83702c4c0",
+      "results_sha256": "731285d204697cb7098122229deed8c4d60ff4e3154b7d525d0c7a4c910f5c83",
+      "native_execution": {
+        "schema_version": 1,
+        "model_sha256": "185944eb9a4f21fe30fe06c047d808a42efda6bb3e67341b3d014e60f96fb041",
+        "analyses": [
+          {
+            "step": 10,
+            "key": 1,
+            "exit": "Converged",
+            "state": "ExecutedCompleted"
+          },
+          {
+            "step": 6,
+            "key": 2,
+            "exit": "Converged",
+            "state": "ExecutedCompleted"
+          }
+        ],
+        "source_commit": "97a8cd5fc6a71295d4b1dfda1136f00869b6c8bc",
+        "assembly_sha256": "042588ca92cc15aaf8b76467a67951aeb56394f3758cb38b6f458b2bcbd3b0bf",
+        "generated_at": "2026-10-16T09:25:48.4844250Z",
+        "generator": "tools/csharp-diagnostics/Invoke-NativeAnalysisOracle.ps1",
+        "benchmark_id": "independent-native-analysis-2026.1.1",
+        "process_id": 14072
+      },
+      "states": [
+        {
+          "analysis": 1,
+          "step": 1,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "5fbc7fca075c3f8aa0a6c642a94db091b222340224de886c20bfa32b83b7842b"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 2,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "d4315bd0e93601ef1e3b7bea684ff0a25da846b199c78a86493e9153f1d31e49"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 3,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "e48469dcfc8ea68a2b7ddd20d1c72e4d6d7ea8f55ca911df3c70f1e20f397f0f"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 4,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "afdc39d9bd7595ac1cb3ccf504dc74a4fd5df2cd72b836ce7e2ce2910feadec1"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 5,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "3a9181cafc23d7a25f44d3775273000386bb2a95403ea00b800cdeb0f34ddb58"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 6,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "938af0142881e5da59b18d14088bbc1665102819d5d074dfc9db691d98b2dc78"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 7,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "8c25fb3469a9398690c8b6d9625531467ea92deb0183f1af47d14703b621b1f8"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 8,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "3a8b07f8ac572bc568a7d6dead15ebb983ab7b38ede97294705cfe01a9be91da"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 9,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "a140cdd33dc38cb9f323b3ab9d5336f277a9761adb3431922849db36c6fb890c"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "step": 10,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "5aa064d690aed42ba0ff4bacf2bdda620a63aa4dfe35199003b9153fe5b362e0"
+            },
+            "SpringStates": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType",
+                "K_tang",
+                "Uy1",
+                "Uy2",
+                "Umax1",
+                "Umax2",
+                "Uu1",
+                "Uu2",
+                "LoadIndicator",
+                "ContactArea",
+                "F0",
+                "CmomMin",
+                "CmomMax",
+                "CrotLimNu",
+                "CrotLimPu",
+                "CrotYn",
+                "CrotYp",
+                "CPhaseUnload_t",
+                "CPhaseUnload_c",
+                "TangentReload_c",
+                "TangentReload_t",
+                "CplasticTensionIndicator",
+                "CplasticCompressionIndicator"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "d88b6841bb70ebd62bce6bd0c043e685b4d12d80aa4916517fe2a00d4ba64ff9"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "step": 2,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "6486c5864d60a97d6c77052b397feaff72483fc3a5f1ad61de4e16bda1b43b6f"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "step": 4,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "cc0d378925e5bdaed35888c70baa1a1d3ca1c4de714f1dc17c50bbb779f41494"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "step": 6,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "c4ac1bb23b561fae7ffc45cc5d582ef5779071afdf1b65e5a70efd32a1a783cf"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "step": 7,
+          "tables": {
+            "SpringStates": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType",
+                "K_tang",
+                "Uy1",
+                "Uy2",
+                "Umax1",
+                "Umax2",
+                "Uu1",
+                "Uu2",
+                "LoadIndicator",
+                "ContactArea",
+                "F0",
+                "CmomMin",
+                "CmomMax",
+                "CrotLimNu",
+                "CrotLimPu",
+                "CrotYn",
+                "CrotYp",
+                "CPhaseUnload_t",
+                "CPhaseUnload_c",
+                "TangentReload_c",
+                "TangentReload_t",
+                "CplasticTensionIndicator",
+                "CplasticCompressionIndicator"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "69689e63dd8fdc1de612d25ea85c8798b74e408dad1bc19b834949d036fd7a4a"
+            }
+          }
+        }
+      ],
+      "committed_steps": {
+        "1": 10,
+        "2": 7
+      }
+    }
+  }
+}

@@ -1,0 +1,28 @@
+﻿{
+    "assembly_sha256":  "a981364ef5b6e3fde2c65d7994eb4a0f60132ded61cf8edac9a98a061b1a5a9b",
+    "cases":  [
+                  {
+                      "input":  0.0123456789,
+                      "node":  0.012345679104328156,
+                      "plane":  0.012345679104328156,
+                      "imax":  0.0123456789
+                  },
+                  {
+                      "input":  0.123456789,
+                      "node":  0.12345679104328156,
+                      "plane":  0.12345679104328156,
+                      "imax":  0.123456789
+                  },
+                  {
+                      "input":  1.23456789,
+                      "node":  1.2345678806304932,
+                      "plane":  1.2345678806304932,
+                      "imax":  1.23456789
+                  }
+              ],
+    "generated_at":  "2026-10-16T08:45:30.1564564Z",
+    "schema_version":  1,
+    "benchmark_id":  "native-geometry-settings-2026.1.1",
+    "source_commit":  "702926842cf033514f80b1e6d1f56a8ebcc56e83",
+    "generator":  "tools/csharp-diagnostics/Invoke-GeometrySettingsOracle.ps1"
+}

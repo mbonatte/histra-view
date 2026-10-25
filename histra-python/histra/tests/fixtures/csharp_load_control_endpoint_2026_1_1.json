@@ -1,0 +1,33 @@
+﻿{
+    "cases":  [
+                  {
+                      "analysis_mult":  1,
+                      "time":  0.89999999999999991,
+                      "mult":  0.89999999999999991,
+                      "df_bits":  "4591870180066957728",
+                      "dt_bits":  "4591870180066957728"
+                  },
+                  {
+                      "analysis_mult":  1,
+                      "time":  0.95,
+                      "mult":  0.94,
+                      "df_bits":  "4588807732320345792",
+                      "dt_bits":  "4587366580439587232"
+                  },
+                  {
+                      "analysis_mult":  2,
+                      "time":  0.9,
+                      "mult":  1.7,
+                      "df_bits":  "4599075939470750516",
+                      "dt_bits":  "4591870180066957720"
+                  },
+                  {
+                      "analysis_mult":  1,
+                      "time":  1,
+                      "mult":  1,
+                      "df_bits":  "0",
+                      "dt_bits":  "0"
+                  }
+              ],
+    "source":  "Original LoadControl.GetDt and GetIncrMult final-interval branch"
+}

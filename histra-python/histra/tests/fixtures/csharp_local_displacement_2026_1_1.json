@@ -1,0 +1,53 @@
+﻿{
+    "cases":  [
+                  {
+                      "expected":  1,
+                      "initial":  1E+16,
+                      "coefficients":  [
+                                           1,
+                                           1
+                                       ],
+                      "x":  [
+                                -1E+16,
+                                1
+                            ]
+                  },
+                  {
+                      "expected":  0.1,
+                      "initial":  0.1,
+                      "coefficients":  [
+                                           1,
+                                           1
+                                       ],
+                      "x":  [
+                                1E-17,
+                                -1E-17
+                            ]
+                  },
+                  {
+                      "expected":  -0.23155974164058218,
+                      "initial":  -0.38483884860077533,
+                      "coefficients":  [
+                                           0.83646285533905029,
+                                           0.54802358150482178
+                                       ],
+                      "x":  [
+                                0.273435095827634,
+                                -0.137656839215837
+                            ]
+                  },
+                  {
+                      "expected":  2,
+                      "initial":  2,
+                      "coefficients":  [
+                                           1,
+                                           0.5
+                                       ],
+                      "x":  [
+                                0.125,
+                                -0.25
+                            ]
+                  }
+              ],
+    "source":  "Original Objects.Quad.UpdateUElem; Interface.UpdateDomain uses the same ordered Status.U additions"
+}

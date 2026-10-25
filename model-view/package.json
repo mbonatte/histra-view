@@ -1,0 +1,13 @@
+{
+  "name": "histra-model-view",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": ".venv/bin/python server.py",
+    "test": ".venv/bin/python -m unittest discover -s tests -v && node --test tests/*.test.js"
+  },
+  "dependencies": {
+    "three": "0.184.0"
+  }
+}

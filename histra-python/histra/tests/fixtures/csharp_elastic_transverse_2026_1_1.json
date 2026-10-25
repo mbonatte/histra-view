@@ -1,0 +1,374 @@
+﻿{
+    "assembly_sha256":  "a981364ef5b6e3fde2c65d7994eb4a0f60132ded61cf8edac9a98a061b1a5a9b",
+    "cases":  [
+                  {
+                      "elastic2":  true,
+                      "k2":  120,
+                      "length2":  1.1,
+                      "length1":  0.8,
+                      "restrained":  false,
+                      "k1":  80,
+                      "area2":  9,
+                      "initial":  {
+                                      "Length":  1.9000000000000001,
+                                      "K":  48,
+                                      "type":  "SpringLinearElastic",
+                                      "Area":  4
+                                  },
+                      "states":  [
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  48,
+                                         "F":  0.0048000000000000004,
+                                         "u":  0.0001
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  48,
+                                         "F":  0.048,
+                                         "u":  0.001
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  48,
+                                         "F":  0.48000000000000004,
+                                         "u":  0.01
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  48,
+                                         "F":  9.6000000000000014,
+                                         "u":  0.2
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  48,
+                                         "F":  -0.23999999999999844,
+                                         "u":  -0.005
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  48,
+                                         "F":  -0.95999999999999841,
+                                         "u":  -0.02
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  48,
+                                         "F":  -9.6,
+                                         "u":  -0.2
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  48,
+                                         "F":  0.14400000000000013,
+                                         "u":  0.003
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  48,
+                                         "F":  1.1102230246251565E-16,
+                                         "u":  0
+                                     }
+                                 ],
+                      "area1":  4,
+                      "elastic1":  true
+                  },
+                  {
+                      "elastic2":  true,
+                      "k2":  120,
+                      "length2":  1.1,
+                      "length1":  0.8,
+                      "restrained":  true,
+                      "k1":  -1,
+                      "area2":  9,
+                      "initial":  {
+                                      "Length":  1.1,
+                                      "K":  120,
+                                      "type":  "SpringLinearElastic",
+                                      "Area":  4
+                                  },
+                      "states":  [
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  120,
+                                         "F":  0.012,
+                                         "u":  0.0001
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  120,
+                                         "F":  0.12,
+                                         "u":  0.001
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  120,
+                                         "F":  1.2000000000000002,
+                                         "u":  0.01
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  120,
+                                         "F":  24,
+                                         "u":  0.2
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  120,
+                                         "F":  -0.60000000000000142,
+                                         "u":  -0.005
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  120,
+                                         "F":  -2.4000000000000012,
+                                         "u":  -0.02
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  120,
+                                         "F":  -24.000000000000004,
+                                         "u":  -0.2
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  120,
+                                         "F":  0.35999999999999943,
+                                         "u":  0.003
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  120,
+                                         "F":  -5.5511151231257827E-16,
+                                         "u":  0
+                                     }
+                                 ],
+                      "area1":  4,
+                      "elastic1":  true
+                  },
+                  {
+                      "elastic2":  false,
+                      "k2":  120,
+                      "length2":  1.1,
+                      "length1":  0.8,
+                      "restrained":  false,
+                      "k1":  80,
+                      "area2":  9,
+                      "initial":  {
+                                      "Length":  0.8,
+                                      "K":  48,
+                                      "type":  "SpringHysteretic",
+                                      "Area":  9
+                                  },
+                      "states":  [
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  48,
+                                         "F":  0.0048000000000000004,
+                                         "u":  0.0001
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  48,
+                                         "F":  0.048,
+                                         "u":  0.001
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  48,
+                                         "F":  0.48,
+                                         "u":  0.01
+                                     },
+                                     {
+                                         "Phase":  1,
+                                         "K_tang":  -6,
+                                         "F":  0.825,
+                                         "u":  0.2
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  48,
+                                         "F":  -0.24,
+                                         "u":  -0.005
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  48,
+                                         "F":  -0.96,
+                                         "u":  -0.02
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  48,
+                                         "F":  -9.6000000000000014,
+                                         "u":  -0.2
+                                     },
+                                     {
+                                         "Phase":  4,
+                                         "K_tang":  4.125,
+                                         "F":  0.012374999999999886,
+                                         "u":  0.003
+                                     },
+                                     {
+                                         "Phase":  3,
+                                         "K_tang":  47.767135215822861,
+                                         "F":  -0.13098644109963936,
+                                         "u":  0
+                                     }
+                                 ],
+                      "area1":  4,
+                      "elastic1":  true
+                  },
+                  {
+                      "elastic2":  false,
+                      "k2":  120,
+                      "length2":  1.1,
+                      "length1":  0.8,
+                      "restrained":  true,
+                      "k1":  -1,
+                      "area2":  9,
+                      "initial":  {
+                                      "Length":  0,
+                                      "K":  120,
+                                      "type":  "SpringHysteretic",
+                                      "Area":  9
+                                  },
+                      "states":  [
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  120,
+                                         "F":  0.012,
+                                         "u":  0.0001
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  120,
+                                         "F":  0.12,
+                                         "u":  0.001
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  120,
+                                         "F":  1.2,
+                                         "u":  0.01
+                                     },
+                                     {
+                                         "Phase":  1,
+                                         "K_tang":  -6,
+                                         "F":  0.69000000000000017,
+                                         "u":  0.2
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  120,
+                                         "F":  -0.6,
+                                         "u":  -0.005
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  120,
+                                         "F":  -2.4,
+                                         "u":  -0.02
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  120,
+                                         "F":  -24,
+                                         "u":  -0.2
+                                     },
+                                     {
+                                         "Phase":  4,
+                                         "K_tang":  3.4500000000000006,
+                                         "F":  0.010350000000000002,
+                                         "u":  0.003
+                                     },
+                                     {
+                                         "Phase":  3,
+                                         "K_tang":  118.46586702206427,
+                                         "F":  -0.34517992003553977,
+                                         "u":  0
+                                     }
+                                 ],
+                      "area1":  4,
+                      "elastic1":  true
+                  },
+                  {
+                      "elastic2":  true,
+                      "k2":  120,
+                      "length2":  1.1,
+                      "length1":  0.8,
+                      "restrained":  false,
+                      "k1":  80,
+                      "area2":  9,
+                      "initial":  {
+                                      "Length":  1.1,
+                                      "K":  48,
+                                      "type":  "SpringHysteretic",
+                                      "Area":  4
+                                  },
+                      "states":  [
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  48,
+                                         "F":  0.0048000000000000004,
+                                         "u":  0.0001
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  48,
+                                         "F":  0.048,
+                                         "u":  0.001
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  48,
+                                         "F":  0.48,
+                                         "u":  0.01
+                                     },
+                                     {
+                                         "Phase":  1,
+                                         "K_tang":  -2.666666666666667,
+                                         "F":  0.31111111111111106,
+                                         "u":  0.2
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  48,
+                                         "F":  -0.24,
+                                         "u":  -0.005
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  48,
+                                         "F":  -0.96,
+                                         "u":  -0.02
+                                     },
+                                     {
+                                         "Phase":  0,
+                                         "K_tang":  48,
+                                         "F":  -9.6000000000000014,
+                                         "u":  -0.2
+                                     },
+                                     {
+                                         "Phase":  4,
+                                         "K_tang":  1.5555555555555554,
+                                         "F":  0.0046666666666666228,
+                                         "u":  0.003
+                                     },
+                                     {
+                                         "Phase":  3,
+                                         "K_tang":  47.449063649843488,
+                                         "F":  -0.13773408753912905,
+                                         "u":  0
+                                     }
+                                 ],
+                      "area1":  4,
+                      "elastic1":  false
+                  }
+              ],
+    "generated_at":  "2026-10-15T08:05:32.6637333Z",
+    "source":  "Original NewSpring, SetQuadTrasvSpring, CombinationSpring(Spring,Spring,bool), SetUltimateDisplacement, setTrialStrain and Commit",
+    "schema_version":  1,
+    "generator":  "tools/csharp-diagnostics/Invoke-ElasticTransverseOracle.ps1"
+}

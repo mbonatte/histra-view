@@ -1,0 +1,33 @@
+{
+  "audit_date": "2026-07-27",
+  "model": {
+    "gdl": 2142,
+    "quads": 306,
+    "interfaces": 555,
+    "nodes": 388,
+    "node_cs": 18,
+    "restraints": 14,
+    "k_nnz": 42252
+  },
+  "tests": {
+    "passed": 96
+  },
+  "csharp_database_rows": {
+    "QuadStates": 20808,
+    "InterfaceStates": 37740,
+    "DynamicVectorsState": 4284,
+    "SpringStates": 93852
+  },
+  "analysis_1_step_1": {
+    "python_exit_code": 0,
+    "iterations": 2,
+    "load_factor": 0.2,
+    "runtime_seconds": 2.290557037000326,
+    "python_u_norm": 0.04390119390629716,
+    "csharp_u_norm": 0.04390119109491215,
+    "relative_l2_error": 2.2820197595032118e-05,
+    "max_abs_error": 2.2123213242721706e-07,
+    "mean_abs_error": 4.461131077004831e-09
+  },
+  "full_analysis_status": "Step 1 matches; complete five-step C# path not yet reproduced. See documentation/ISSUES.md."
+}

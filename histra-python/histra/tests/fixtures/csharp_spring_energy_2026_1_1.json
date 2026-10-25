@@ -1,0 +1,85 @@
+{
+  "reference": "Original C# 2026.1.1 Spring.ComputeEnergy called on SpringHysteretic",
+  "cases": [
+    {
+      "K": 100.0,
+      "CommitStress": 0.0,
+      "TrialStress": -10.0,
+      "CommitStrain": 0.0,
+      "TrialStrain": -0.1,
+      "Elastic": -0.5,
+      "Plastic": 1.0,
+      "Total": 0.5
+    },
+    {
+      "K": 100.0,
+      "CommitStress": -10.0,
+      "TrialStress": -20.0,
+      "CommitStrain": -0.1,
+      "TrialStrain": -0.2,
+      "Elastic": -1.5,
+      "Plastic": 3.0,
+      "Total": 1.5
+    },
+    {
+      "K": 100.0,
+      "CommitStress": -20.0,
+      "TrialStress": -10.0,
+      "CommitStrain": -0.2,
+      "TrialStrain": -0.1,
+      "Elastic": -1.5,
+      "Plastic": 0.0,
+      "Total": -1.5
+    },
+    {
+      "K": 100.0,
+      "CommitStress": 10.0,
+      "TrialStress": 20.0,
+      "CommitStrain": 0.1,
+      "TrialStrain": 0.2,
+      "Elastic": 1.5,
+      "Plastic": 0.0,
+      "Total": 1.5
+    },
+    {
+      "K": 100.0,
+      "CommitStress": 20.0,
+      "TrialStress": 10.0,
+      "CommitStrain": 0.2,
+      "TrialStrain": 0.1,
+      "Elastic": 1.5,
+      "Plastic": -3.0,
+      "Total": -1.5
+    },
+    {
+      "K": 100.0,
+      "CommitStress": 10.0,
+      "TrialStress": 10.0,
+      "CommitStrain": 0.1,
+      "TrialStrain": 0.3,
+      "Elastic": 0.0,
+      "Plastic": 1.9999999999999998,
+      "Total": 1.9999999999999998
+    },
+    {
+      "K": 100.0,
+      "CommitStress": -10.0,
+      "TrialStress": 10.0,
+      "CommitStrain": -0.2,
+      "TrialStrain": 0.3,
+      "Elastic": 0.0,
+      "Plastic": 0.0,
+      "Total": 0.0
+    },
+    {
+      "K": 100.0,
+      "CommitStress": 0.0,
+      "TrialStress": -15.0,
+      "CommitStrain": 0.0,
+      "TrialStrain": -0.4,
+      "Elastic": -1.125,
+      "Plastic": 4.125,
+      "Total": 3.0
+    }
+  ]
+}

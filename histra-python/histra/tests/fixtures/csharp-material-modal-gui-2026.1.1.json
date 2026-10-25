@@ -1,0 +1,5326 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-17T09:41:28.946108+00:00",
+  "source_commit": "f34bcebdbba8cf6b721f242c83eb993b26553f04",
+  "generator": "tools/benchmarks/export_material_modal_reference.py",
+  "benchmark_id": "gui-loaded-foundation-material-return-2026.1.1",
+  "limitations": [
+    "Step zero is initialization, never a committed static step.",
+    "NULL/absent private histories are unavailable, not validated zeros.",
+    "Elastic cross-law GUI restart skips incompatible saved spring rows; Python rejects this transition."
+  ],
+  "cases": {
+    "01_foundation_stiffness_return": {
+      "input_lf_sha256": "2ea97ab098d2256bf5400e4e92b9e15309bf311b4b687db671ebdb99fc57a4db",
+      "results_sha256": "ee0a956444fce6b3d5a89a5af0cb3d067a2b243d70a994af580acd84aaf24589",
+      "saved_hrb_sha256": "4bac3f6752e8857c01d6ba12e77660e34f2835b581f8ad2e89b3d2efb1c2a98c",
+      "exported_hrx_sha256": "ec6d05674ed58a18e79d436c914bcd4a6d3f106add8032c66cfcf5b1f60a8031",
+      "native_version": "2026.1.1",
+      "states": [
+        {
+          "analysis": 1,
+          "combination": 1,
+          "step": 1,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "5fbc7fca075c3f8aa0a6c642a94db091b222340224de886c20bfa32b83b7842b"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "combination": 1,
+          "step": 2,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "d4315bd0e93601ef1e3b7bea684ff0a25da846b199c78a86493e9153f1d31e49"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "combination": 1,
+          "step": 3,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "e48469dcfc8ea68a2b7ddd20d1c72e4d6d7ea8f55ca911df3c70f1e20f397f0f"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "combination": 1,
+          "step": 4,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "afdc39d9bd7595ac1cb3ccf504dc74a4fd5df2cd72b836ce7e2ce2910feadec1"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "combination": 1,
+          "step": 5,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "3a9181cafc23d7a25f44d3775273000386bb2a95403ea00b800cdeb0f34ddb58"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "combination": 1,
+          "step": 6,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "938af0142881e5da59b18d14088bbc1665102819d5d074dfc9db691d98b2dc78"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "combination": 1,
+          "step": 7,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "8c25fb3469a9398690c8b6d9625531467ea92deb0183f1af47d14703b621b1f8"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "combination": 1,
+          "step": 8,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "3a8b07f8ac572bc568a7d6dead15ebb983ab7b38ede97294705cfe01a9be91da"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "combination": 1,
+          "step": 9,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "a140cdd33dc38cb9f323b3ab9d5336f277a9761adb3431922849db36c6fb890c"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "combination": 1,
+          "step": 10,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "5aa064d690aed42ba0ff4bacf2bdda620a63aa4dfe35199003b9153fe5b362e0"
+            },
+            "SpringStates": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType",
+                "K_tang",
+                "Uy1",
+                "Uy2",
+                "Umax1",
+                "Umax2",
+                "Uu1",
+                "Uu2",
+                "LoadIndicator",
+                "ContactArea",
+                "F0",
+                "CmomMin",
+                "CmomMax",
+                "CrotLimNu",
+                "CrotLimPu",
+                "CrotYn",
+                "CrotYp",
+                "CPhaseUnload_t",
+                "CPhaseUnload_c",
+                "TangentReload_c",
+                "TangentReload_t",
+                "CplasticTensionIndicator",
+                "CplasticCompressionIndicator"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "d88b6841bb70ebd62bce6bd0c043e685b4d12d80aa4916517fe2a00d4ba64ff9"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 1,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "cb93894e7510cddfa10c21ce0a5c6f4a718905bbea5235ce6aa009995316e0b3"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 2,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "a6753d50fec4dcfff5c5d48c3b5560ef2b967fa53532c199a4b02013cccfd020"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 3,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "f44cec34c08d11654e0b344a7fa6582fb033d45e51fc985daae0942a290661bc"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 4,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "f2e59a406c1b32db0c1092b0a92334341e8850ef32bb23d542f0dc5a618c7d4b"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 5,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "dd382403e5fc5ac7e093b74c7e97dd0276cd1d31981da22fda7b2a790bfbb2ea"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 6,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "13a31593a58e63aa65ccf3c98c34b85025973d7334a734465f7366dc399fe0f9"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 7,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "c26fb1ac74d64880eecacede64b89257b031777b6d531fae7509a6e8586315c1"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 8,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "42632206610da53cdcd5099f39ce05496746e6ada375ed99c6a107837585f6a2"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 9,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "c2723cd7ba51456bb907307ef7557464ccd96e5912aeb5535da1310779df47f3"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 10,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "48a55eab4c3d08fe0ec5ffa9e1af8be8b4f33b5761ed7cbc915c144c17a76d0f"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 11,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "7c261115fe12071f32c8c495e7b11cfed5939274a9b6491a2353e289e435b41b"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 12,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "03ba7ce98d73b4281331883d9256dfdac5b12e461aa735ea7bf41ca301facd2e"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 13,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "8cceb5808a586847e7259a93383adca2f893b80447e4b157e10c45328fb0dd89"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 14,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "42b8ac73a975334fd955647320abcbbf2c1279d2b1b91852db05f41bac02f7d6"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 15,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "619e966d974341193f4f0c545ebf40e58dd7bbf04602007abeab75bfc9bd395a"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 16,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "9c518328a4d83279e3754ecdcbbce095b1f6491c13145e4c19b01e5d2ab85ad2"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 17,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "a7a2b9ee7363b92034b1606ba00c52a0469beb1895425e7151e988027601c277"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 18,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "c778cbb87bddea6b5d20ecd1aa6cd9a50ffd88c9b14b6c714bff64259e5adda7"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 19,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "bed70231de99294c4e29a284c11218c132675a5446b83e4331d416058c41823e"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 20,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "de2599e97815a593be92800a954e1c1e111be2d98086eb4adb188d6b8aa666fd"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 21,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "22d5f037a406e5d06c2a53a16bce363f3a0dcf2403e226ead7efcc7fbd2b9ef7"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 22,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "4d3b464363b91269f76a48dc95936ab99ce298b5d5b33afaea6b447c6d4665a8"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 23,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "df4bb9bf247c23cf38e02f2448e2fde1cf5bffd92f771281697d7952c445f963"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 24,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "3490fcef97946b688a283f328654bfb0dd4daed7cfbce35d9979231744fd43b5"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 25,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "fcfeb0747d774fce1deafa088a9fe5c34f9c43f30ef4703402054aec4b8667eb"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 26,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "38253d4d08470a82e83eef0848124a87be6cbd62a8e8a966bea7aea4f7f71f1d"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 27,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "e7e5a20979329ded4bb5527be2ff46a427611378e8fa4b30adcbb5218c063c65"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 28,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "1e054834d0fd502b59fcbd45f87052ba85ffb9773499c440fa3a702629772926"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 29,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "670a6caeecdfa13daa38f0c1faef46afddbea6ece017bbf6014a3959600aa527"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 30,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "d5905ba717bdfc8ad28d817a30f43ef4715fc6febfad36e193ef5c2c3a90dde0"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 31,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "d62341d2a91701e2765fd7dae3e6146af6b8bdf7548a5ff8cecc4a9ebd7dd85f"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 32,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "46f3fb6f77e90b171736e6c73f250740bf3e4be7a106f68e747fd9404e305daf"
+            },
+            "SpringStates": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType",
+                "K_tang",
+                "Uy1",
+                "Uy2",
+                "Umax1",
+                "Umax2",
+                "Uu1",
+                "Uu2",
+                "LoadIndicator",
+                "ContactArea",
+                "F0",
+                "CmomMin",
+                "CmomMax",
+                "CrotLimNu",
+                "CrotLimPu",
+                "CrotYn",
+                "CrotYp",
+                "CPhaseUnload_t",
+                "CPhaseUnload_c",
+                "TangentReload_c",
+                "TangentReload_t",
+                "CplasticTensionIndicator",
+                "CplasticCompressionIndicator"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "86dd0a7e2343938bb3b97d3173279eb6f39278134697eb2f634c77ac763b6f76"
+            }
+          }
+        }
+      ],
+      "modal": {
+        "3": [
+          {
+            "values": {
+              "AnalysisKey": 3,
+              "Combination": 1,
+              "Step": 1,
+              "Wn": 7.3724480675617645,
+              "Fn": 1.1733615526407464,
+              "Tn": 0.8522522301411853,
+              "GammaX": -1.196496430326946e-10,
+              "GammaY": 0.25789199434893,
+              "GammaZ": 1.2619698716683942e-10,
+              "MassaX": 1.4316037077851243e-20,
+              "MassaY": 0.06650828074926855,
+              "MassaZ": 1.5925679569987433e-20,
+              "MTotX": 0.07032429282965605,
+              "MTotY": 0.07032429282965605,
+              "MTotZ": 0.07032429282965605,
+              "Mx_pcent": 2.0357171756463237e-17,
+              "My_pcent": 94.57369292055182,
+              "Mz_pcent": 2.264605718618973e-17,
+              "UMaxX": 2.800506715416873e-09,
+              "UMaxY": 3.932882070541382,
+              "UMaxZ": 1.9378454396701272e-09
+            },
+            "shape": [
+              -1.3489623907419454e-09,
+              0.23473483079919302,
+              -9.013101526485789e-10,
+              -0.009214178217953133,
+              -5.420953861275264e-11,
+              8.969177329566043e-17,
+              -4.512568572084781e-12,
+              -2.8005067034974318e-09,
+              1.0319271171313027,
+              6.793049530981949e-10,
+              -0.022323811820647063,
+              -1.3378740136050247e-11,
+              2.461478058180706e-16,
+              -4.4724306418604435e-12,
+              -2.6244280748292885e-09,
+              2.3522246731648297,
+              1.6225691253076078e-09,
+              -0.03014159209208798,
+              1.0980057727210292e-11,
+              3.487597663597908e-16,
+              -4.378600073658995e-12,
+              -1.6413063581579011e-09,
+              3.9328820316284765,
+              1.9378454286866365e-09,
+              -0.03274550518746503,
+              1.910103513842109e-11,
+              3.6275067943575053e-16,
+              1.2659874750077771e-15
+            ]
+          },
+          {
+            "values": {
+              "AnalysisKey": 3,
+              "Combination": 1,
+              "Step": 2,
+              "Wn": 34.313930447165276,
+              "Fn": 5.461231647577844,
+              "Tn": 0.18310887809410506,
+              "GammaX": 0.2575636761171831,
+              "GammaY": 1.6858315013336584e-09,
+              "GammaZ": -4.090796505598391e-10,
+              "MassaX": 0.0663390472549972,
+              "MassaY": 2.8420278508888967e-18,
+              "MassaZ": 1.6734616050216006e-19,
+              "MTotX": 0.07032429282965605,
+              "MTotY": 0.07032429282965605,
+              "MTotZ": 0.07032429282965605,
+              "Mx_pcent": 94.33304564567445,
+              "My_pcent": 4.041317354975807e-15,
+              "Mz_pcent": 2.3796351697061e-16,
+              "UMaxX": 3.9262306690216064,
+              "UMaxY": 4.631066019555874e-08,
+              "UMaxZ": 1.0199295630286542e-08
+            },
+            "shape": [
+              0.204688704331928,
+              -2.5145649133542483e-08,
+              -1.0199295354490699e-08,
+              1.011694355123297e-09,
+              0.007998006083311953,
+              1.0517134941555924e-09,
+              -0.0034059924631241897,
+              1.0690363624301231,
+              -4.631066079352885e-08,
+              -7.70592385213614e-09,
+              -1.5195914652631726e-10,
+              0.019385519312864884,
+              2.99502657559599e-09,
+              -0.003373640786011237,
+              2.3862479177758327,
+              -2.033865584000384e-08,
+              -6.1691217505088265e-09,
+              -8.7132597901601e-10,
+              0.026180859506049804,
+              4.482373903274119e-09,
+              -0.0033014270383217308,
+              3.9262306450169846,
+              2.9864187817557245e-08,
+              -5.578678869764942e-09,
+              -1.119990374590106e-09,
+              0.028448816424474273,
+              5.287320415860819e-09,
+              4.37613242041299e-22
+            ]
+          },
+          {
+            "values": {
+              "AnalysisKey": 3,
+              "Combination": 1,
+              "Step": 3,
+              "Wn": 119.74205048682306,
+              "Fn": 19.057539230937184,
+              "Tn": 0.05247267172755669,
+              "GammaX": -6.258822134802346e-11,
+              "GammaY": -2.816796908304039e-12,
+              "GammaZ": 7.252678032822124e-07,
+              "MassaX": 3.9172854515091796e-21,
+              "MassaY": 7.934344822631191e-24,
+              "MassaZ": 5.260133864778059e-13,
+              "MTotX": 0.07032429282965605,
+              "MTotY": 0.07032429282965605,
+              "MTotZ": 0.07032429282965605,
+              "Mx_pcent": 5.570316165137809e-18,
+              "My_pcent": 1.1282509220320586e-20,
+              "Mz_pcent": 7.479824756317833e-10,
+              "UMaxX": 9.540697121224184e-10,
+              "UMaxY": 6.832161225656108e-11,
+              "UMaxZ": 1.0914801350736525e-05
+            },
+            "shape": [
+              -4.9789062155903413e-11,
+              2.69859682321664e-11,
+              1.5909875367246183e-06,
+              -9.917858398707176e-13,
+              -1.94551187361557e-12,
+              0.09804300528046314,
+              8.274876898125649e-13,
+              -2.598769751956579e-10,
+              6.832161105310813e-11,
+              4.757017641123903e-06,
+              -5.256287050766069e-13,
+              -4.711097721945382e-12,
+              0.2792028570494949,
+              8.195823866173211e-13,
+              -5.799361150003277e-10,
+              5.0327622832517775e-11,
+              7.87537290413014e-06,
+              1.2749562425391765e-12,
+              -6.361049798616975e-12,
+              0.4178566048129427,
+              8.020033968917661e-13,
+              -9.540697233623074e-10,
+              -4.962040212437876e-11,
+              1.0914801162353169e-05,
+              2.6487404773026876e-12,
+              -6.911187413075108e-12,
+              0.4928954723731748,
+              -3.764134507379679e-23
+            ]
+          },
+          {
+            "values": {
+              "AnalysisKey": 3,
+              "Combination": 1,
+              "Step": 4,
+              "Wn": 132.47355434062484,
+              "Fn": 21.083821002263253,
+              "Tn": 0.04742973296408912,
+              "GammaX": 1.7746927500556592e-09,
+              "GammaY": -2.4649958415433e-07,
+              "GammaZ": 0.2603446327469885,
+              "MassaX": 3.1495343571001183e-18,
+              "MassaY": 6.076204498825762e-14,
+              "MassaZ": 0.06777932780016431,
+              "MTotX": 0.07032429282965605,
+              "MTotY": 0.07032429282965605,
+              "MTotZ": 0.07032429282965605,
+              "Mx_pcent": 4.478586602682404e-15,
+              "My_pcent": 8.640263917824142e-11,
+              "Mz_pcent": 96.38110114287774,
+              "UMaxX": 2.9962190950527656e-08,
+              "UMaxY": 5.969498488411773e-06,
+              "UMaxZ": 3.9180147647857666
+            },
+            "shape": [
+              -1.6361843015949055e-08,
+              2.3496933456476537e-06,
+              0.5711063748846007,
+              -8.619544617081302e-08,
+              -6.587583042150641e-10,
+              -1.4374923438158278e-05,
+              -8.51231323125196e-11,
+              -2.8569661536665244e-08,
+              5.969498428830929e-06,
+              1.7075954635574937,
+              -4.650629307642755e-08,
+              -9.244878343096829e-12,
+              -4.093631853002069e-05,
+              -1.0062800543118857e-10,
+              -1.0685909721523306e-08,
+              4.404096542155163e-06,
+              2.8269710266918158,
+              1.1172610084186027e-07,
+              5.121752724480826e-10,
+              -6.126553021433896e-05,
+              -1.1125092987765293e-10,
+              2.996218949667038e-08,
+              -4.341543246796443e-06,
+              3.9180146799010234,
+              2.3144584704611496e-07,
+              8.789051428908971e-10,
+              -7.226762029693849e-05,
+              -3.355248289251692e-18
+            ]
+          }
+        ],
+        "4": [
+          {
+            "values": {
+              "AnalysisKey": 4,
+              "Combination": 1,
+              "Step": 1,
+              "Wn": 7.3724480675617645,
+              "Fn": 1.1733615526407464,
+              "Tn": 0.8522522301411853,
+              "GammaX": -1.1964964232257144e-10,
+              "GammaY": 0.25789199434893,
+              "GammaZ": 1.2619698702704037e-10,
+              "MassaX": 1.431603690791928e-20,
+              "MassaY": 0.06650828074926855,
+              "MassaZ": 1.5925679534702994e-20,
+              "MTotX": 0.07032429282965605,
+              "MTotY": 0.07032429282965605,
+              "MTotZ": 0.07032429282965605,
+              "Mx_pcent": 2.035717151482275e-17,
+              "My_pcent": 94.57369292055182,
+              "Mz_pcent": 2.2646057136015834e-17,
+              "UMaxX": 2.800506715416873e-09,
+              "UMaxY": 3.932882070541382,
+              "UMaxZ": 1.9378454396701272e-09
+            },
+            "shape": [
+              -1.3489623887274957e-09,
+              0.23473483079919302,
+              -9.013101540217938e-10,
+              -0.009214178217953133,
+              -5.420953853219877e-11,
+              8.969177329566043e-17,
+              -4.512568572516198e-12,
+              -2.8005066979401036e-09,
+              1.0319271171313027,
+              6.793049513654292e-10,
+              -0.022323811820647063,
+              -1.3378740075799776e-11,
+              2.461478058180706e-16,
+              -4.472430642284093e-12,
+              -2.6244280665398626e-09,
+              2.3522246731648297,
+              1.6225691233597317e-09,
+              -0.03014159209208798,
+              1.0980057775349375e-11,
+              3.487597663597908e-16,
+              -4.378600074071084e-12,
+              -1.6413063475406509e-09,
+              3.9328820316284765,
+              1.9378454266659695e-09,
+              -0.03274550518746503,
+              1.9101035182525038e-11,
+              3.6275067943575053e-16,
+              1.2659874750077771e-15
+            ]
+          },
+          {
+            "values": {
+              "AnalysisKey": 4,
+              "Combination": 1,
+              "Step": 2,
+              "Wn": 34.313930447165276,
+              "Fn": 5.461231647577844,
+              "Tn": 0.18310887809410506,
+              "GammaX": 0.2575636761171831,
+              "GammaY": 1.685831498797304e-09,
+              "GammaZ": -4.0907965055983883e-10,
+              "MassaX": 0.0663390472549972,
+              "MassaY": 2.8420278423371646e-18,
+              "MassaZ": 1.6734616050215985e-19,
+              "MTotX": 0.07032429282965605,
+              "MTotY": 0.07032429282965605,
+              "MTotZ": 0.07032429282965605,
+              "Mx_pcent": 94.33304564567445,
+              "My_pcent": 4.041317342815383e-15,
+              "Mz_pcent": 2.3796351697060973e-16,
+              "UMaxX": 3.9262306690216064,
+              "UMaxY": 4.631066019555874e-08,
+              "UMaxZ": 1.0199295630286542e-08
+            },
+            "shape": [
+              0.204688704331928,
+              -2.5145649105026672e-08,
+              -1.0199295354490699e-08,
+              1.0116943539743512e-09,
+              0.007998006083311953,
+              1.0517134941555924e-09,
+              -0.0034059924631241897,
+              1.0690363624301231,
+              -4.631066074214214e-08,
+              -7.705923852136137e-09,
+              -1.5195914631087256e-10,
+              0.019385519312864884,
+              2.99502657559599e-09,
+              -0.003373640786011237,
+              2.3862479177758327,
+              -2.0338655821458925e-08,
+              -6.169121750508823e-09,
+              -8.713259779404334e-10,
+              0.026180859506049804,
+              4.482373903274119e-09,
+              -0.0033014270383217308,
+              3.9262306450169846,
+              2.986418777405353e-08,
+              -5.578678869764938e-09,
+              -1.1199903732088414e-09,
+              0.028448816424474273,
+              5.287320415860819e-09,
+              4.376132410932838e-22
+            ]
+          },
+          {
+            "values": {
+              "AnalysisKey": 4,
+              "Combination": 1,
+              "Step": 3,
+              "Wn": 119.74205048682306,
+              "Fn": 19.057539230937184,
+              "Tn": 0.05247267172755669,
+              "GammaX": -6.258822134802346e-11,
+              "GammaY": -2.8167969082891625e-12,
+              "GammaZ": 7.252678032822094e-07,
+              "MassaX": 3.9172854515091796e-21,
+              "MassaY": 7.934344822547385e-24,
+              "MassaZ": 5.260133864778016e-13,
+              "MTotX": 0.07032429282965605,
+              "MTotY": 0.07032429282965605,
+              "MTotZ": 0.07032429282965605,
+              "Mx_pcent": 5.570316165137809e-18,
+              "My_pcent": 1.1282509220201411e-20,
+              "Mz_pcent": 7.47982475631777e-10,
+              "UMaxX": 9.540697121224184e-10,
+              "UMaxY": 6.832161225656108e-11,
+              "UMaxZ": 1.0914801350736525e-05
+            },
+            "shape": [
+              -4.9789062155903413e-11,
+              2.6985968231984096e-11,
+              1.590987536724612e-06,
+              -9.917858398637189e-13,
+              -1.94551187361557e-12,
+              0.09804300528046314,
+              8.274876898125649e-13,
+              -2.598769751956579e-10,
+              6.832161105271521e-11,
+              4.757017641123884e-06,
+              -5.256287050755934e-13,
+              -4.711097721945382e-12,
+              0.2792028570494949,
+              8.195823866173211e-13,
+              -5.799361150003277e-10,
+              5.032762283228939e-11,
+              7.87537290413011e-06,
+              1.274956242531591e-12,
+              -6.361049798616975e-12,
+              0.4178566048129427,
+              8.020033968917661e-13,
+              -9.540697233623074e-10,
+              -4.962040212411546e-11,
+              1.0914801162353123e-05,
+              2.648740477291212e-12,
+              -6.911187413075108e-12,
+              0.4928954723731748,
+              -3.764134507366762e-23
+            ]
+          },
+          {
+            "values": {
+              "AnalysisKey": 4,
+              "Combination": 1,
+              "Step": 4,
+              "Wn": 132.47355434062482,
+              "Fn": 21.083821002263246,
+              "Tn": 0.04742973296408914,
+              "GammaX": 1.7746927500556478e-09,
+              "GammaY": -2.464995841499574e-07,
+              "GammaZ": 0.2603446327469885,
+              "MassaX": 3.149534357100078e-18,
+              "MassaY": 6.076204498610193e-14,
+              "MassaZ": 0.06777932780016431,
+              "MTotX": 0.07032429282965605,
+              "MTotY": 0.07032429282965605,
+              "MTotZ": 0.07032429282965605,
+              "Mx_pcent": 4.478586602682347e-15,
+              "My_pcent": 8.640263917517606e-11,
+              "Mz_pcent": 96.38110114287774,
+              "UMaxX": 2.9962190950527656e-08,
+              "UMaxY": 5.969498488411773e-06,
+              "UMaxZ": 3.9180147647857666
+            },
+            "shape": [
+              -1.6361843015949055e-08,
+              2.349693345591032e-06,
+              0.5711063748846005,
+              -8.619544616862842e-08,
+              -6.587583042150638e-10,
+              -1.4374923438158217e-05,
+              -8.512313231251925e-11,
+              -2.8569661536665277e-08,
+              5.969498428712297e-06,
+              1.7075954635574935,
+              -4.6506293076229905e-08,
+              -9.244878343097971e-12,
+              -4.0936318530020505e-05,
+              -1.0062800543118804e-10,
+              -1.0685909721523415e-08,
+              4.404096542090046e-06,
+              2.8269710266918158,
+              1.1172610083956573e-07,
+              5.121752724480815e-10,
+              -6.126553021433872e-05,
+              -1.1125092987765443e-10,
+              2.99621894966702e-08,
+              -4.341543246718902e-06,
+              3.9180146799010234,
+              2.3144584704286383e-07,
+              8.789051428908959e-10,
+              -7.22676202969382e-05,
+              -3.35524828921806e-18
+            ]
+          }
+        ],
+        "5": [
+          {
+            "values": {
+              "AnalysisKey": 5,
+              "Combination": 1,
+              "Step": 1,
+              "Wn": 0.035456728555017705,
+              "Fn": 0.0056431136153986235,
+              "Tn": 177.2071356619959,
+              "GammaX": 2.0773699266887241e-19,
+              "GammaY": 1.1962704979675655e-15,
+              "GammaZ": 2.0710704277478498e-23,
+              "MassaX": 4.315465812310715e-38,
+              "MassaY": 1.431063104307567e-30,
+              "MassaZ": 4.2893327166916614e-46,
+              "MTotX": 0.07032429282965605,
+              "MTotY": 0.07032429282965605,
+              "MTotZ": 0.07032429282965605,
+              "Mx_pcent": 6.136522158514852e-35,
+              "My_pcent": 2.034948446298605e-27,
+              "Mz_pcent": 6.0993613218145746e-43,
+              "UMaxX": 3.1562530041887333e-18,
+              "UMaxY": 1.8208982363382073e-14,
+              "UMaxZ": 3.097453635325909e-22
+            },
+            "shape": [
+              2.4250266279985703e-19,
+              1.3989714136415007e-15,
+              7.209978947792792e-23,
+              -5.5212555085856635e-17,
+              9.475147678414038e-21,
+              3.1104757210072745e-22,
+              -2.019417778799728e-21,
+              9.913420026248412e-19,
+              5.275412728075423e-15,
+              1.5422875524166176e-22,
+              -9.910098862678931e-17,
+              1.6215231334914122e-20,
+              5.841625163022317e-22,
+              -1.997348581635976e-21,
+              2.0079897361057105e-18,
+              1.1064806255205258e-14,
+              2.336559920381605e-22,
+              -1.3173870899376703e-16,
+              2.023407373245563e-20,
+              7.864701021776794e-22,
+              -1.952643501452283e-21,
+              3.1562529104901892e-18,
+              1.820898194285277e-14,
+              3.09745353131128e-22,
+              -1.5330865198533168e-16,
+              2.1574225911875863e-20,
+              8.939461773032637e-22,
+              0.5318508891851236
+            ]
+          },
+          {
+            "values": {
+              "AnalysisKey": 5,
+              "Combination": 1,
+              "Step": 2,
+              "Wn": 6.202614721781823,
+              "Fn": 0.9871767930661384,
+              "Tn": 1.0129897775392727,
+              "GammaX": -6.307950049071511e-10,
+              "GammaY": 0.25858013157446524,
+              "GammaZ": 4.411261495685438e-11,
+              "MassaX": 3.9790233821581274e-19,
+              "MassaY": 0.06686368444506775,
+              "MassaZ": 1.945922798331693e-21,
+              "MTotX": 0.07032429282965605,
+              "MTotY": 0.07032429282965605,
+              "MTotZ": 0.07032429282965605,
+              "Mx_pcent": 5.658106497844734e-16,
+              "My_pcent": 95.07907119241028,
+              "Mz_pcent": 2.767070552767918e-18,
+              "UMaxX": 9.399034439638854e-09,
+              "UMaxY": 3.928586959838867,
+              "UMaxZ": 1.2773799795695595e-09
+            },
+            "shape": [
+              -2.02719914615558e-09,
+              0.33248508443394514,
+              -1.2773800109419557e-09,
+              -0.013050698231036686,
+              -8.133602855096268e-11,
+              1.6304613098237296e-16,
+              -2.2277702898845505e-12,
+              -5.335103410982391e-09,
+              1.2231426387559106,
+              -1.5965084605551995e-10,
+              -0.022327629291650358,
+              -5.568322562703004e-11,
+              3.005250711147982e-16,
+              -2.2054749340073574e-12,
+              -7.620591752265001e-09,
+              2.4838468377765417,
+              5.065299073136449e-10,
+              -0.02785525136047724,
+              -4.039235213308076e-11,
+              3.863444342233179e-16,
+              -2.1575286672000383e-12,
+              -9.399034128912617e-09,
+              3.928586889898839,
+              7.284889342629085e-10,
+              -0.029694520624435096,
+              -3.530018454238439e-11,
+              3.9121281667551e-16,
+              -1.992056957163386e-13
+            ]
+          },
+          {
+            "values": {
+              "AnalysisKey": 5,
+              "Combination": 1,
+              "Step": 3,
+              "Wn": 29.433139597073566,
+              "Fn": 4.684429657588055,
+              "Tn": 0.21347315961509936,
+              "GammaX": 0.25815792301168694,
+              "GammaY": 2.396837000290993e-09,
+              "GammaZ": -8.869033330200059e-10,
+              "MassaX": 0.06664551321370808,
+              "MassaY": 5.744827605963926e-18,
+              "MassaZ": 7.865975221219954e-19,
+              "MTotX": 0.07032429282965605,
+              "MTotY": 0.07032429282965605,
+              "MTotZ": 0.07032429282965605,
+              "Mx_pcent": 94.76883525176864,
+              "My_pcent": 8.169051368748793e-15,
+              "Mz_pcent": 1.1185288759708423e-15,
+              "UMaxX": 3.9223225116729736,
+              "UMaxY": 4.388271790389808e-08,
+              "UMaxZ": 1.5236739869806115e-08
+            },
+            "shape": [
+              0.3013690033282696,
+              -2.4587431819486194e-08,
+              -1.523673996397823e-08,
+              1.0008859478129845e-09,
+              0.0117752041759887,
+              9.963252408352102e-10,
+              -0.002509526337334506,
+              1.2319696630303494,
+              -4.388271870485071e-08,
+              -1.3620511439401681e-08,
+              -2.1053262591006745e-10,
+              0.020150959063734077,
+              1.87247892303623e-09,
+              -0.002482096570736263,
+              2.4953691339506543,
+              -1.4159897540061447e-08,
+              -1.270414253100955e-08,
+              -9.57688126958406e-10,
+              0.025145063627910726,
+              2.522783981942133e-09,
+              -0.002426537253835118,
+              3.922322427122546,
+              4.073633691953823e-08,
+              -1.2477504282856846e-08,
+              -1.2163561158066375e-09,
+              0.02681040327414737,
+              2.868804060338911e-09,
+              -3.5135342227694093e-17
+            ]
+          },
+          {
+            "values": {
+              "AnalysisKey": 5,
+              "Combination": 1,
+              "Step": 4,
+              "Wn": 106.58134469331691,
+              "Fn": 16.962947849322536,
+              "Tn": 0.05895201759050023,
+              "GammaX": -3.45191648227468e-11,
+              "GammaY": -2.052763431570156e-09,
+              "GammaZ": 4.5541680662167225e-07,
+              "MassaX": 1.19157274005996e-21,
+              "MassaY": 4.213837705991682e-18,
+              "MassaZ": 2.0740446775348163e-13,
+              "MTotX": 0.07032429282965605,
+              "MTotY": 0.07032429282965605,
+              "MTotZ": 0.07032429282965605,
+              "Mx_pcent": 1.6943970456215793e-18,
+              "My_pcent": 5.992008645147285e-15,
+              "Mz_pcent": 2.9492577800372605e-10,
+              "UMaxX": 5.244607526044831e-10,
+              "UMaxY": 4.764140015822704e-08,
+              "UMaxZ": 6.802508778491756e-06
+            },
+            "shape": [
+              -4.033663181769703e-11,
+              2.1339350263022394e-08,
+              1.7383211993101243e-06,
+              -7.59959230057649e-10,
+              -1.5761069008145912e-12,
+              0.16205271552420475,
+              3.353438871414745e-13,
+              -1.648072488698227e-10,
+              4.764139933009807e-08,
+              3.4614855643089624e-06,
+              -2.2392938499495006e-10,
+              -2.694772983461008e-12,
+              0.30455948191282634,
+              3.316482637531242e-13,
+              -3.337196431386625e-10,
+              3.052496685550666e-08,
+              5.1544685128003204e-06,
+              9.156243105388943e-10,
+              -3.361579817688589e-12,
+              0.4103318799635197,
+              3.242018119922658e-13,
+              -5.244607637172061e-10,
+              -3.5922759849832903e-08,
+              6.802508572568244e-06,
+              1.6945783967378067e-09,
+              -3.5836422418610415e-12,
+              0.46661219743703064,
+              -1.753612449504864e-21
+            ]
+          },
+          {
+            "values": {
+              "AnalysisKey": 5,
+              "Combination": 1,
+              "Step": 5,
+              "Wn": 123.56358156767435,
+              "Fn": 19.66575479263398,
+              "Tn": 0.05084981535387397,
+              "GammaX": 2.8357905919782754e-09,
+              "GammaY": -3.03997686061222e-07,
+              "GammaZ": 0.2615418798477769,
+              "MassaX": 8.041708281552497e-18,
+              "MassaY": 9.241459313057729e-14,
+              "MassaZ": 0.06840415491430896,
+              "MTotX": 0.07032429282965605,
+              "MTotY": 0.07032429282965605,
+              "MTotZ": 0.07032429282965605,
+              "Mx_pcent": 1.143517831175584e-14,
+              "My_pcent": 1.3141204754725335e-10,
+              "Mz_pcent": 97.2695951312327,
+              "UMaxX": 4.6627857130943084e-08,
+              "UMaxY": 7.0482210503541864e-06,
+              "UMaxZ": 3.906620979309082
+            },
+            "shape": [
+              -1.9392178062818623e-08,
+              3.1500515820877747e-06,
+              0.9983026265846758,
+              -1.1181192133397677e-07,
+              -7.913397462396307e-10,
+              -1.618528169652398e-05,
+              -1.4961818437073696e-10,
+              -3.0348407585980294e-08,
+              7.048221201338012e-06,
+              1.987900816085717,
+              -3.377545854196562e-08,
+              3.725356790801837e-11,
+              -3.0418379551129623e-05,
+              -1.6532597591512107e-10,
+              -4.4298328723562785e-09,
+              4.5234218524270205e-06,
+              2.9601660827004395,
+              1.3582822303134864e-07,
+              6.504944218002627e-10,
+              -4.098257190439897e-05,
+              -1.7472469468429804e-10,
+              4.6627858650884674e-08,
+              -5.319356026974558e-06,
+              3.906621042268194,
+              2.506300716793536e-07,
+              1.0229782866911193e-09,
+              -4.6603661247653564e-05,
+              5.615695704386488e-21
+            ]
+          }
+        ],
+        "7": []
+      },
+      "analysis_states": {
+        "1": [
+          {
+            "Id": "1",
+            "Key": "1",
+            "Combination": "1",
+            "Step": "10",
+            "State": "ExecutedCompleted",
+            "Fo": "68.96",
+            "Exit": "Converged",
+            "ExitDescription": "Step 10 converged at iteration 1, error = 0.0000000 < tol = 0.0000000@ > F = 68.96 kN, target load Fo=68.96 kN@ > Load multiplier F/Fo=100.00 %"
+          }
+        ],
+        "2": [
+          {
+            "Id": "1",
+            "Key": "2",
+            "Combination": "1",
+            "Step": "32",
+            "State": "ExecutedCompleted",
+            "Fo": "0",
+            "Exit": "Converged",
+            "ExitDescription": "Step 32 converged at iteration 1, error = 0.0000000 < tol = 0.0000000@ > F = 0.00 kN, target load Fo=0.00 kN@ > Load multiplier F/Fo=0.00 %"
+          },
+          {
+            "Id": "2",
+            "Key": "2",
+            "Combination": "2",
+            "Step": "0",
+            "State": "NotExecutedNotToBeExecuted",
+            "Fo": "0",
+            "Exit": "NotExecuted"
+          }
+        ],
+        "3": [
+          {
+            "Id": "1",
+            "Key": "3",
+            "Combination": "1",
+            "Step": "4",
+            "State": "ExecutedNotCompleted",
+            "Fo": "60",
+            "Exit": "LargeIterations",
+            "ExitDescription": "Modal analysis not completed due to large iterations: 4 frequencies evaluated"
+          }
+        ],
+        "4": [
+          {
+            "Id": "1",
+            "Key": "4",
+            "Combination": "1",
+            "Step": "4",
+            "State": "ExecutedNotCompleted",
+            "Fo": "60",
+            "Exit": "LargeIterations",
+            "ExitDescription": "Modal analysis not completed due to large iterations: 4 frequencies evaluated"
+          }
+        ],
+        "5": [
+          {
+            "Id": "1",
+            "Key": "5",
+            "Combination": "1",
+            "Step": "5",
+            "State": "ExecutedNotCompleted",
+            "Fo": "60",
+            "Exit": "LargeIterations",
+            "ExitDescription": "Modal analysis not completed due to large iterations: 5 frequencies evaluated"
+          }
+        ],
+        "6": [
+          {
+            "Id": "1",
+            "Key": "6",
+            "Combination": "1",
+            "Step": "0",
+            "State": "ExecutedNotCompleted",
+            "Fo": "0",
+            "Exit": "LargeDisplacement",
+            "ExitDescription": "Analysis interrupted at step 1 due to large displacements@ > Displacement=11250.00 cm > Max displacement=10.00 cm at element Quad (4)@ > Iterations=1 < Max Iterations=1000, error=281249.9449, toll=0.0000@ >@ > NOTES:@ >@ > If you want to get further steps and push the analysis@ > change the value of the Max displacements allowed for this analysis:@ > In order to do it go to main menu:@ > Define > Analysis > Convergence criteria > Max displacement"
+          },
+          {
+            "Id": "2",
+            "Key": "6",
+            "Combination": "2",
+            "Step": "0",
+            "State": "ExecutedNotCompleted",
+            "Fo": "0",
+            "Exit": "LargeDisplacement",
+            "ExitDescription": "Analysis interrupted at step 1 due to large displacements@ > Displacement=22500.00 cm > Max displacement=10.00 cm at element Quad (4)@ > Iterations=1 < Max Iterations=1000, error=281249.9504, toll=0.0000@ >@ > NOTES:@ >@ > If you want to get further steps and push the analysis@ > change the value of the Max displacements allowed for this analysis:@ > In order to do it go to main menu:@ > Define > Analysis > Convergence criteria > Max displacement"
+          }
+        ],
+        "7": [
+          {
+            "Id": "1",
+            "Key": "7",
+            "Combination": "1",
+            "Step": "0",
+            "State": "NotExecutedToBeExecute",
+            "Fo": "0",
+            "Exit": "NotExecuted"
+          }
+        ]
+      },
+      "reaction_history": [
+        {
+          "AnalysisKey": 1,
+          "Combination": 1,
+          "Step": 1,
+          "R1": 0.0,
+          "R2": 4.1359030627651384e-23,
+          "R3": -6.896003723144531,
+          "Et": 0.0,
+          "Eel": -0.018575982858273384,
+          "Ed": 0.03715196571654676,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 1,
+          "Combination": 1,
+          "Step": 2,
+          "R1": -4.1359020530231797e-22,
+          "R2": 0.0,
+          "R3": -13.792007446289062,
+          "Et": 0.0,
+          "Eel": -0.07430393143309359,
+          "Ed": 0.1486078628661872,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 1,
+          "Combination": 1,
+          "Step": 3,
+          "R1": -4.1359020530231797e-22,
+          "R2": 0.0,
+          "R3": -20.687997817993164,
+          "Et": 0.0,
+          "Eel": -0.1671838457244606,
+          "Ed": 0.3343676914489212,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 1,
+          "Combination": 1,
+          "Step": 4,
+          "R1": -8.271804106046359e-22,
+          "R2": 0.0,
+          "R3": -27.584014892578125,
+          "Et": 0.0,
+          "Eel": -0.2972157257323744,
+          "Ed": 0.5944314514647489,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 1,
+          "Combination": 1,
+          "Step": 5,
+          "R1": -4.1359020530231797e-22,
+          "R2": 0.0,
+          "R3": -34.47998046875,
+          "Et": 0.0,
+          "Eel": -0.4643995714568351,
+          "Ed": 0.9287991429136702,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 1,
+          "Combination": 1,
+          "Step": 6,
+          "R1": -4.1359020530231797e-22,
+          "R2": 0.0,
+          "R3": -41.37599563598633,
+          "Et": 0.0,
+          "Eel": -0.6687353828978423,
+          "Ed": 1.3374707657956848,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 1,
+          "Combination": 1,
+          "Step": 7,
+          "R1": -4.1359020530231797e-22,
+          "R2": 0.0,
+          "R3": -48.27202224731445,
+          "Et": 0.0,
+          "Eel": -0.9102231600553969,
+          "Ed": 1.8204463201107939,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 1,
+          "Combination": 1,
+          "Step": 8,
+          "R1": -8.271804106046359e-22,
+          "R2": 0.0,
+          "R3": -55.16802978515625,
+          "Et": 0.0,
+          "Eel": -1.1888629029294977,
+          "Ed": 2.3777258058589954,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 1,
+          "Combination": 1,
+          "Step": 9,
+          "R1": -8.271804106046359e-22,
+          "R2": 0.0,
+          "R3": -62.06403350830078,
+          "Et": 0.0,
+          "Eel": -1.5046546115201458,
+          "Ed": 3.0093092230402916,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 1,
+          "Combination": 1,
+          "Step": 10,
+          "R1": 0.0,
+          "R2": 4.1359030627651384e-23,
+          "R3": -68.9599609375,
+          "Et": 0.0,
+          "Eel": -1.8575982858273408,
+          "Ed": 3.7151965716546815,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 1,
+          "R1": 0.9999999403953552,
+          "R2": 6.93888649236894e-16,
+          "R3": -68.95999145507812,
+          "Et": 0.0,
+          "Eel": -0.2512937229019677,
+          "Ed": 0.8583070252052822,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 2,
+          "R1": 1.9999998807907104,
+          "R2": -6.938893374511636e-16,
+          "R3": -68.96000671386719,
+          "Et": 0.0,
+          "Eel": -0.5047749462539772,
+          "Ed": 1.1495226220060033,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 3,
+          "R1": 2.999999761581421,
+          "R2": 6.938884904182164e-16,
+          "R3": -68.96000671386719,
+          "Et": 0.0,
+          "Eel": -0.7604436700560057,
+          "Ed": 1.468081966047781,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 4,
+          "R1": 3.999999761581421,
+          "R2": -6.93889178632486e-16,
+          "R3": -68.95999908447266,
+          "Et": 0.0,
+          "Eel": -1.0182998943080614,
+          "Ed": 1.8139850573306255,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 5,
+          "R1": 4.999999523162842,
+          "R2": 6.938882786599796e-16,
+          "R3": -68.95999145507812,
+          "Et": 0.0,
+          "Eel": -1.2783436190101458,
+          "Ed": 2.1872318958545374,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 6,
+          "R1": 5.999999523162842,
+          "R2": -6.938888080555716e-16,
+          "R3": -68.96000671386719,
+          "Et": 0.0,
+          "Eel": -1.5405748441622584,
+          "Ed": 2.587822481619517,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 7,
+          "R1": 6.999999523162842,
+          "R2": -6.9388891393469e-16,
+          "R3": -68.95999908447266,
+          "Et": 0.0,
+          "Eel": -1.8205468771566307,
+          "Ed": 3.031622494232144,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 8,
+          "R1": 7.999999523162842,
+          "R2": -6.938890198138084e-16,
+          "R3": -68.95999908447266,
+          "Et": 0.0,
+          "Eel": -2.125642515030563,
+          "Ed": 3.5308785851813362,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 9,
+          "R1": 5.999999523162842,
+          "R2": -6.938890727533676e-16,
+          "R3": -68.96000671386719,
+          "Et": 0.0,
+          "Eel": -2.710710530864729,
+          "Ed": 3.7601884774115195,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 10,
+          "R1": 3.999999761581421,
+          "R2": 6.93888384539098e-16,
+          "R3": -68.95999908447266,
+          "Et": 0.0,
+          "Eel": -3.232985480718946,
+          "Ed": 4.0309009528310344,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 11,
+          "R1": 1.9999998807907104,
+          "R2": -6.938890727533676e-16,
+          "R3": -68.96000671386719,
+          "Et": 0.0,
+          "Eel": -3.74651042877303,
+          "Ed": 4.393488413614585,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 12,
+          "R1": -4.574118861455645e-14,
+          "R2": 6.938887021764532e-16,
+          "R3": -68.9599609375,
+          "Et": 0.0,
+          "Eel": -4.251285375026999,
+          "Ed": 4.847950859762177,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 13,
+          "R1": -1.9999998807907104,
+          "R2": -6.938887551160124e-16,
+          "R3": -68.95999908447266,
+          "Et": 0.0,
+          "Eel": -4.747310319480857,
+          "Ed": 5.394288291273815,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 14,
+          "R1": -3.999999761581421,
+          "R2": 6.938876963248283e-16,
+          "R3": -68.95999908447266,
+          "Et": 0.0,
+          "Eel": -5.234585262134599,
+          "Ed": 6.032500708149494,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 15,
+          "R1": -5.999999523162842,
+          "R2": -6.938884374786572e-16,
+          "R3": -68.96000671386719,
+          "Et": 0.0,
+          "Eel": -5.713110202988231,
+          "Ed": 6.76258811038922,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 16,
+          "R1": -7.999999523162842,
+          "R2": 6.93888384539098e-16,
+          "R3": -68.95999908447266,
+          "Et": 0.0,
+          "Eel": -6.236928200010131,
+          "Ed": 7.642164214220373,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 17,
+          "R1": -5.999999523162842,
+          "R2": 6.938885433577756e-16,
+          "R3": -68.96000671386719,
+          "Et": 0.0,
+          "Eel": -6.760746197032043,
+          "Ed": 7.8102241044330265,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 18,
+          "R1": -3.999999761581421,
+          "R2": -6.938892845116044e-16,
+          "R3": -68.95999908447266,
+          "Et": 0.0,
+          "Eel": -7.2392711378856935,
+          "Ed": 8.037186583900578,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 19,
+          "R1": -1.9999998807907104,
+          "R2": 6.938881727808612e-16,
+          "R3": -68.95999908447266,
+          "Et": 0.0,
+          "Eel": -7.72654608053944,
+          "Ed": 8.373524052332394,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 20,
+          "R1": 3.108624468950438e-14,
+          "R2": -6.938892845116044e-16,
+          "R3": -68.9599609375,
+          "Et": 0.0,
+          "Eel": -8.222571024993298,
+          "Ed": 8.819236509728476,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 21,
+          "R1": 1.9999998807907104,
+          "R2": 6.938885433577756e-16,
+          "R3": -68.96000671386719,
+          "Et": 0.0,
+          "Eel": -8.72734597124727,
+          "Ed": 9.37432395608883,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 22,
+          "R1": 3.999999761581421,
+          "R2": -6.938892845116044e-16,
+          "R3": -68.95999908447266,
+          "Et": 0.0,
+          "Eel": -9.240870919301354,
+          "Ed": 10.038786391413456,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 23,
+          "R1": 5.999999523162842,
+          "R2": 6.938878551435059e-16,
+          "R3": -68.96000671386719,
+          "Et": 0.0,
+          "Eel": -9.763145869155554,
+          "Ed": 10.812623815702349,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 24,
+          "R1": 7.999999523162842,
+          "R2": -6.938893374511636e-16,
+          "R3": -68.95999908447266,
+          "Et": 0.0,
+          "Eel": -10.348213884989706,
+          "Ed": 11.753449955140479,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 25,
+          "R1": 6.999999523162842,
+          "R2": -6.938894962698412e-16,
+          "R3": -68.96001434326172,
+          "Et": 0.0,
+          "Eel": -10.651593587374407,
+          "Ed": 11.863019779866402,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 26,
+          "R1": 5.999999523162842,
+          "R2": -6.93889443330282e-16,
+          "R3": -68.96000671386719,
+          "Et": 0.0,
+          "Eel": -10.933281900823879,
+          "Ed": 11.98084400782139,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 27,
+          "R1": 4.999999523162842,
+          "R2": 6.93888649236894e-16,
+          "R3": -68.95999145507812,
+          "Et": 0.0,
+          "Eel": -11.195513125976,
+          "Ed": 12.10471587236064,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 28,
+          "R1": 3.999999761581421,
+          "R2": -6.938892845116044e-16,
+          "R3": -68.95999908447266,
+          "Et": 0.0,
+          "Eel": -11.455556850678088,
+          "Ed": 12.251556483240897,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 29,
+          "R1": 2.999999761581421,
+          "R2": 6.93888649236894e-16,
+          "R3": -68.96000671386719,
+          "Et": 0.0,
+          "Eel": -11.713413074930145,
+          "Ed": 12.421365840462165,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 30,
+          "R1": 1.9999998807907104,
+          "R2": -6.938891256929268e-16,
+          "R3": -68.96000671386719,
+          "Et": 0.0,
+          "Eel": -11.969081798732173,
+          "Ed": 12.614143944024446,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 31,
+          "R1": 0.9999999403953552,
+          "R2": 6.938884904182164e-16,
+          "R3": -68.95999145507812,
+          "Et": 0.0,
+          "Eel": -12.22256302208417,
+          "Ed": 12.829890793927737,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 32,
+          "R1": -6.772360450213455e-15,
+          "R2": -6.938889668742492e-16,
+          "R3": -68.9599609375,
+          "Et": 0.0,
+          "Eel": -12.473856744986143,
+          "Ed": 13.06860639017204,
+          "Ei": 0.0,
+          "Evd": 0.0
+        }
+      ],
+      "trace": {
+        "file": "trace-20261017-091426-014-3732.tsv",
+        "match": "Cycle_B terminal displacement prefix equals native Results",
+        "analyses": {
+          "Vert": [
+            {
+              "step": 1,
+              "iterations": 1
+            },
+            {
+              "step": 2,
+              "iterations": 1
+            },
+            {
+              "step": 3,
+              "iterations": 1
+            },
+            {
+              "step": 4,
+              "iterations": 1
+            },
+            {
+              "step": 5,
+              "iterations": 1
+            },
+            {
+              "step": 6,
+              "iterations": 1
+            },
+            {
+              "step": 7,
+              "iterations": 1
+            },
+            {
+              "step": 8,
+              "iterations": 1
+            },
+            {
+              "step": 9,
+              "iterations": 1
+            },
+            {
+              "step": 10,
+              "iterations": 1
+            }
+          ],
+          "Modal_loaded_A": [],
+          "Cycle_B (1)": [
+            {
+              "step": 1,
+              "iterations": 5
+            },
+            {
+              "step": 2,
+              "iterations": 1
+            },
+            {
+              "step": 3,
+              "iterations": 1
+            },
+            {
+              "step": 4,
+              "iterations": 1
+            },
+            {
+              "step": 5,
+              "iterations": 1
+            },
+            {
+              "step": 6,
+              "iterations": 1
+            },
+            {
+              "step": 7,
+              "iterations": 2
+            },
+            {
+              "step": 8,
+              "iterations": 2
+            },
+            {
+              "step": 9,
+              "iterations": 2
+            },
+            {
+              "step": 10,
+              "iterations": 1
+            },
+            {
+              "step": 11,
+              "iterations": 1
+            },
+            {
+              "step": 12,
+              "iterations": 1
+            },
+            {
+              "step": 13,
+              "iterations": 1
+            },
+            {
+              "step": 14,
+              "iterations": 1
+            },
+            {
+              "step": 15,
+              "iterations": 1
+            },
+            {
+              "step": 16,
+              "iterations": 3
+            },
+            {
+              "step": 17,
+              "iterations": 2
+            },
+            {
+              "step": 18,
+              "iterations": 1
+            },
+            {
+              "step": 19,
+              "iterations": 1
+            },
+            {
+              "step": 20,
+              "iterations": 1
+            },
+            {
+              "step": 21,
+              "iterations": 1
+            },
+            {
+              "step": 22,
+              "iterations": 1
+            },
+            {
+              "step": 23,
+              "iterations": 1
+            },
+            {
+              "step": 24,
+              "iterations": 3
+            },
+            {
+              "step": 25,
+              "iterations": 2
+            },
+            {
+              "step": 26,
+              "iterations": 2
+            },
+            {
+              "step": 27,
+              "iterations": 1
+            },
+            {
+              "step": 28,
+              "iterations": 1
+            },
+            {
+              "step": 29,
+              "iterations": 1
+            },
+            {
+              "step": 30,
+              "iterations": 1
+            },
+            {
+              "step": 31,
+              "iterations": 1
+            },
+            {
+              "step": 32,
+              "iterations": 1
+            }
+          ],
+          "Modal_loaded_B": [],
+          "Cycle_return_A (1)": [],
+          "Cycle_return_A (2)": []
+        }
+      }
+    },
+    "02_foundation_elastic_return": {
+      "input_lf_sha256": "938638ff401cfe97f3fd64ddbe06be67d4d19818368c15ce98bc85b5f57a35bd",
+      "results_sha256": "96dcf71ba5f778fceef29bcbc7ec8d4cca0d15f60543586a1bacfdd5e792d570",
+      "saved_hrb_sha256": "b56a4cdd349af8d7d5facfbb41f9a8687268103704dd273917900a6e5ffc88b2",
+      "exported_hrx_sha256": "012adca617a390cb9cb0ceb7c80500bad20946efcc460b03be6a4a31bfaedbf4",
+      "native_version": "2026.1.1",
+      "states": [
+        {
+          "analysis": 1,
+          "combination": 1,
+          "step": 1,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "5fbc7fca075c3f8aa0a6c642a94db091b222340224de886c20bfa32b83b7842b"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "combination": 1,
+          "step": 2,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "d4315bd0e93601ef1e3b7bea684ff0a25da846b199c78a86493e9153f1d31e49"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "combination": 1,
+          "step": 3,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "e48469dcfc8ea68a2b7ddd20d1c72e4d6d7ea8f55ca911df3c70f1e20f397f0f"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "combination": 1,
+          "step": 4,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "afdc39d9bd7595ac1cb3ccf504dc74a4fd5df2cd72b836ce7e2ce2910feadec1"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "combination": 1,
+          "step": 5,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "3a9181cafc23d7a25f44d3775273000386bb2a95403ea00b800cdeb0f34ddb58"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "combination": 1,
+          "step": 6,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "938af0142881e5da59b18d14088bbc1665102819d5d074dfc9db691d98b2dc78"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "combination": 1,
+          "step": 7,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "8c25fb3469a9398690c8b6d9625531467ea92deb0183f1af47d14703b621b1f8"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "combination": 1,
+          "step": 8,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "3a8b07f8ac572bc568a7d6dead15ebb983ab7b38ede97294705cfe01a9be91da"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "combination": 1,
+          "step": 9,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "a140cdd33dc38cb9f323b3ab9d5336f277a9761adb3431922849db36c6fb890c"
+            }
+          }
+        },
+        {
+          "analysis": 1,
+          "combination": 1,
+          "step": 10,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "5aa064d690aed42ba0ff4bacf2bdda620a63aa4dfe35199003b9153fe5b362e0"
+            },
+            "SpringStates": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType",
+                "K_tang",
+                "Uy1",
+                "Uy2",
+                "Umax1",
+                "Umax2",
+                "Uu1",
+                "Uu2",
+                "LoadIndicator",
+                "ContactArea",
+                "F0",
+                "CmomMin",
+                "CmomMax",
+                "CrotLimNu",
+                "CrotLimPu",
+                "CrotYn",
+                "CrotYp",
+                "CPhaseUnload_t",
+                "CPhaseUnload_c",
+                "TangentReload_c",
+                "TangentReload_t",
+                "CplasticTensionIndicator",
+                "CplasticCompressionIndicator"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "d88b6841bb70ebd62bce6bd0c043e685b4d12d80aa4916517fe2a00d4ba64ff9"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 1,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "66a2c7989a9277410107a62b160cb76e2e89ac9df5654b6f3960a1789ebc874e"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 2,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "221b87bc86477e3ed714510f32db0f46311168b4eae7c3512535ba2114f58be1"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 3,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "cb1f90c881e0b02664da679a3a0e42e4314bf186e03f619c0bac0ad2df17b719"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 4,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "2461917e19520e67fae81a7cfdc58de428d937806da023fe4708efc60e732909"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 5,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "a3f6052c410e515cc7dffaaf01e5b4d86431b7530f43db721d4f977cf2a81d51"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 6,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "dc5e47817fb442607c2437f2a6f11ceca3d6c525de2435867f2bbf2c2f72fe93"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 7,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "2044abbc957aafb3d3f35dfb5efaccf5222a9a607dd725563a41d1004bc8cfe6"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 8,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "74c2ef3d1dde52c5134fabef9a2eefabd57f9118f58633a944947390f4266e8d"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 9,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "562fa2ebbabf1ff5612001343ae490794f775e0290d78c67834fb56e2409150c"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 10,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "490c013cf20a299c32228dab9b788d36309165248fd7ab38937bd3ad07f4f2fd"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 11,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "6a768c49860243cf7dcb739f86ff3b0b4fa34099710ed60645bf583db55d4c97"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 12,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "7f55d435b9d205361b20fc3855087b72559fe2d9d736b043092100e51834125f"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 13,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "a1af111174f907be7a9e195738b5dffc8ffdaacf18ea3a90fec71cb897ee1c5d"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 14,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "b343e72bbd670dfea8b57615cbeab52f577db2360e21358b03160b42cf5e9045"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 15,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "f0f992ce1e5fb85a3c11c7e09b8449ab2be3257148c26915d9a6fececb88999f"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 16,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "a7d61c2882d10ae7a2c4bd0363cefc4eaa139c416d7950123999950f260f0cb7"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 17,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "425725c83a430a5c0ee6d371a27685bfa59a70792b51951bdc5ff41736578c76"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 18,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "a30fab2197ca4126e967b0b66e756242f8f694b81387e332e68dc8aa331254f1"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 19,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "de82e3dcec40caafa7a61b2b83bd2c71ca2fc5c5c36bc818adbf336cfaf15f66"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 20,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "4081bcfbad4adc0e7fd37c2419c47269797b31ef3d4b2cf5b9113a8e32e8903b"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 21,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "447b01b22e6dcf1420064cec3f882b013948e5e38c3911ec3820479fcf564f03"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 22,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "e633744b98d58264df6f94641395c5b5a9b97ff7a9d651868da0f9799b5e1af6"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 23,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "4797f61c1cfe2dd26bd0fe24670bf1e62be2e3f16e225e7828b8981a2ea8c885"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 24,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "c880f3e4e8bf1a6402751f87eb152de91fba75d0b8378b2d9808299ea800aea3"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 25,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "3125bd430966bae6bf96f0ff14631e091026959208684c76460fd1385a83d408"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 26,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "660f28e1ab71de7559407878c43aaadfc7c17576160b6f4b7e3f7477ac455161"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 27,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "80a7d0274295d7aff5dc036221f579fbdfcdec6a165fbf95484521d72a5158ac"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 28,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "fe71b33081ba071c5d7279742e9da27a623af01b01aa8077f13f9fd069c848a2"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 29,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "6b97805347531ec103b57c66d357cf69139ba00defeb0885ff8d71aaafdd3bc8"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 30,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "ac335efd69c33ed1341f86422946f5d791a061ae6120cec81054e5a09354644b"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 31,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "ad7bd96147a82e4e0284ad663d9b103f5aaa637ce2b78559ac3fa994fa41b212"
+            }
+          }
+        },
+        {
+          "analysis": 2,
+          "combination": 1,
+          "step": 32,
+          "tables": {
+            "SpringStatesTmp": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "b134b44451932a17d4d97d8b6c30bd7433d375c58b61064d2252de7dc671036e"
+            },
+            "SpringStates": {
+              "fields": [
+                "U",
+                "F",
+                "Phase",
+                "Fy1",
+                "Fy2",
+                "Up1",
+                "Up2",
+                "N",
+                "SpringType",
+                "K_tang",
+                "Uy1",
+                "Uy2",
+                "Umax1",
+                "Umax2",
+                "Uu1",
+                "Uu2",
+                "LoadIndicator",
+                "ContactArea",
+                "F0",
+                "CmomMin",
+                "CmomMax",
+                "CrotLimNu",
+                "CrotLimPu",
+                "CrotYn",
+                "CrotYp",
+                "CPhaseUnload_t",
+                "CPhaseUnload_c",
+                "TangentReload_c",
+                "TangentReload_t",
+                "CplasticTensionIndicator",
+                "CplasticCompressionIndicator"
+              ],
+              "unavailable_fields": [],
+              "rows": 340,
+              "identities": "34bb48b690b541481cda4c98666e712a16d80a57b7b892f5fa8496896cf9144a",
+              "values": "40fb1f4173e469392c7c5a922b3aeca9eab72568448a1f7ddb35ce38345bc00f"
+            }
+          }
+        }
+      ],
+      "modal": {
+        "3": [
+          {
+            "values": {
+              "AnalysisKey": 3,
+              "Combination": 1,
+              "Step": 1,
+              "Wn": 7.3724480675617645,
+              "Fn": 1.1733615526407464,
+              "Tn": 0.8522522301411853,
+              "GammaX": -1.196496430326946e-10,
+              "GammaY": 0.25789199434893,
+              "GammaZ": 1.2619698716683942e-10,
+              "MassaX": 1.4316037077851243e-20,
+              "MassaY": 0.06650828074926855,
+              "MassaZ": 1.5925679569987433e-20,
+              "MTotX": 0.07032429282965605,
+              "MTotY": 0.07032429282965605,
+              "MTotZ": 0.07032429282965605,
+              "Mx_pcent": 2.0357171756463237e-17,
+              "My_pcent": 94.57369292055182,
+              "Mz_pcent": 2.264605718618973e-17,
+              "UMaxX": 2.800506715416873e-09,
+              "UMaxY": 3.932882070541382,
+              "UMaxZ": 1.9378454396701272e-09
+            },
+            "shape": [
+              -1.3489623907419454e-09,
+              0.23473483079919302,
+              -9.013101526485789e-10,
+              -0.009214178217953133,
+              -5.420953861275264e-11,
+              8.969177329566043e-17,
+              -4.512568572084781e-12,
+              -2.8005067034974318e-09,
+              1.0319271171313027,
+              6.793049530981949e-10,
+              -0.022323811820647063,
+              -1.3378740136050247e-11,
+              2.461478058180706e-16,
+              -4.4724306418604435e-12,
+              -2.6244280748292885e-09,
+              2.3522246731648297,
+              1.6225691253076078e-09,
+              -0.03014159209208798,
+              1.0980057727210292e-11,
+              3.487597663597908e-16,
+              -4.378600073658995e-12,
+              -1.6413063581579011e-09,
+              3.9328820316284765,
+              1.9378454286866365e-09,
+              -0.03274550518746503,
+              1.910103513842109e-11,
+              3.6275067943575053e-16,
+              1.2659874750077771e-15
+            ]
+          },
+          {
+            "values": {
+              "AnalysisKey": 3,
+              "Combination": 1,
+              "Step": 2,
+              "Wn": 34.313930447165276,
+              "Fn": 5.461231647577844,
+              "Tn": 0.18310887809410506,
+              "GammaX": 0.2575636761171831,
+              "GammaY": 1.6858315013336584e-09,
+              "GammaZ": -4.090796505598391e-10,
+              "MassaX": 0.0663390472549972,
+              "MassaY": 2.8420278508888967e-18,
+              "MassaZ": 1.6734616050216006e-19,
+              "MTotX": 0.07032429282965605,
+              "MTotY": 0.07032429282965605,
+              "MTotZ": 0.07032429282965605,
+              "Mx_pcent": 94.33304564567445,
+              "My_pcent": 4.041317354975807e-15,
+              "Mz_pcent": 2.3796351697061e-16,
+              "UMaxX": 3.9262306690216064,
+              "UMaxY": 4.631066019555874e-08,
+              "UMaxZ": 1.0199295630286542e-08
+            },
+            "shape": [
+              0.204688704331928,
+              -2.5145649133542483e-08,
+              -1.0199295354490699e-08,
+              1.011694355123297e-09,
+              0.007998006083311953,
+              1.0517134941555924e-09,
+              -0.0034059924631241897,
+              1.0690363624301231,
+              -4.631066079352885e-08,
+              -7.70592385213614e-09,
+              -1.5195914652631726e-10,
+              0.019385519312864884,
+              2.99502657559599e-09,
+              -0.003373640786011237,
+              2.3862479177758327,
+              -2.033865584000384e-08,
+              -6.1691217505088265e-09,
+              -8.7132597901601e-10,
+              0.026180859506049804,
+              4.482373903274119e-09,
+              -0.0033014270383217308,
+              3.9262306450169846,
+              2.9864187817557245e-08,
+              -5.578678869764942e-09,
+              -1.119990374590106e-09,
+              0.028448816424474273,
+              5.287320415860819e-09,
+              4.37613242041299e-22
+            ]
+          },
+          {
+            "values": {
+              "AnalysisKey": 3,
+              "Combination": 1,
+              "Step": 3,
+              "Wn": 119.74205048682306,
+              "Fn": 19.057539230937184,
+              "Tn": 0.05247267172755669,
+              "GammaX": -6.258822134802346e-11,
+              "GammaY": -2.816796908304039e-12,
+              "GammaZ": 7.252678032822124e-07,
+              "MassaX": 3.9172854515091796e-21,
+              "MassaY": 7.934344822631191e-24,
+              "MassaZ": 5.260133864778059e-13,
+              "MTotX": 0.07032429282965605,
+              "MTotY": 0.07032429282965605,
+              "MTotZ": 0.07032429282965605,
+              "Mx_pcent": 5.570316165137809e-18,
+              "My_pcent": 1.1282509220320586e-20,
+              "Mz_pcent": 7.479824756317833e-10,
+              "UMaxX": 9.540697121224184e-10,
+              "UMaxY": 6.832161225656108e-11,
+              "UMaxZ": 1.0914801350736525e-05
+            },
+            "shape": [
+              -4.9789062155903413e-11,
+              2.69859682321664e-11,
+              1.5909875367246183e-06,
+              -9.917858398707176e-13,
+              -1.94551187361557e-12,
+              0.09804300528046314,
+              8.274876898125649e-13,
+              -2.598769751956579e-10,
+              6.832161105310813e-11,
+              4.757017641123903e-06,
+              -5.256287050766069e-13,
+              -4.711097721945382e-12,
+              0.2792028570494949,
+              8.195823866173211e-13,
+              -5.799361150003277e-10,
+              5.0327622832517775e-11,
+              7.87537290413014e-06,
+              1.2749562425391765e-12,
+              -6.361049798616975e-12,
+              0.4178566048129427,
+              8.020033968917661e-13,
+              -9.540697233623074e-10,
+              -4.962040212437876e-11,
+              1.0914801162353169e-05,
+              2.6487404773026876e-12,
+              -6.911187413075108e-12,
+              0.4928954723731748,
+              -3.764134507379679e-23
+            ]
+          },
+          {
+            "values": {
+              "AnalysisKey": 3,
+              "Combination": 1,
+              "Step": 4,
+              "Wn": 132.47355434062484,
+              "Fn": 21.083821002263253,
+              "Tn": 0.04742973296408912,
+              "GammaX": 1.7746927500556592e-09,
+              "GammaY": -2.4649958415433e-07,
+              "GammaZ": 0.2603446327469885,
+              "MassaX": 3.1495343571001183e-18,
+              "MassaY": 6.076204498825762e-14,
+              "MassaZ": 0.06777932780016431,
+              "MTotX": 0.07032429282965605,
+              "MTotY": 0.07032429282965605,
+              "MTotZ": 0.07032429282965605,
+              "Mx_pcent": 4.478586602682404e-15,
+              "My_pcent": 8.640263917824142e-11,
+              "Mz_pcent": 96.38110114287774,
+              "UMaxX": 2.9962190950527656e-08,
+              "UMaxY": 5.969498488411773e-06,
+              "UMaxZ": 3.9180147647857666
+            },
+            "shape": [
+              -1.6361843015949055e-08,
+              2.3496933456476537e-06,
+              0.5711063748846007,
+              -8.619544617081302e-08,
+              -6.587583042150641e-10,
+              -1.4374923438158278e-05,
+              -8.51231323125196e-11,
+              -2.8569661536665244e-08,
+              5.969498428830929e-06,
+              1.7075954635574937,
+              -4.650629307642755e-08,
+              -9.244878343096829e-12,
+              -4.093631853002069e-05,
+              -1.0062800543118857e-10,
+              -1.0685909721523306e-08,
+              4.404096542155163e-06,
+              2.8269710266918158,
+              1.1172610084186027e-07,
+              5.121752724480826e-10,
+              -6.126553021433896e-05,
+              -1.1125092987765293e-10,
+              2.996218949667038e-08,
+              -4.341543246796443e-06,
+              3.9180146799010234,
+              2.3144584704611496e-07,
+              8.789051428908971e-10,
+              -7.226762029693849e-05,
+              -3.355248289251692e-18
+            ]
+          }
+        ],
+        "4": [
+          {
+            "values": {
+              "AnalysisKey": 4,
+              "Combination": 1,
+              "Step": 1,
+              "Wn": 7.3724480675617645,
+              "Fn": 1.1733615526407464,
+              "Tn": 0.8522522301411853,
+              "GammaX": -1.1964964232257144e-10,
+              "GammaY": 0.25789199434893,
+              "GammaZ": 1.2619698702704037e-10,
+              "MassaX": 1.431603690791928e-20,
+              "MassaY": 0.06650828074926855,
+              "MassaZ": 1.5925679534702994e-20,
+              "MTotX": 0.07032429282965605,
+              "MTotY": 0.07032429282965605,
+              "MTotZ": 0.07032429282965605,
+              "Mx_pcent": 2.035717151482275e-17,
+              "My_pcent": 94.57369292055182,
+              "Mz_pcent": 2.2646057136015834e-17,
+              "UMaxX": 2.800506715416873e-09,
+              "UMaxY": 3.932882070541382,
+              "UMaxZ": 1.9378454396701272e-09
+            },
+            "shape": [
+              -1.3489623887274957e-09,
+              0.23473483079919302,
+              -9.013101540217938e-10,
+              -0.009214178217953133,
+              -5.420953853219877e-11,
+              8.969177329566043e-17,
+              -4.512568572516198e-12,
+              -2.8005066979401036e-09,
+              1.0319271171313027,
+              6.793049513654292e-10,
+              -0.022323811820647063,
+              -1.3378740075799776e-11,
+              2.461478058180706e-16,
+              -4.472430642284093e-12,
+              -2.6244280665398626e-09,
+              2.3522246731648297,
+              1.6225691233597317e-09,
+              -0.03014159209208798,
+              1.0980057775349375e-11,
+              3.487597663597908e-16,
+              -4.378600074071084e-12,
+              -1.6413063475406509e-09,
+              3.9328820316284765,
+              1.9378454266659695e-09,
+              -0.03274550518746503,
+              1.9101035182525038e-11,
+              3.6275067943575053e-16,
+              1.2659874750077771e-15
+            ]
+          },
+          {
+            "values": {
+              "AnalysisKey": 4,
+              "Combination": 1,
+              "Step": 2,
+              "Wn": 34.313930447165276,
+              "Fn": 5.461231647577844,
+              "Tn": 0.18310887809410506,
+              "GammaX": 0.2575636761171831,
+              "GammaY": 1.685831498797304e-09,
+              "GammaZ": -4.0907965055983883e-10,
+              "MassaX": 0.0663390472549972,
+              "MassaY": 2.8420278423371646e-18,
+              "MassaZ": 1.6734616050215985e-19,
+              "MTotX": 0.07032429282965605,
+              "MTotY": 0.07032429282965605,
+              "MTotZ": 0.07032429282965605,
+              "Mx_pcent": 94.33304564567445,
+              "My_pcent": 4.041317342815383e-15,
+              "Mz_pcent": 2.3796351697060973e-16,
+              "UMaxX": 3.9262306690216064,
+              "UMaxY": 4.631066019555874e-08,
+              "UMaxZ": 1.0199295630286542e-08
+            },
+            "shape": [
+              0.204688704331928,
+              -2.5145649105026672e-08,
+              -1.0199295354490699e-08,
+              1.0116943539743512e-09,
+              0.007998006083311953,
+              1.0517134941555924e-09,
+              -0.0034059924631241897,
+              1.0690363624301231,
+              -4.631066074214214e-08,
+              -7.705923852136137e-09,
+              -1.5195914631087256e-10,
+              0.019385519312864884,
+              2.99502657559599e-09,
+              -0.003373640786011237,
+              2.3862479177758327,
+              -2.0338655821458925e-08,
+              -6.169121750508823e-09,
+              -8.713259779404334e-10,
+              0.026180859506049804,
+              4.482373903274119e-09,
+              -0.0033014270383217308,
+              3.9262306450169846,
+              2.986418777405353e-08,
+              -5.578678869764938e-09,
+              -1.1199903732088414e-09,
+              0.028448816424474273,
+              5.287320415860819e-09,
+              4.376132410932838e-22
+            ]
+          },
+          {
+            "values": {
+              "AnalysisKey": 4,
+              "Combination": 1,
+              "Step": 3,
+              "Wn": 119.74205048682306,
+              "Fn": 19.057539230937184,
+              "Tn": 0.05247267172755669,
+              "GammaX": -6.258822134802346e-11,
+              "GammaY": -2.8167969082891625e-12,
+              "GammaZ": 7.252678032822094e-07,
+              "MassaX": 3.9172854515091796e-21,
+              "MassaY": 7.934344822547385e-24,
+              "MassaZ": 5.260133864778016e-13,
+              "MTotX": 0.07032429282965605,
+              "MTotY": 0.07032429282965605,
+              "MTotZ": 0.07032429282965605,
+              "Mx_pcent": 5.570316165137809e-18,
+              "My_pcent": 1.1282509220201411e-20,
+              "Mz_pcent": 7.47982475631777e-10,
+              "UMaxX": 9.540697121224184e-10,
+              "UMaxY": 6.832161225656108e-11,
+              "UMaxZ": 1.0914801350736525e-05
+            },
+            "shape": [
+              -4.9789062155903413e-11,
+              2.6985968231984096e-11,
+              1.590987536724612e-06,
+              -9.917858398637189e-13,
+              -1.94551187361557e-12,
+              0.09804300528046314,
+              8.274876898125649e-13,
+              -2.598769751956579e-10,
+              6.832161105271521e-11,
+              4.757017641123884e-06,
+              -5.256287050755934e-13,
+              -4.711097721945382e-12,
+              0.2792028570494949,
+              8.195823866173211e-13,
+              -5.799361150003277e-10,
+              5.032762283228939e-11,
+              7.87537290413011e-06,
+              1.274956242531591e-12,
+              -6.361049798616975e-12,
+              0.4178566048129427,
+              8.020033968917661e-13,
+              -9.540697233623074e-10,
+              -4.962040212411546e-11,
+              1.0914801162353123e-05,
+              2.648740477291212e-12,
+              -6.911187413075108e-12,
+              0.4928954723731748,
+              -3.764134507366762e-23
+            ]
+          },
+          {
+            "values": {
+              "AnalysisKey": 4,
+              "Combination": 1,
+              "Step": 4,
+              "Wn": 132.47355434062482,
+              "Fn": 21.083821002263246,
+              "Tn": 0.04742973296408914,
+              "GammaX": 1.7746927500556478e-09,
+              "GammaY": -2.464995841499574e-07,
+              "GammaZ": 0.2603446327469885,
+              "MassaX": 3.149534357100078e-18,
+              "MassaY": 6.076204498610193e-14,
+              "MassaZ": 0.06777932780016431,
+              "MTotX": 0.07032429282965605,
+              "MTotY": 0.07032429282965605,
+              "MTotZ": 0.07032429282965605,
+              "Mx_pcent": 4.478586602682347e-15,
+              "My_pcent": 8.640263917517606e-11,
+              "Mz_pcent": 96.38110114287774,
+              "UMaxX": 2.9962190950527656e-08,
+              "UMaxY": 5.969498488411773e-06,
+              "UMaxZ": 3.9180147647857666
+            },
+            "shape": [
+              -1.6361843015949055e-08,
+              2.349693345591032e-06,
+              0.5711063748846005,
+              -8.619544616862842e-08,
+              -6.587583042150638e-10,
+              -1.4374923438158217e-05,
+              -8.512313231251925e-11,
+              -2.8569661536665277e-08,
+              5.969498428712297e-06,
+              1.7075954635574935,
+              -4.6506293076229905e-08,
+              -9.244878343097971e-12,
+              -4.0936318530020505e-05,
+              -1.0062800543118804e-10,
+              -1.0685909721523415e-08,
+              4.404096542090046e-06,
+              2.8269710266918158,
+              1.1172610083956573e-07,
+              5.121752724480815e-10,
+              -6.126553021433872e-05,
+              -1.1125092987765443e-10,
+              2.99621894966702e-08,
+              -4.341543246718902e-06,
+              3.9180146799010234,
+              2.3144584704286383e-07,
+              8.789051428908959e-10,
+              -7.22676202969382e-05,
+              -3.35524828921806e-18
+            ]
+          }
+        ],
+        "5": [
+          {
+            "values": {
+              "AnalysisKey": 5,
+              "Combination": 1,
+              "Step": 1,
+              "Wn": 0.035456728555017705,
+              "Fn": 0.0056431136153986235,
+              "Tn": 177.2071356619959,
+              "GammaX": 8.191575838022453e-20,
+              "GammaY": 5.910235777444339e-16,
+              "GammaZ": 1.3706301442285143e-23,
+              "MassaX": 6.710191471007326e-39,
+              "MassaY": 3.493088694498309e-31,
+              "MassaZ": 1.878626992267878e-46,
+              "MTotX": 0.07032429282965605,
+              "MTotY": 0.07032429282965605,
+              "MTotZ": 0.07032429282965605,
+              "Mx_pcent": 9.541783075247094e-36,
+              "My_pcent": 4.967115279722029e-28,
+              "Mz_pcent": 2.671377011665666e-43,
+              "UMaxX": 1.2487020299402765e-18,
+              "UMaxY": 9.041161916356621e-15,
+              "UMaxZ": 2.0641679020456395e-22
+            },
+            "shape": [
+              6.509673865885984e-20,
+              4.408853268877707e-16,
+              2.735716908760797e-23,
+              -1.7456080451800335e-17,
+              2.543587255435442e-21,
+              8.977272192083583e-23,
+              -1.0832479920782963e-21,
+              3.3999172476530463e-19,
+              2.0593485227653173e-15,
+              8.875472375874095e-23,
+              -4.6924528194290095e-17,
+              6.165370437123572e-21,
+              2.554097493066188e-22,
+              -1.0729620971997827e-21,
+              7.58920105555664e-19,
+              5.015747058776734e-15,
+              1.4862838062142537e-22,
+              -7.097677330487869e-17,
+              8.326637573631637e-21,
+              3.8185047608862034e-22,
+              -1.0499985040196464e-21,
+              1.248701985453981e-18,
+              9.04116178290498e-15,
+              2.064167844941468e-22,
+              -8.969264944645836e-17,
+              9.04798878616416e-21,
+              4.501286473863233e-22,
+              0.5318508891851236
+            ]
+          },
+          {
+            "values": {
+              "AnalysisKey": 5,
+              "Combination": 1,
+              "Step": 2,
+              "Wn": 7.372448067561791,
+              "Fn": 1.1733615526407506,
+              "Tn": 0.8522522301411822,
+              "GammaX": -1.200011468702221e-10,
+              "GammaY": 0.25789199434893,
+              "GammaZ": 1.2619698713404448e-10,
+              "MassaX": 1.4400275250168615e-20,
+              "MassaY": 0.06650828074926855,
+              "MassaZ": 1.5925679561710186e-20,
+              "MTotX": 0.07032429282965605,
+              "MTotY": 0.07032429282965605,
+              "MTotZ": 0.07032429282965605,
+              "Mx_pcent": 2.0476957066670934e-17,
+              "My_pcent": 94.57369292055182,
+              "Mz_pcent": 2.2646057174419623e-17,
+              "UMaxX": 2.8019655484712302e-09,
+              "UMaxY": 3.932882070541382,
+              "UMaxZ": 1.9378454396701272e-09
+            },
+            "shape": [
+              -1.3492417340647937e-09,
+              0.2347348307991931,
+              -9.013101524808839e-10,
+              -0.009214178217953133,
+              -5.4220453672580024e-11,
+              8.967071792645632e-17,
+              -4.5079203243865275e-12,
+              -2.801965643902103e-09,
+              1.031927117131303,
+              6.793049528981116e-10,
+              -0.022323811820647063,
+              -1.3405196057101306e-11,
+              2.4608784519094296e-16,
+              -4.467826545346957e-12,
+              -2.627684648481785e-09,
+              2.3522246731648297,
+              1.6225691248855402e-09,
+              -0.030141592092087985,
+              1.0944328013303193e-11,
+              3.4867002892089804e-16,
+              -4.3740945291493805e-12,
+              -1.646664587181066e-09,
+              3.9328820316284765,
+              1.937845428186303e-09,
+              -0.03274550518746504,
+              1.906221027960339e-11,
+              3.6264482689315995e-16,
+              -9.324203679069221e-14
+            ]
+          },
+          {
+            "values": {
+              "AnalysisKey": 5,
+              "Combination": 1,
+              "Step": 3,
+              "Wn": 34.313930447165276,
+              "Fn": 5.461231647577844,
+              "Tn": 0.18310887809410506,
+              "GammaX": 0.2575636761171831,
+              "GammaY": 1.6861805464820081e-09,
+              "GammaZ": -4.0908669056159465e-10,
+              "MassaX": 0.0663390472549972,
+              "MassaY": 2.8432048353343636e-18,
+              "MassaZ": 1.673519203946379e-19,
+              "MTotX": 0.07032429282965605,
+              "MTotY": 0.07032429282965605,
+              "MTotZ": 0.07032429282965605,
+              "Mx_pcent": 94.33304564567445,
+              "My_pcent": 4.042991007703916e-15,
+              "Mz_pcent": 2.3797170744398145e-16,
+              "UMaxX": 3.9262306690216064,
+              "UMaxY": 4.6309104106967425e-08,
+              "UMaxZ": 1.0199310729319677e-08
+            },
+            "shape": [
+              0.204688704331928,
+              -2.514527195190451e-08,
+              -1.0199310797829288e-08,
+              1.0116796840766087e-09,
+              0.007998006083311953,
+              1.0525834231048899e-09,
+              -0.0034059924631241897,
+              1.0690363624301231,
+              -4.63091040993439e-08,
+              -7.705970027372962e-09,
+              -1.519909031050599e-10,
+              0.019385519312864884,
+              2.9975039236785037e-09,
+              -0.003373640786011237,
+              2.3862479177758327,
+              -2.0335319441217846e-08,
+              -6.1691981948767485e-09,
+              -8.713648747689291e-10,
+              0.026180859506049804,
+              4.4860815167573036e-09,
+              -0.0033014270383217308,
+              3.9262306450169846,
+              2.9869497397397714e-08,
+              -5.578784817139088e-09,
+              -1.1200300874972829e-09,
+              0.028448816424474273,
+              5.291693844213149e-09,
+              -1.3332946413864018e-17
+            ]
+          },
+          {
+            "values": {
+              "AnalysisKey": 5,
+              "Combination": 1,
+              "Step": 4,
+              "Wn": 119.742050486823,
+              "Fn": 19.057539230937174,
+              "Tn": 0.052472671727556715,
+              "GammaX": -6.26399957662129e-11,
+              "GammaY": -2.8219600850393217e-12,
+              "GammaZ": 7.252304964968657e-07,
+              "MassaX": 3.92376906959117e-21,
+              "MassaY": 7.963458721555137e-24,
+              "MassaZ": 5.259592730490903e-13,
+              "MTotX": 0.07032429282965605,
+              "MTotY": 0.07032429282965605,
+              "MTotZ": 0.07032429282965605,
+              "Mx_pcent": 5.579535764540955e-18,
+              "My_pcent": 1.1323908710813105e-20,
+              "Mz_pcent": 7.479055272167502e-10,
+              "UMaxX": 9.548589696706244e-10,
+              "UMaxY": 6.844690786378393e-11,
+              "UMaxZ": 1.091423928301083e-05
+            },
+            "shape": [
+              -4.983020531256684e-11,
+              2.7035516436138233e-11,
+              1.5909056984984457e-06,
+              -9.936079410603694e-13,
+              -1.9471194984639313e-12,
+              0.09804300528046317,
+              8.28172357603082e-13,
+              -2.600918634525951e-10,
+              6.844691001008966e-11,
+              4.756772946632813e-06,
+              -5.265886333664131e-13,
+              -4.71499450089943e-12,
+              0.27920285704949493,
+              8.202605534569693e-13,
+              -5.804157851084153e-10,
+              5.041987405003683e-11,
+              7.874967805702869e-06,
+              1.277292156042218e-12,
+              -6.366312617639565e-12,
+              0.4178566048129428,
+              8.026670492067248e-13,
+              -9.54858958932167e-10,
+              -4.9711361496823145e-11,
+              1.0914239719887055e-05,
+              2.6535980549997438e-12,
+              -6.9169061780258134e-12,
+              0.492895472373175,
+              -8.677169524319255e-22
+            ]
+          },
+          {
+            "values": {
+              "AnalysisKey": 5,
+              "Combination": 1,
+              "Step": 5,
+              "Wn": 132.47355434065184,
+              "Fn": 21.08382100226755,
+              "Tn": 0.04742973296407946,
+              "GammaX": 1.7747010515451184e-09,
+              "GammaY": -2.461226043950886e-07,
+              "GammaZ": 0.260344632747277,
+              "MassaX": 3.149563822355349e-18,
+              "MassaY": 6.057633639422129e-14,
+              "MassaZ": 0.06777932780031452,
+              "MTotX": 0.07032429282965605,
+              "MTotY": 0.07032429282965605,
+              "MTotZ": 0.07032429282965605,
+              "Mx_pcent": 4.478628501795847e-15,
+              "My_pcent": 8.613856457960143e-11,
+              "Mz_pcent": 96.38110114309133,
+              "UMaxX": 2.9962315295506414e-08,
+              "UMaxY": 5.960349881206639e-06,
+              "UMaxZ": 3.9180147647857666
+            },
+            "shape": [
+              -1.6361836406770614e-08,
+              2.3460758410886045e-06,
+              0.5711063748852334,
+              -8.606241713782577e-08,
+              -6.587580459469669e-10,
+              -1.4374184011743551e-05,
+              -8.512324190346306e-11,
+              -2.8569627067771782e-08,
+              5.960350090660088e-06,
+              1.7075954635593853,
+              -4.643619867093562e-08,
+              -9.244253579506161e-12,
+              -4.0934212821745244e-05,
+              -1.0062811397058377e-10,
+              -1.0685832808603759e-08,
+              4.397360994545137e-06,
+              2.8269710266949475,
+              1.1155554635317653e-07,
+              5.121761163084669e-10,
+              -6.126237879919944e-05,
+              -1.1125103608691343e-10,
+              2.996231604134503e-08,
+              -4.334902028021872e-06,
+              3.918014679905365,
+              2.3109118491629567e-07,
+              8.789060600823768e-10,
+              -7.226390294932224e-05,
+              4.618789629695452e-21
+            ]
+          }
+        ],
+        "7": []
+      },
+      "analysis_states": {
+        "1": [
+          {
+            "Id": "1",
+            "Key": "1",
+            "Combination": "1",
+            "Step": "10",
+            "State": "ExecutedCompleted",
+            "Fo": "68.96",
+            "Exit": "Converged",
+            "ExitDescription": "Step 10 converged at iteration 1, error = 0.0000000 < tol = 0.0000000@ > F = 68.96 kN, target load Fo=68.96 kN@ > Load multiplier F/Fo=100.00 %"
+          }
+        ],
+        "2": [
+          {
+            "Id": "1",
+            "Key": "2",
+            "Combination": "1",
+            "Step": "32",
+            "State": "ExecutedCompleted",
+            "Fo": "0",
+            "Exit": "Converged",
+            "ExitDescription": "Step 32 converged at iteration 1, error = 0.0000000 < tol = 0.0000000@ > F = 0.00 kN, target load Fo=0.00 kN@ > Load multiplier F/Fo=0.00 %"
+          },
+          {
+            "Id": "2",
+            "Key": "2",
+            "Combination": "2",
+            "Step": "0",
+            "State": "NotExecutedNotToBeExecuted",
+            "Fo": "0",
+            "Exit": "NotExecuted"
+          }
+        ],
+        "3": [
+          {
+            "Id": "1",
+            "Key": "3",
+            "Combination": "1",
+            "Step": "4",
+            "State": "ExecutedNotCompleted",
+            "Fo": "60",
+            "Exit": "LargeIterations",
+            "ExitDescription": "Modal analysis not completed due to large iterations: 4 frequencies evaluated"
+          }
+        ],
+        "4": [
+          {
+            "Id": "1",
+            "Key": "4",
+            "Combination": "1",
+            "Step": "4",
+            "State": "ExecutedNotCompleted",
+            "Fo": "60",
+            "Exit": "LargeIterations",
+            "ExitDescription": "Modal analysis not completed due to large iterations: 4 frequencies evaluated"
+          }
+        ],
+        "5": [
+          {
+            "Id": "1",
+            "Key": "5",
+            "Combination": "1",
+            "Step": "5",
+            "State": "ExecutedNotCompleted",
+            "Fo": "60",
+            "Exit": "LargeIterations",
+            "ExitDescription": "Modal analysis not completed due to large iterations: 5 frequencies evaluated"
+          }
+        ],
+        "6": [
+          {
+            "Id": "1",
+            "Key": "6",
+            "Combination": "1",
+            "Step": "0",
+            "State": "ExecutedNotCompleted",
+            "Fo": "0",
+            "Exit": "LargeDisplacement",
+            "ExitDescription": "Analysis interrupted at step 1 due to large displacements@ > Displacement=11250.00 cm > Max displacement=10.00 cm at element Quad (4)@ > Iterations=1 < Max Iterations=1000, error=281249.9385, toll=0.0000@ >@ > NOTES:@ >@ > If you want to get further steps and push the analysis@ > change the value of the Max displacements allowed for this analysis:@ > In order to do it go to main menu:@ > Define > Analysis > Convergence criteria > Max displacement"
+          },
+          {
+            "Id": "2",
+            "Key": "6",
+            "Combination": "2",
+            "Step": "0",
+            "State": "ExecutedNotCompleted",
+            "Fo": "0",
+            "Exit": "LargeDisplacement",
+            "ExitDescription": "Analysis interrupted at step 1 due to large displacements@ > Displacement=22500.00 cm > Max displacement=10.00 cm at element Quad (4)@ > Iterations=1 < Max Iterations=1000, error=281249.9701, toll=0.0000@ >@ > NOTES:@ >@ > If you want to get further steps and push the analysis@ > change the value of the Max displacements allowed for this analysis:@ > In order to do it go to main menu:@ > Define > Analysis > Convergence criteria > Max displacement"
+          }
+        ],
+        "7": [
+          {
+            "Id": "1",
+            "Key": "7",
+            "Combination": "1",
+            "Step": "0",
+            "State": "NotExecutedToBeExecute",
+            "Fo": "0",
+            "Exit": "NotExecuted"
+          }
+        ]
+      },
+      "reaction_history": [
+        {
+          "AnalysisKey": 1,
+          "Combination": 1,
+          "Step": 1,
+          "R1": 0.0,
+          "R2": 4.1359030627651384e-23,
+          "R3": -6.896003723144531,
+          "Et": 0.0,
+          "Eel": -0.018575982858273384,
+          "Ed": 0.03715196571654676,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 1,
+          "Combination": 1,
+          "Step": 2,
+          "R1": -4.1359020530231797e-22,
+          "R2": 0.0,
+          "R3": -13.792007446289062,
+          "Et": 0.0,
+          "Eel": -0.07430393143309359,
+          "Ed": 0.1486078628661872,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 1,
+          "Combination": 1,
+          "Step": 3,
+          "R1": -4.1359020530231797e-22,
+          "R2": 0.0,
+          "R3": -20.687997817993164,
+          "Et": 0.0,
+          "Eel": -0.1671838457244606,
+          "Ed": 0.3343676914489212,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 1,
+          "Combination": 1,
+          "Step": 4,
+          "R1": -8.271804106046359e-22,
+          "R2": 0.0,
+          "R3": -27.584014892578125,
+          "Et": 0.0,
+          "Eel": -0.2972157257323744,
+          "Ed": 0.5944314514647489,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 1,
+          "Combination": 1,
+          "Step": 5,
+          "R1": -4.1359020530231797e-22,
+          "R2": 0.0,
+          "R3": -34.47998046875,
+          "Et": 0.0,
+          "Eel": -0.4643995714568351,
+          "Ed": 0.9287991429136702,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 1,
+          "Combination": 1,
+          "Step": 6,
+          "R1": -4.1359020530231797e-22,
+          "R2": 0.0,
+          "R3": -41.37599563598633,
+          "Et": 0.0,
+          "Eel": -0.6687353828978423,
+          "Ed": 1.3374707657956848,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 1,
+          "Combination": 1,
+          "Step": 7,
+          "R1": -4.1359020530231797e-22,
+          "R2": 0.0,
+          "R3": -48.27202224731445,
+          "Et": 0.0,
+          "Eel": -0.9102231600553969,
+          "Ed": 1.8204463201107939,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 1,
+          "Combination": 1,
+          "Step": 8,
+          "R1": -8.271804106046359e-22,
+          "R2": 0.0,
+          "R3": -55.16802978515625,
+          "Et": 0.0,
+          "Eel": -1.1888629029294977,
+          "Ed": 2.3777258058589954,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 1,
+          "Combination": 1,
+          "Step": 9,
+          "R1": -8.271804106046359e-22,
+          "R2": 0.0,
+          "R3": -62.06403350830078,
+          "Et": 0.0,
+          "Eel": -1.5046546115201458,
+          "Ed": 3.0093092230402916,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 1,
+          "Combination": 1,
+          "Step": 10,
+          "R1": 0.0,
+          "R2": 4.1359030627651384e-23,
+          "R3": -68.9599609375,
+          "Et": 0.0,
+          "Eel": -1.8575982858273408,
+          "Ed": 3.7151965716546815,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 1,
+          "R1": 0.9999999403953552,
+          "R2": -3.440372101914207e-22,
+          "R3": 7.450580596923828e-08,
+          "Et": 0.0,
+          "Eel": -0.14784591699325994,
+          "Ed": 0.15737872647261605,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 2,
+          "R1": 1.9999998807907104,
+          "R2": -3.440372101914207e-22,
+          "R3": 1.4901161193847656e-07,
+          "Et": 0.0,
+          "Eel": -0.29786370919289695,
+          "Ed": 0.3359949504020735,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 3,
+          "R1": 2.999999761581421,
+          "R2": -3.440372101914207e-22,
+          "R3": 0.0,
+          "Et": 0.0,
+          "Eel": -0.4500533765989167,
+          "Ed": 0.5358486717883775,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 4,
+          "R1": 3.999999761581421,
+          "R2": -5.094733327020263e-22,
+          "R3": 2.980232238769531e-07,
+          "Et": 0.0,
+          "Eel": -0.6044149192113198,
+          "Ed": 0.7569398906315292,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 5,
+          "R1": 4.999999523162842,
+          "R2": -1.7860110030258967e-22,
+          "R3": 0.0,
+          "Et": 0.0,
+          "Eel": -0.7609483370301019,
+          "Ed": 0.9992686069315219,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 6,
+          "R1": 5.999999523162842,
+          "R2": -6.749094552126318e-22,
+          "R3": 0.0,
+          "Et": 0.0,
+          "Eel": -0.9196536300552675,
+          "Ed": 1.262834820688363,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 7,
+          "R1": 6.999999523162842,
+          "R2": -1.3164974636540515e-23,
+          "R3": 4.76837158203125e-07,
+          "Et": 0.0,
+          "Eel": -1.080530798286815,
+          "Ed": 1.5476385319020491,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 8,
+          "R1": 7.999999523162842,
+          "R2": -8.403455777232373e-22,
+          "R3": 5.960464477539062e-07,
+          "Et": 0.0,
+          "Eel": -1.243579841724746,
+          "Ed": 1.8536797405725838,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 9,
+          "R1": 5.999999523162842,
+          "R2": 4.8314340236160695e-22,
+          "R3": 0.0,
+          "Et": 0.0,
+          "Eel": -1.5675060533942378,
+          "Ed": 1.9106872440273228,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 10,
+          "R1": 3.999999761581421,
+          "R2": -8.403455777232373e-22,
+          "R3": 2.980232238769531e-07,
+          "Et": 0.0,
+          "Eel": -1.8827447642381867,
+          "Ed": 2.035269735658388,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 11,
+          "R1": 1.9999998807907104,
+          "R2": 4.8314340236160695e-22,
+          "R3": 1.4901161193847656e-07,
+          "Et": 0.0,
+          "Eel": -2.189295974256609,
+          "Ed": 2.2274272154657804,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 12,
+          "R1": -2.220446049250313e-14,
+          "R2": -8.403455777232373e-22,
+          "R3": 2.9744730848301967e-15,
+          "Et": 0.0,
+          "Eel": -2.487159683449501,
+          "Ed": 2.4871596834494993,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 13,
+          "R1": -1.9999998807907104,
+          "R2": 1.522711447186214e-22,
+          "R3": -1.4901161193847656e-07,
+          "Et": 0.0,
+          "Eel": -2.7763358918168652,
+          "Ed": 2.814467139609546,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 14,
+          "R1": -3.999999761581421,
+          "R2": -5.094733327020263e-22,
+          "R3": -2.980232238769531e-07,
+          "Et": 0.0,
+          "Eel": -3.056824599358702,
+          "Ed": 3.209349583945921,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 15,
+          "R1": -5.999999523162842,
+          "R2": 1.522711447186214e-22,
+          "R3": 0.0,
+          "Et": 0.0,
+          "Eel": -3.3286258060750105,
+          "Ed": 3.671807016458625,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 16,
+          "R1": -7.999999523162842,
+          "R2": -8.403455777232373e-22,
+          "R3": -5.960464477539062e-07,
+          "Et": 0.0,
+          "Eel": -3.5917395119657893,
+          "Ed": 4.201839437147653,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 17,
+          "R1": -5.999999523162842,
+          "R2": -1.7860110030258967e-22,
+          "R3": 0.0,
+          "Et": 0.0,
+          "Eel": -3.8548532178565864,
+          "Ed": 4.1980344282401845,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 18,
+          "R1": -3.999999761581421,
+          "R2": -8.403455777232373e-22,
+          "R3": -2.980232238769531e-07,
+          "Et": 0.0,
+          "Eel": -4.126654424572894,
+          "Ed": 4.279179409160104,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 19,
+          "R1": -1.9999998807907104,
+          "R2": 1.522711447186214e-22,
+          "R3": -1.4901161193847656e-07,
+          "Et": 0.0,
+          "Eel": -4.407143132114733,
+          "Ed": 4.445274379907406,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 20,
+          "R1": 2.020605904817785e-14,
+          "R2": -1.1712178732315463e-21,
+          "R3": 5.70839558890375e-15,
+          "Et": 0.0,
+          "Eel": -4.6963193404820975,
+          "Ed": 4.69631934048209,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 21,
+          "R1": 1.9999998807907104,
+          "R2": 1.522711447186214e-22,
+          "R3": 1.4901161193847656e-07,
+          "Et": 0.0,
+          "Eel": -4.994183049674992,
+          "Ed": 5.032314290884161,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 22,
+          "R1": 3.999999761581421,
+          "R2": -1.1712178732315463e-21,
+          "R3": 2.980232238769531e-07,
+          "Et": 0.0,
+          "Eel": -5.300734259693414,
+          "Ed": 5.453259231113615,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 23,
+          "R1": 5.999999523162842,
+          "R2": 4.8314340236160695e-22,
+          "R3": 0.0,
+          "Et": 0.0,
+          "Eel": -5.6159729705373636,
+          "Ed": 5.959154161170456,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 24,
+          "R1": 7.999999523162842,
+          "R2": -1.1712178732315463e-21,
+          "R3": 5.960464477539062e-07,
+          "Et": 0.0,
+          "Eel": -5.93989918220684,
+          "Ed": 6.549999081054678,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 25,
+          "R1": 6.999999523162842,
+          "R2": 4.8314340236160695e-22,
+          "R3": 4.76837158203125e-07,
+          "Et": 0.0,
+          "Eel": -6.102948225644786,
+          "Ed": 6.5700559592600065,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 26,
+          "R1": 5.999999523162842,
+          "R2": -8.403455777232373e-22,
+          "R3": 0.0,
+          "Et": 0.0,
+          "Eel": -6.263825393876334,
+          "Ed": 6.607006584509416,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 27,
+          "R1": 4.999999523162842,
+          "R2": 3.177072798510014e-22,
+          "R3": 0.0,
+          "Et": 0.0,
+          "Eel": -6.4225306869015,
+          "Ed": 6.660850956802907,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 28,
+          "R1": 3.999999761581421,
+          "R2": -1.0057817507209408e-21,
+          "R3": 2.980232238769531e-07,
+          "Et": 0.0,
+          "Eel": -6.5790641047202865,
+          "Ed": 6.731589076140481,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 29,
+          "R1": 2.999999761581421,
+          "R2": 3.177072798510014e-22,
+          "R3": 0.0,
+          "Et": 0.0,
+          "Eel": -6.733425647332688,
+          "Ed": 6.8192209425221355,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 30,
+          "R1": 1.9999998807907104,
+          "R2": -1.0057817507209408e-21,
+          "R3": 1.4901161193847656e-07,
+          "Et": 0.0,
+          "Eel": -6.885615314738709,
+          "Ed": 6.923746555947872,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 31,
+          "R1": 0.9999999403953552,
+          "R2": 3.177072798510014e-22,
+          "R3": 7.450580596923828e-08,
+          "Et": 0.0,
+          "Eel": -7.035633106938348,
+          "Ed": 7.04516591641769,
+          "Ei": 0.0,
+          "Evd": 0.0
+        },
+        {
+          "AnalysisKey": 2,
+          "Combination": 1,
+          "Step": 32,
+          "R1": -8.359979375427429e-14,
+          "R2": -8.403455777232373e-22,
+          "R3": -1.7370367229557586e-15,
+          "Et": 0.0,
+          "Eel": -7.183479023931599,
+          "Ed": 7.183479023931586,
+          "Ei": 0.0,
+          "Evd": 0.0
+        }
+      ],
+      "trace": {
+        "file": "trace-20261017-091439-482-21520.tsv",
+        "match": "Cycle_B terminal displacement prefix equals native Results",
+        "analyses": {
+          "Vert": [
+            {
+              "step": 1,
+              "iterations": 1
+            },
+            {
+              "step": 2,
+              "iterations": 1
+            },
+            {
+              "step": 3,
+              "iterations": 1
+            },
+            {
+              "step": 4,
+              "iterations": 1
+            },
+            {
+              "step": 5,
+              "iterations": 1
+            },
+            {
+              "step": 6,
+              "iterations": 1
+            },
+            {
+              "step": 7,
+              "iterations": 1
+            },
+            {
+              "step": 8,
+              "iterations": 1
+            },
+            {
+              "step": 9,
+              "iterations": 1
+            },
+            {
+              "step": 10,
+              "iterations": 1
+            }
+          ],
+          "Modal_loaded_A": [],
+          "Cycle_B (1)": [
+            {
+              "step": 1,
+              "iterations": 1
+            },
+            {
+              "step": 2,
+              "iterations": 1
+            },
+            {
+              "step": 3,
+              "iterations": 1
+            },
+            {
+              "step": 4,
+              "iterations": 1
+            },
+            {
+              "step": 5,
+              "iterations": 1
+            },
+            {
+              "step": 6,
+              "iterations": 1
+            },
+            {
+              "step": 7,
+              "iterations": 1
+            },
+            {
+              "step": 8,
+              "iterations": 1
+            },
+            {
+              "step": 9,
+              "iterations": 1
+            },
+            {
+              "step": 10,
+              "iterations": 1
+            },
+            {
+              "step": 11,
+              "iterations": 1
+            },
+            {
+              "step": 12,
+              "iterations": 1
+            },
+            {
+              "step": 13,
+              "iterations": 1
+            },
+            {
+              "step": 14,
+              "iterations": 1
+            },
+            {
+              "step": 15,
+              "iterations": 1
+            },
+            {
+              "step": 16,
+              "iterations": 1
+            },
+            {
+              "step": 17,
+              "iterations": 1
+            },
+            {
+              "step": 18,
+              "iterations": 1
+            },
+            {
+              "step": 19,
+              "iterations": 1
+            },
+            {
+              "step": 20,
+              "iterations": 1
+            },
+            {
+              "step": 21,
+              "iterations": 1
+            },
+            {
+              "step": 22,
+              "iterations": 1
+            },
+            {
+              "step": 23,
+              "iterations": 1
+            },
+            {
+              "step": 24,
+              "iterations": 1
+            },
+            {
+              "step": 25,
+              "iterations": 1
+            },
+            {
+              "step": 26,
+              "iterations": 1
+            },
+            {
+              "step": 27,
+              "iterations": 1
+            },
+            {
+              "step": 28,
+              "iterations": 1
+            },
+            {
+              "step": 29,
+              "iterations": 1
+            },
+            {
+              "step": 30,
+              "iterations": 1
+            },
+            {
+              "step": 31,
+              "iterations": 1
+            },
+            {
+              "step": 32,
+              "iterations": 1
+            }
+          ],
+          "Modal_loaded_B": [],
+          "Cycle_return_A (1)": [],
+          "Cycle_return_A (2)": []
+        }
+      }
+    }
+  },
+  "logs": {
+    "trace-20261017-091026-401-12340.tsv": "9a956a88e1a622fb956b038d48320af549e846cb9018f84c25e9f8f28bcb5fb2",
+    "trace-20261017-091036-359-20244.tsv": "5cc9d01be74b72a54a7212c4b101f43e73ae1528ff61bdaaf2664c02cbf126bb",
+    "trace-20261017-091426-014-3732.tsv": "c129cf681397fbe32a1d6aed44a03a3a9af6c7ec79b91e4b7cbfbce870faf952",
+    "trace-20261017-091439-482-21520.tsv": "f04bbdb908e1c3394e35e5db3f3d9154f54325b795422beb473292e049407fe4"
+  }
+}

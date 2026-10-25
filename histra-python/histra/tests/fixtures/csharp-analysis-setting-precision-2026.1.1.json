@@ -1,0 +1,55 @@
+﻿{
+    "assembly_sha256":  "042588ca92cc15aaf8b76467a67951aeb56394f3758cb38b6f458b2bcbd3b0bf",
+    "cases":  [
+                  {
+                      "inputs":  [
+                                     0.8,
+                                     0.1,
+                                     10,
+                                     0.0123456789,
+                                     0.1
+                                 ],
+                      "tolerance":  0.800000011920929,
+                      "stop":  false,
+                      "reduction_threshold":  0.10000000149011612,
+                      "arc_length2":  0.012345679104328156,
+                      "max_eta":  10,
+                      "min_eta":  0.10000000149011612
+                  },
+                  {
+                      "inputs":  [
+                                     0.7123456789,
+                                     0.123456789,
+                                     9.87654321,
+                                     0.123456789,
+                                     0.234567891
+                                 ],
+                      "tolerance":  0.7123456597328186,
+                      "stop":  false,
+                      "reduction_threshold":  0.23456789553165436,
+                      "arc_length2":  0.12345679104328156,
+                      "max_eta":  9.8765430450439453,
+                      "min_eta":  0.12345679104328156
+                  },
+                  {
+                      "inputs":  [
+                                     0.9123456789,
+                                     0.2123456789,
+                                     4.123456789,
+                                     0.234567891,
+                                     0.123456789
+                                 ],
+                      "tolerance":  0.91234570741653442,
+                      "stop":  false,
+                      "reduction_threshold":  0.12345679104328156,
+                      "arc_length2":  0.23456789553165436,
+                      "max_eta":  4.1234569549560547,
+                      "min_eta":  0.2123456746339798
+                  }
+              ],
+    "generated_at":  "2026-10-15T22:53:03.8271846Z",
+    "schema_version":  1,
+    "benchmark_id":  "native-analysis-setting-precision-2026.1.1",
+    "source_commit":  "59f24309e393c4b1e82a55cc60f733c68ae5aab6",
+    "generator":  "tools/csharp-diagnostics/Invoke-AnalysisPrecisionOracle.ps1"
+}
