@@ -46,6 +46,17 @@ class BridgeV2ProjectionTests(unittest.TestCase):
         self.assertEqual(quad.size, 2520 * 4 * 3)
         self.assertTrue(np.isfinite(quad).all())
 
+    def test_final_von_mises_field(self):
+        stress = self.analysis["finalStress"]
+        self.assertEqual(stress["unit"], "MPa")
+        self.assertEqual(stress["step"], 45)
+        self.assertEqual(len(stress["quadCornerValues"]), 2520)
+        self.assertEqual(len(stress["quadCornerValues"][0]), 4)
+        values = np.asarray(stress["quadCornerValues"], dtype=float)
+        self.assertTrue(np.isfinite(values).all())
+        self.assertGreater(stress["max"], stress["min"])
+        self.assertGreaterEqual(stress["min"], 0.0)
+
     def test_lazy_analysis_selection(self):
         other = project_bridge(HRX, OUTPUT, "Pushover_Span1_Half")
         self.assertEqual(other["defaultAnalysis"], "Pushover_Span1_Half")

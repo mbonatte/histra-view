@@ -106,6 +106,63 @@ export function displacementColormap(t) {
   return [last.r, last.g, last.b];
 }
 
+export function csharpStressColormap(t) {
+  t = Math.max(0, Math.min(1, Number(t) || 0));
+  const stops = [
+    { t: 0.000, r: 0.00, g: 0.00, b: 0.55 }, // DarkBlue
+    { t: 0.125, r: 0.00, g: 0.00, b: 1.00 }, // Blue
+    { t: 0.250, r: 0.00, g: 0.75, b: 1.00 }, // DeepSkyBlue
+    { t: 0.375, r: 0.68, g: 0.85, b: 0.90 }, // LightBlue
+    { t: 0.500, r: 0.00, g: 1.00, b: 0.00 }, // Lime
+    { t: 0.625, r: 0.56, g: 0.93, b: 0.56 }, // LightGreen
+    { t: 0.750, r: 1.00, g: 1.00, b: 0.00 }, // Yellow
+    { t: 0.875, r: 1.00, g: 0.65, b: 0.00 }, // Orange
+    { t: 1.000, r: 1.00, g: 0.00, b: 0.00 }, // Red
+  ];
+  for (let i = 0; i < stops.length - 1; i++) {
+    if (t <= stops[i + 1].t) {
+      const f = (t - stops[i].t) / (stops[i + 1].t - stops[i].t);
+      return [
+        stops[i].r + f * (stops[i + 1].r - stops[i].r),
+        stops[i].g + f * (stops[i + 1].g - stops[i].g),
+        stops[i].b + f * (stops[i + 1].b - stops[i].b)
+      ];
+    }
+  }
+  const last = stops[stops.length - 1];
+  return [last.r, last.g, last.b];
+}
+
+export function computeScalarContours({
+  quads,
+  values,
+  min,
+  max,
+  colormap = displacementColormap,
+  makeColor = (r, g, b) => [r, g, b]
+}) {
+  const quadCount = quads.length;
+  if (!Array.isArray(values) && !ArrayBuffer.isView(values)) throw new Error('Missing scalar values.');
+  if (values.length !== quadCount * 4) throw new Error('Scalar values must provide four corners per Quad.');
+  const finite = [];
+  for (const value of values) if (Number.isFinite(value)) finite.push(value);
+  const minimum = Number.isFinite(min) ? min : (finite.length ? Math.min(...finite) : 0);
+  const maximum = Number.isFinite(max) ? max : (finite.length ? Math.max(...finite) : 0);
+  const range = (maximum - minimum) || 1e-12;
+  const quadColors = new Array(quadCount);
+  for (let q = 0; q < quadCount; q++) {
+    const corners = new Array(4);
+    for (let v = 0; v < 4; v++) {
+      const raw = values[q * 4 + v];
+      const value = Number.isFinite(raw) ? raw : minimum;
+      const rgb = colormap((value - minimum) / range);
+      corners[v] = makeColor(rgb[0], rgb[1], rgb[2]);
+    }
+    quadColors[q] = corners;
+  }
+  return { quadColors, min: minimum, max: maximum };
+}
+
 export function computeDisplacementContours({
   quads,
   nodeKeyToIndex,

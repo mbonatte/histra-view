@@ -240,6 +240,127 @@ def _interfaces_summary(z, interface_order):
     return out
 
 
+def _von_mises_field(z):
+    """Interface-spring stress tensor -> global tensor -> Von Mises per Quad corner.
+
+    C# ``ComputationalElement.GetTensorPrepare`` builds an interface tensor with
+    M22 = normal spring stress, M12 = in-plane sliding stress and
+    M23 = out-of-plane sliding stress, transforms it to global axes and
+    interpolates it over the Quad face. The v2 bundle has the final spring
+    snapshot only, so this is a final-step map. At each contact-line endpoint
+    the out-of-plane spring is selected by the C# left/right half rule.
+    """
+    keys = z["mesh/interface_keys"].astype(int)
+    index = {int(key): i for i, key in enumerate(keys)}
+    node_keys = z["mesh/interface_node_keys"].astype(int)
+    node_xyz = z["mesh/interface_node_xyz"].astype(float)
+    e1s = z["mesh/interface_e1"].astype(float)
+    e3s = z["mesh/interface_e3"].astype(float)
+    rows = z["mesh/interface_nrow"].astype(int)
+    cols = z["mesh/interface_ncol"].astype(int)
+    t_offsets = z["springs/transverse_offsets"].astype(int)
+    t_stress = z["springs/transverse_stress"].astype(float)
+    t_valid = z["springs/transverse_stress_valid"].astype(bool)
+    s_offsets = z["springs/sliding_offsets"].astype(int)
+    s_stress = z["springs/sliding_stress"].astype(float)
+
+    def tensor_at(i, endpoint):
+        start, stop = int(t_offsets[i]), int(t_offsets[i + 1])
+        nrow, ncol = int(rows[i]), int(cols[i])
+        if stop - start != nrow * ncol:
+            return None
+        normal = t_stress[start:stop].reshape(nrow, ncol)
+        valid = t_valid[start:stop].reshape(nrow, ncol)
+        column = 0 if endpoint == 0 else ncol - 1
+        values = normal[:, column][valid[:, column]]
+        if not values.size:
+            return None
+        sigma = float(values.mean())
+        sstart = int(s_offsets[i])
+        if s_offsets[i + 1] - sstart < 3:
+            return None
+        tau_in = float(s_stress[sstart])
+        tau_out = float(s_stress[sstart + 1 + endpoint])
+        e1 = e1s[i]
+        e3 = e3s[i]
+        e2 = np.cross(e3, e1)
+        norm = float(np.linalg.norm(e2))
+        if norm <= 1e-12:
+            return None
+        e2 = e2 / norm
+        local = np.array([
+            [0.0, tau_in, 0.0],
+            [tau_in, sigma, tau_out],
+            [0.0, tau_out, 0.0],
+        ], dtype=float)
+        rotation = np.column_stack([e1, e2, e3])
+        return rotation @ local @ rotation.T
+
+    def von_mises(tensor):
+        if tensor is None:
+            return 0.0
+        s11, s22, s33 = tensor[0, 0], tensor[1, 1], tensor[2, 2]
+        s12, s23, s13 = tensor[0, 1], tensor[1, 2], tensor[0, 2]
+        return float(np.sqrt(max(0.0, s11 * s11 + s22 * s22 + s33 * s33
+                                 - s11 * s22 - s11 * s33 - s22 * s33
+                                 + 3.0 * (s12 * s12 + s23 * s23 + s13 * s13))))
+
+    interface_tensors = []
+    for i in range(len(keys)):
+        interface_tensors.append((tensor_at(i, 0), tensor_at(i, 1)))
+
+    quad_keys = z["mesh/quad_keys"].astype(int)
+    conn = z["mesh/quad_conn"].astype(int)
+    face_offsets = z["mesh/quad_face_interface_offsets"].astype(int)
+    face_keys = z["mesh/quad_face_interface_keys"].astype(int)
+    quad_corners = []
+    mesh_positions = {int(key): xyz for key, xyz in zip(z["mesh/node_keys"].astype(int), z["mesh/nodes_xyz"].astype(float))}
+    for qi, quad_key in enumerate(quad_keys):
+        qpoints = np.array([mesh_positions[int(nk)] for nk in conn[qi]], dtype=float)
+        corner_tensors = [[], [], [], []]
+        for side in range(4):
+            start = int(face_offsets[qi * 6 + side])
+            stop = int(face_offsets[qi * 6 + side + 1])
+            first, last = side, (side + 1) % 4
+            for raw_key in face_keys[start:stop]:
+                key = int(raw_key)
+                if key not in index:
+                    continue
+                i = index[key]
+                t0, t1 = interface_tensors[i]
+                if t0 is None and t1 is None:
+                    continue
+                p0, p1 = node_xyz[i, 0], node_xyz[i, 1]
+                forward = np.linalg.norm(p0 - qpoints[first]) + np.linalg.norm(p1 - qpoints[last])
+                reverse = np.linalg.norm(p0 - qpoints[last]) + np.linalg.norm(p1 - qpoints[first])
+                if forward <= reverse:
+                    if t0 is not None: corner_tensors[first].append(t0)
+                    if t1 is not None: corner_tensors[last].append(t1)
+                else:
+                    if t1 is not None: corner_tensors[first].append(t1)
+                    if t0 is not None: corner_tensors[last].append(t0)
+        corners = []
+        all_tensors = [tensor for tensors in corner_tensors for tensor in tensors]
+        quad_tensor = np.mean(all_tensors, axis=0) if all_tensors else None
+        for corner in range(4):
+            adjacent = corner_tensors[corner]
+            tensor = np.mean(adjacent, axis=0) if adjacent else quad_tensor
+            corners.append(von_mises(tensor) if tensor is not None else 0.0)
+        quad_corners.append(corners)
+    flat = [value for corners in quad_corners for value in corners]
+    finite = [value for value in flat if np.isfinite(value)]
+    minimum = float(min(finite)) if finite else 0.0
+    maximum = float(max(finite)) if finite else 0.0
+    return {
+        "quadCornerValues": [[round(float(v), 6) for v in corners] for corners in quad_corners],
+        "min": minimum,
+        "max": maximum,
+        "unit": "MPa",
+        "step": int(z["steps/step_index"][-1]),
+        "source": "interface spring stresses (normal + sliding)",
+    }
+
+
 def _analysis(entry, summary, mesh, z):
     interface_order = sorted(z["mesh/interface_keys"].astype(int).tolist())
     steps_index = z["steps/step_index"].astype(int)
@@ -277,6 +398,7 @@ def _analysis(entry, summary, mesh, z):
         "diagnostics": {"equilibriumCheckedSteps": 0, "equilibriumFailedSteps": 0},
         "interfaces": _interfaces_summary(z, interface_order),
         "interfaceOrder": interface_order,
+        "finalStress": _von_mises_field(z),
         "curveOnly": False,
     }
 

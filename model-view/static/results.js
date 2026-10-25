@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { QuadViewer } from './mesh-viewer.js';
-import { decodeQuadDisplacements, deformedPoints, deformedQuadPoints, computeDisplacementContours } from './deformation.js';
+import { decodeQuadDisplacements, deformedPoints, deformedQuadPoints, computeDisplacementContours, computeScalarContours, csharpStressColormap } from './deformation.js';
 import { responseChart, ResponseCurves } from './result-charts.js';
 import { InterfaceResults } from './interface-results.js';
 import { computeThrustLines } from './thrust-line.js';
@@ -33,13 +33,14 @@ export class ResultsPage {
             <div class="result-scale-row"><input id="resultScale" type="number" min="0" max="1000000" step="any" value="10" aria-label="Deformation scale"><span>×</span></div>
           </label>
           <div class="result-scale-actions"><button id="resultActual">Actual size · 1×</button><button id="resultAuto">Auto scale</button></div>
-          <label class="field">Displacement contour
-            <select id="resultColorBy" aria-label="Displacement contour component">
+          <label class="field">Color map
+            <select id="resultColorBy" aria-label="Color map component">
               <option value="none">Uniform (model color)</option>
               <option value="magnitude" selected>Displacement |U| (magnitude)</option>
               <option value="x">Displacement Ux (X direction)</option>
               <option value="y">Displacement Uy (Y direction)</option>
               <option value="z">Displacement Uz (Z / vertical)</option>
+              <option value="vonMises">Von Mises stress [MPa] · final step</option>
             </select>
           </label>
           <div class="toggle-row"><label for="resultGhost">Undeformed outline</label><input id="resultGhost" type="checkbox" checked></div>
@@ -109,7 +110,7 @@ export class ResultsPage {
     this.$('modalAnalysis').onchange = () => this.selectModal();
     this.$('modalMode').onchange = () => { this.pause(); this.modePhase = 1; this.draw(); };
     this.$('resultStep').oninput = () => { this.pause(); this.draw(); };
-    this.$('resultColorBy').onchange = () => this.draw();
+    this.$('resultColorBy').onchange = () => { this.syncColorMode(); this.draw(); };
     this.$('resultScale').oninput = () => { this.autoScaled = false; this.draw(); };
     this.$('resultActual').onclick = () => { this.autoScaled = false; this.$('resultScale').value = '1'; this.draw(); };
     this.$('resultAuto').onclick = () => this.autoScale();
@@ -373,6 +374,7 @@ export class ResultsPage {
     this.root.querySelector('.result-timeline-labels').classList.toggle('hidden', section === 'modes');
     this.root.querySelector('.results-controls h1').textContent = { shape: 'Deformed shape', modes: 'Modal shapes', curves: 'Response curves', interfaces: 'Interface contours' }[section] || 'Analysis results';
     this.root.querySelector('.results-description').textContent = { shape: 'Explore movement through each analysis stage.', modes: 'Inspect the saved eigenmodes before and after scour.', curves: 'Inspect forces, reactions and energies at saved steps.', interfaces: 'Click an interface in 3D to inspect its stress contour. Use All interfaces to see the field across the model.' }[section] || '';
+    this.syncColorMode();
     if (this.data) { this.draw(); this.viewer.resize(); }
   }
 
@@ -426,6 +428,27 @@ export class ResultsPage {
     }
   }
 
+  syncColorMode() {
+    const select = this.$('resultColorBy');
+    if (!select) return;
+    const option = [...select.options].find(item => item.value === 'vonMises');
+    const available = Boolean(this.analysis?.finalStress);
+    const modes = this.section === 'modes';
+    if (option) {
+      option.disabled = !available || modes;
+      option.title = available ? 'Final saved interface-spring snapshot (MPa)' : 'No final-step spring stress data for this source';
+    }
+    if (select.value === 'vonMises' && (!available || modes)) select.value = 'magnitude';
+    const stress = select.value === 'vonMises' && available && !modes;
+    if (this.analysis) {
+      this.$('resultStep').disabled = stress;
+      this.$('resultPlay').disabled = stress;
+      this.$('resultPrevious').disabled = stress || modes;
+      this.$('resultNext').disabled = stress || modes;
+      if (stress) this.$('resultStep').value = this.analysis.steps.length - 1;
+    }
+  }
+
   selectAnalysis() {
     this.pause();
     this.$('resultStep').max = this.analysis.steps.length - 1;
@@ -447,6 +470,7 @@ export class ResultsPage {
     note.classList.toggle('hidden', !diagnostics?.equilibriumFailedSteps);
     note.textContent = diagnostics?.equilibriumFailedSteps ? `Saved diagnostics: equilibrium checks failed at ${diagnostics.equilibriumFailedSteps} of ${diagnostics.equilibriumCheckedSteps} checked steps. Results are displayed as exported.` : '';
     this.$('resultFinalLabel').textContent = `Step ${this.analysis.steps.at(-1).step}`;
+    this.syncColorMode();
     if (this.autoScaled) this.autoScale();
     else this.draw();
   }
@@ -458,6 +482,11 @@ export class ResultsPage {
     if (!Number.isFinite(scale) || scale < 0 || scale > 1000000) { input.setCustomValidity('Use a scale between 0 and 1,000,000.'); return; }
     input.setCustomValidity('');
     const modal = this.section === 'modes';
+    const requestedColor = this.$('resultColorBy')?.value || 'magnitude';
+    const stressMap = requestedColor === 'vonMises' && !modal && Boolean(this.analysis?.finalStress);
+    if (stressMap && Number(this.$('resultStep').value) !== this.analysis.steps.length - 1) {
+      this.$('resultStep').value = this.analysis.steps.length - 1;
+    }
     if ((this.section === 'shape' || modal) && this.data.mesh?.nodes?.length && (!modal || this.mode)) {
       const values = modal ? this.mode.displacements.map(v => v.map(u => u * (this.modePhase ?? 1))) : this.step.displacements;
       if (values && values.length === this.data.mesh.nodes.length) {
@@ -492,7 +521,29 @@ export class ResultsPage {
         });
         this.viewer.state.bounds.copy(bounds);
         const colorMode = this.$('resultColorBy')?.value || 'magnitude';
-        if (colorMode !== 'none') {
+        if (stressMap) {
+          const stress = this.analysis.finalStress;
+          const res = computeScalarContours({
+            quads: this.viewer.state.quads,
+            values: stress.quadCornerValues.flat(),
+            min: stress.min,
+            max: stress.max,
+            colormap: csharpStressColormap,
+            makeColor: (r, g, b) => new THREE.Color(r, g, b)
+          });
+          this.viewer.state.quads.forEach((quad, i) => {
+            quad.colors = res.quadColors[i];
+          });
+          const dispLeg = this.$('dispLegend');
+          if (dispLeg) {
+            dispLeg.classList.remove('hidden');
+            this.$('dispLegendTitle').textContent = `Von Mises (interface springs) [MPa] · step ${stress.step}`;
+            this.$('dispLegendMin').textContent = `${number(res.min)} MPa`;
+            this.$('dispLegendMid').textContent = `${number((res.min + res.max) / 2)} MPa`;
+            this.$('dispLegendMax').textContent = `${number(res.max)} MPa`;
+            this.root.querySelector('.disp-gradient')?.classList.add('stress');
+          }
+        } else if (colorMode !== 'none') {
           if (!this.nodeKeyToIndex && this.data.mesh?.nodes) {
             this.nodeKeyToIndex = new Map(this.data.mesh.nodes.map((n, i) => [String(n.key), i]));
           }
@@ -521,12 +572,14 @@ export class ResultsPage {
             this.$('dispLegendMin').textContent = `${res.min.toFixed(2)} mm`;
             this.$('dispLegendMid').textContent = `${((res.min + res.max) / 2).toFixed(2)} mm`;
             this.$('dispLegendMax').textContent = `${res.max.toFixed(2)} mm`;
+            this.root.querySelector('.disp-gradient')?.classList.remove('stress');
           }
         } else {
           this.viewer.state.quads.forEach(quad => {
             quad.colors = null;
             quad.color = null;
           });
+          this.root.querySelector('.disp-gradient')?.classList.remove('stress');
           this.$('dispLegend')?.classList.add('hidden');
         }
         this.viewer.rebuild();
@@ -716,10 +769,13 @@ export class ResultsPage {
       legend.push({ type: 'dot', color: '#ef4444', label: `Hinges (${this.$('hingeCount').textContent})` });
     }
     if (this.$('resultColorBy')?.value !== 'none' && !this.$('dispLegend')?.classList.contains('hidden')) {
+      const stress = this.$('resultColorBy').value === 'vonMises';
       legend.push({
         type: 'gradient',
-        colors: ['#1933d9', '#19bfd9', '#33d94c', '#f2d919', '#e62619'],
-        label: `${this.$('dispLegendMin')?.textContent ?? ''} – ${this.$('dispLegendMax')?.textContent ?? ''}`,
+        colors: stress
+          ? ['#00008b', '#0000ff', '#00bfff', '#add8e6', '#00ff00', '#90ee90', '#ffff00', '#ffa500', '#ff0000']
+          : ['#1933d9', '#19bfd9', '#33d94c', '#f2d919', '#e62619'],
+        label: `${stress ? 'Von Mises ' : ''}${this.$('dispLegendMin')?.textContent ?? ''} – ${this.$('dispLegendMax')?.textContent ?? ''}`,
       });
     }
     return {

@@ -42,6 +42,8 @@
 .export-actions{display:flex;gap:8px;margin-top:18px}
 .export-actions button:first-child{background:#254e47;border-color:#397568;color:#acf1e1;font-weight:600}
 .export-actions button{flex:1}
+.disp-gradient.stress{background:linear-gradient(90deg,rgb(0,0,139),rgb(0,0,255),rgb(0,191,255),rgb(173,216,230),rgb(0,255,0),rgb(144,238,144),rgb(255,255,0),rgb(255,165,0),rgb(255,0,0))}
+
 
 /* Pushover Comparison & Import Styling */
 .result-source-actions{display:flex;gap:8px;align-items:flex-end;margin-bottom:18px}.result-source-actions .field{margin-bottom:0;flex:1}

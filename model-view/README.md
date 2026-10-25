@@ -60,10 +60,13 @@ python3 model-view/server.py --model /absolute/path/to/model.hrx --port 8766
   outline, edges, physical extrusion and camera presets. The native bridge v2
   bundle (`pdelta_soft_subgrade_phase4_results.json` + per-case summary/NPZ)
   loads one P-Delta analysis at a time through the analysis selector; its
-  Standard cases are curve-only. Thickness orientation follows the displayed
-  Quad plane. Displays actual control displacement, maximum nodal displacement
-  and load factor alongside the scaled drawing. A linked force–displacement
-  preview appears beside the 3D view on wide screens. **Export PNG** captures
+  Standard cases are curve-only. The **Color map** selector includes a
+  **Von Mises stress** field derived from the final interface normal and sliding
+  spring stresses (C# tensor construction); it is a final-step snapshot, so
+  playback is disabled while it is selected. Thickness orientation follows the
+  displayed Quad plane. Displays actual control displacement, maximum nodal
+  displacement and load factor alongside the scaled drawing. A linked
+  force–displacement preview appears beside the 3D view on wide screens. **Export PNG** captures
   the current 3D view at 2×/3×/4× resolution with a white, screen-dark or
   transparent background and an optional caption/legend; PNG is recommended for
   LaTeX reports because the WebGL view is raster.

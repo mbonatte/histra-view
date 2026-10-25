@@ -60,6 +60,13 @@ The viewer server requires `model-view/.venv`; setup is documented in
 - Bridge thrust pairs must be built from `quad_interface_keys` plus
   `quad_face_interface_offsets`: only pair opposite faces when each face has
   exactly one interface. That reproduces the 3,752-pair topology.
+- The bridge Von Mises map follows the C# interface tensor construction:
+  local `M22` is the normal spring stress, `M12` the in-plane sliding stress and
+  `M23` the out-of-plane sliding stress; the tensor is rotated to global axes
+  and the invariant is evaluated per Quad corner. The v2 bundle stores spring
+  stresses only at the final stage end, so the map is final-step only and the
+  UI disables playback in that mode. Do not present it as a continuum stress
+  tensor or as available at intermediate steps.
 - The saved-result payload is projected in `result_preview.py`/`bridge_v2.py`
   and cached by the server keyed on every referenced file's timestamp. Clear
   that cache only by changing the source files or restarting the server.

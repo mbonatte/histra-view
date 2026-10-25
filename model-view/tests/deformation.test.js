@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { decodeQuadDisplacements, deformedPoints, deformedQuadPoints, displacementColormap, computeDisplacementContours } from '../static/deformation.js';
+import { decodeQuadDisplacements, deformedPoints, deformedQuadPoints, displacementColormap, computeDisplacementContours, computeScalarContours, csharpStressColormap } from '../static/deformation.js';
 
 test('step/scale changes are relative to the immutable undeformed geometry', () => {
   const nodes = [{ point: [10, 20, 30] }, { point: [0, -2, 1] }];
@@ -105,5 +105,27 @@ test('computeDisplacementContours computes component ranges and per-quad colors'
   });
   assert.equal(resX.min, 0);
   assert.equal(resX.max, 2); // 0.2 cm * 10 = 2 mm
+});
+
+test('computeScalarContours maps per-corner Von Mises values to Quad colours', () => {
+  const quads = [{ nodeKeys: [1, 2, 3, 4] }, { nodeKeys: [4, 3, 5, 6] }];
+  const res = computeScalarContours({
+    quads,
+    values: [0, 1, 2, 3, 4, 5, 6, 7],
+    min: 0,
+    max: 8
+  });
+  assert.equal(res.min, 0);
+  assert.equal(res.max, 8);
+  assert.equal(res.quadColors.length, 2);
+  assert.equal(res.quadColors[0].length, 4);
+  assert.notDeepEqual(res.quadColors[0][0], res.quadColors[1][3]);
+  assert.throws(() => computeScalarContours({ quads, values: [0, 1], min: 0, max: 1 }), /four corners/);
+});
+
+test('C# Von Mises palette runs dark blue -> lime -> red', () => {
+  assert.deepEqual(csharpStressColormap(0), [0, 0, 0.55]);
+  assert.deepEqual(csharpStressColormap(0.5), [0, 1, 0]);
+  assert.deepEqual(csharpStressColormap(1), [1, 0, 0]);
 });
 
