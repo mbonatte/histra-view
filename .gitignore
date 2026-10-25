@@ -18,8 +18,10 @@ node_modules/
 # Generated analysis results (large, reproducible)
 3D_bridge/*.json
 3D_bridge/*.pkl
+3D_bridge/*.npz
 wall_model/*.json
 wall_model/*.pkl
+wall_model/*.npz
 histra-python/histra/model-output/model.zip
 
 # Local build output

@@ -73,7 +73,7 @@ the source model SHA-256 before displaying them.
 - `C#_Original/`: a local decompiled export of the installed HiStrA vendor
   application, used as an implementation reference. It contains third-party and
   decompiled code and is not redistributed here.
-- Raw result bundles (`*.json`, `*.pkl`) and virtual environments.
+- Raw result bundles (`*.json`, `*.pkl`, `*.npz`) and virtual environments.
 - Third-party papers and the vendor manual under
   `histra-python/docs/references/`.
 

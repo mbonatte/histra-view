@@ -33,7 +33,7 @@ The viewer server requires `model-view/.venv`; setup is documented in
 ## Data boundaries
 
 - Treat HRX models and `.Results` databases as read-only inputs.
-- Do not commit `.venv/`, `node_modules/`, `__pycache__/`, raw result JSON/PKL
+- Do not commit `.venv/`, `node_modules/`, `__pycache__/`, raw result JSON/PKL/NPZ
   bundles, or build output. Root `.gitignore` covers these.
 - The raw result bundles required by the Results page are intentionally absent
   from Git; keep them locally next to their HRX files when testing.
