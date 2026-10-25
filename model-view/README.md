@@ -54,10 +54,13 @@ python3 model-view/server.py --model /absolute/path/to/model.hrx --port 8766
   applicable local direction; hover for values or export the samples as CSV.
 - **Results** page: saved wall deformed-shape playback, static analysis/step
   selection, deformation scale (including actual size and auto scale), undeformed
-  outline, edges, physical extrusion and camera presets. Thickness orientation
-  follows the displayed Quad plane. Displays actual control displacement,
-  maximum nodal displacement and load factor alongside the scaled drawing.
-  A linked force–displacement preview appears beside the 3D view on wide screens.
+  outline, edges, physical extrusion and camera presets. The native bridge v2
+  bundle (`pdelta_soft_subgrade_phase4_results.json` + per-case summary/NPZ)
+  loads one P-Delta analysis at a time through the analysis selector; its
+  Standard cases are curve-only. Thickness orientation follows the displayed
+  Quad plane. Displays actual control displacement, maximum nodal displacement
+  and load factor alongside the scaled drawing. A linked force–displacement
+  preview appears beside the 3D view on wide screens.
 - **Line of thrust & plastic hinges**: toggle **Line of thrust** in the Deformed
   shape view to render the funicular compression trajectory across opposite Quad
   interfaces (`DrawCurvaPressioni` parity) and mark **Plastic hinges** (red dots)
@@ -101,6 +104,27 @@ python3 model-view/server.py --model /absolute/path/to/model.hrx --port 8766
   fibre contours for all interfaces, with packed little-endian float32 geometry,
   stress, force, area and displacement arrays, plus phase codes and interface
   cell ranges. Only this contour data is requested when the stress view opens.
+  `GET /api/results/bridge` returns one bridge analysis (the default unless
+  `?analysis=Pushover_...` is supplied) plus the analysis catalog.
+  `GET /api/results/bridge/contours?analysis=Pushover_...` returns the final-step
+  interface contours with 9×9 fibre cells and explicit offsets.
+  `GET /api/results/bridge/interface?analysis=Pushover_...&key=...` returns one
+  interface's final spring values and thrust geometry.
+
+## Saved bridge results
+
+The bridge source reads the native v2.0.0 bundle:
+`3D_bridge/pdelta_soft_subgrade_phase4_results.json` plus one
+`pdelta_scour4_soft_<case>.summary.json` and `.fields.npz` per P-Delta case.
+The aggregate manifest selects the default analysis and supplies the catalog;
+the field file supplies the mesh, per-step node and Quad displacements,
+interface resultants/moments, final spring state and 9×9 fibre contours. Units
+are declared as cm/kN/kN·cm/MPa and are served unchanged.
+
+The browser requests one analysis at a time (`?analysis=Pushover_...`) so a
+four-case bundle is never serialized into a single page payload. The `Vert`
+baseline is available as an analysis. Standard cases are `curve_only` and are
+not offered for 3D display. No pickle is loaded.
 
 ## Saved wall results
 

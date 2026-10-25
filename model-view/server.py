@@ -17,7 +17,7 @@ BASE = Path(__file__).resolve().parent
 MAX_UPLOAD = 32 * 1024 * 1024
 MAX_RESULT_UPLOAD = 1024 * 1024 * 1024
 RESULT_SOURCES = {
-    "bridge": {"label": "3D Bridge", "folder": "3D_bridge", "model": "Bridge.hrx", "output": "Bridge.json"},
+    "bridge": {"label": "3D Bridge", "folder": "3D_bridge", "model": "Bridge.hrx", "output": "pdelta_soft_subgrade_phase4_results.json"},
     "wall": {"label": "Wall model", "folder": "wall_model", "model": "overturning_wall_elastic_foundation.hrx", "output": "overturning_wall_raw_output.json"},
 }
 RESULT_LOCK = threading.Lock()
@@ -42,7 +42,13 @@ def saved_results(source_id, mode="", analysis="", key=""):
         raise ValueError("Choose a valid interface ID.")
     files = tuple(BASE.parent / source["folder"] / source[k] for k in ("model", "output"))
     with RESULT_LOCK:
-        stamp = tuple((p.stat().st_mtime_ns, p.stat().st_size) if p.is_file() else None for p in (*files, BASE / "result_preview.py"))
+        stamp = tuple((p.stat().st_mtime_ns, p.stat().st_size) if p.is_file() else None for p in (*files, BASE / "result_preview.py", BASE / "bridge_v2.py"))
+        if source_id == "bridge":
+            try:
+                from bridge_v2 import cache_stamp
+                stamp += cache_stamp(files[1])
+            except (OSError, ValueError):
+                pass
         cache = INTERFACE_CACHE if mode == "interface" else CONTOUR_CACHE if mode == "contours" else RESULT_CACHE
         cache_key = source_id, stamp, analysis, key
         if cache_key not in cache:
@@ -52,7 +58,7 @@ def saved_results(source_id, mode="", analysis="", key=""):
             elif mode == "contours":
                 payload = project_contours(str(files[1]), analysis)
             else:
-                payload = project_results(str(files[0]), str(files[1]))
+                payload = project_results(str(files[0]), str(files[1]), analysis)
             payload["sourceId"] = source_id
             if len(cache) >= (200 if mode == "interface" else 4):
                 cache.pop(next(iter(cache)))
@@ -91,7 +97,7 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 query = parse_qs(urlsplit(self.path).query)
                 return self.reply(200, saved_results(source_id, mode, query.get("analysis", [""])[0], query.get("key", [""])[0]))
-            except (ValueError, OSError, subprocess.TimeoutExpired) as exc:
+            except (ValueError, KeyError, IndexError, OSError, subprocess.TimeoutExpired) as exc:
                 return self.reply(400 if mode else 503, {"error": str(exc)})
         if route == "/api/model/example":
             return self.reply(200, parse_hrx(self.server.model_path.read_bytes(), self.server.model_path.name))

@@ -110,7 +110,9 @@ export class InterfaceResults {
       const axes = node('p', `Local axes: e1 (${data.geometry.reference_e1.map(fmt).join(', ')}), e2 (${data.geometry.reference_e2.map(fmt).join(', ')}), e3 (${data.geometry.reference_e3.map(fmt).join(', ')})`, 'result-note'); detail.append(axes);
       const controls = node('div', undefined, 'curve-controls');
       const label = node('label', 'Fibre map'); const select = node('select'); select.setAttribute('aria-label', 'Spring map quantity');
-      for (const [value, text] of [['stress', 'Normal stress [MPa]'], ['strain', 'Normal strain [cm]'], ['phase', 'Constitutive phase'], ['force', 'Normal force [kN]']]) select.add(new Option(text, value)); label.append(select);
+      const quantities = [['stress', 'Normal stress [MPa]'], ['phase', 'Constitutive phase'], ['force', 'Normal force [kN]']];
+      if (data.normal.some(s => s.strain != null || s.displacement != null)) quantities.splice(1, 0, ['strain', 'Normal strain [cm]']);
+      for (const [value, text] of quantities) select.add(new Option(text, value)); label.append(select);
       const csv = node('button', 'Export springs CSV'); csv.onclick = () => downloadCsv(`${data.analysis}-interface-${key}.csv`, [['group', 'index', 'row', 'column', 'force_kN', 'gross_area_cm2', 'nominal_stress_MPa', 'strain_cm', 'phase'], ...[...data.normal.map(s => ({ ...s, group: 'normal' })), ...data.sliding].map(s => [s.group, s.index, s.row, s.col, s.force, s.area, s.stress, s.strain ?? s.displacement, s.phase])]);
       controls.append(label, csv); snapshot.append(controls);
       const map = node('div', undefined, 'spring-map'), readout = node('p', 'Hover or focus a fibre for force, stress and phase.', 'spring-readout'); snapshot.append(map, readout);
@@ -119,7 +121,12 @@ export class InterfaceResults {
       for (const [phase, count] of Object.entries(this.analysis.interfaces.find(i => i.key === key).phases)) { const item = node('span', `${phase} (${count})`); item.style.borderColor = phaseColors[phase] || '#8193a5'; phases.append(item); } snapshot.append(phases);
       snapshot.append(node('p', 'σ = fibre force / fibre area. Sliding τ below is nominal force / gross area, not force / compressed contact area.', 'result-note'));
       const localForces = node('details'); localForces.append(node('summary', 'Final local resisting force vector (12 DOFs, native kN / kN·cm)'));
-      localForces.append(node('p', data.localForces.map(fmt).join(', '), 'result-note')); snapshot.append(localForces);
+      if (Array.isArray(data.localForces) && data.localForces.length) {
+        localForces.append(node('p', data.localForces.map(fmt).join(', '), 'result-note'));
+      } else {
+        localForces.append(node('p', 'The 12-DOF local resisting force vector is not exported by this result format.', 'result-note'));
+      }
+      snapshot.append(localForces);
       const table = node('table', undefined, 'result-table');
       const head = node('tr'); for (const text of ['Sliding link', 'Force [kN]', 'τ nom. [MPa]', 'Phase']) head.append(node('th', text)); table.append(head);
       data.sliding.forEach((s, i) => { const tr = node('tr'); for (const text of [`${s.group === 'slid' ? 'In-plane' : 'Out-of-plane'} ${i + 1}`, fmt(s.force), fmt(s.stress), s.phase]) tr.append(node('td', text)); table.append(tr); }); snapshot.append(table);

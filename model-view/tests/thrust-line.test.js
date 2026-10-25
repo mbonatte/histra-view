@@ -48,6 +48,28 @@ test('computeInterfaceThrust detects plastic hinge when eccentricity exceeds thr
   assert.deepEqual(resHingeLeft.hingePoint, [0, 0, 0]); // node 1
 });
 
+test('computeInterfaceThrust falls back to interface points outside the mesh node map', () => {
+  const iface = {
+    nodeKeys: ['9001', '9002'], length: 20,
+    points: [[0, 10, 0], [20, 10, 0]],
+  };
+  const res = computeInterfaceThrust(iface, [0, -100, 0, 0, 0, 0], () => undefined);
+  assert.deepEqual(res.point, [10, 10, 0]);
+  assert.equal(res.isHinge, false);
+});
+
+test('buildWidthGroups uses interface points when the mesh has no node map', () => {
+  const mesh = {
+    thrustPairs: [[101, 1, 2, 'masonry']],
+    interfaces: {
+      '1': { nodeKeys: ['9001', '9002'], length: 20, points: [[0, 10, 0], [20, 10, 0]] },
+      '2': { nodeKeys: ['9003', '9004'], length: 20, points: [[0, 10, 10], [20, 10, 10]] },
+    },
+  };
+  const groups = buildWidthGroups(mesh, () => undefined);
+  assert.equal(groups.size, 1);
+});
+
 test('computeThrustLines connects opposite interfaces and forms valid segments', () => {
   const mesh = {
     thrustPairs: [

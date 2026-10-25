@@ -61,12 +61,14 @@ not installed.
 The **Results** page reads generated result bundles next to the input models:
 
 - `wall_model/overturning_wall_raw_output.json`
-- `3D_bridge/Bridge.json`
+- `3D_bridge/pdelta_soft_subgrade_phase4_results.json` plus its per-case
+  `pdelta_scour4_soft_*.summary.json` and `.fields.npz` files
 
 Those files are intentionally not tracked because they are large generated
-exports (hundreds of megabytes). Place them beside the corresponding `.hrx`
-files to enable the Results page. The viewer validates units, schema version and
-the source model SHA-256 before displaying them.
+exports. Place them beside the corresponding `.hrx` files to enable the Results
+page. The viewer validates units, schema version and the source model SHA-256
+before displaying them. The bridge v2 bundle loads one analysis at a time; the
+Standard cases are curve-only and have no field files.
 
 ## Not tracked in this repository
 

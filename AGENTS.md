@@ -42,20 +42,31 @@ The viewer server requires `model-view/.venv`; setup is documented in
 
 ## Viewer implementation notes
 
+- `model-view/bridge_v2.py` projects the native bridge v2.0.0 bundle. It serves
+  one analysis per request; `analysisCatalog`/`defaultAnalysis` drive lazy
+  switching in `results.js`. Standard cases are curve-only. Interface nodes can
+  exceed the 3,216 Quad nodes, so use `mesh/interfaces[*].points` /
+  `interface_node_xyz`, not only the mesh node map.
 - `model-view/static/thrust-line.js` computes the funicular thrust line and
   plastic hinges. Width grouping must use the **undeformed** mesh nodes from
   `mesh.nodes`; the deformed node map is only for drawing playback positions.
   Collinear, touching joint interfaces across through-thickness columns are
-  merged into one section resultant.
-- The saved-result payload is projected in `result_preview.py` and cached by the
-  server keyed on source-file timestamps. Clear that cache only by changing the
-  source files or restarting the server.
+  merged into one section resultant. Interface points are the fallback for
+  interface-only nodes.
+- Bridge thrust pairs must be built from `quad_interface_keys` plus
+  `quad_face_interface_offsets`: only pair opposite faces when each face has
+  exactly one interface. That reproduces the 3,752-pair topology.
+- The saved-result payload is projected in `result_preview.py`/`bridge_v2.py`
+  and cached by the server keyed on every referenced file's timestamp. Clear
+  that cache only by changing the source files or restarting the server.
 - Keep source units explicit. HRX geometry and load values are native units;
-  material-property conversions are display-only.
+  material-property conversions are display-only. Bridge results are
+  cm/kN/kN·cm; do not label them mm.
 - The viewer is read-only: opening a model must not prepare it, run an analysis,
   or write to the source files.
 - Add focused regression tests for numerical projection, picking and rendering
-  changes. `model-view/tests/thrust-line.test.js` covers the thrust-line cases.
+  changes. `model-view/tests/test_bridge_v2.py` covers the bridge adapter and
+  `model-view/tests/thrust-line.test.js` covers the thrust-line cases.
 
 ## General rules
 

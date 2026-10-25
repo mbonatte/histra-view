@@ -24,8 +24,8 @@ export function computeInterfaceThrust(ifaceData, rawRow, nodeMap, hingeThreshol
   const eta = (2 * Math.abs(ex)) / L;
   const xi = 0.5 + ex / L;
 
-  const p1Raw = nodeMap(ifaceData.nodeKeys[0]);
-  const p2Raw = nodeMap(ifaceData.nodeKeys[1]);
+  const p1Raw = nodeMap(ifaceData.nodeKeys[0]) ?? ifaceData.points?.[0];
+  const p2Raw = nodeMap(ifaceData.nodeKeys[1]) ?? ifaceData.points?.[1];
   if (!p1Raw || !p2Raw) return null;
 
   const toVec = p => Array.isArray(p) ? p : [p.x, p.y, p.z];
@@ -63,6 +63,12 @@ export function buildWidthGroups(mesh, nodeMap) {
   const interfaces = mesh?.interfaces || {};
   const toVec = p => Array.isArray(p) ? p : [p.x, p.y, p.z];
   const reference = referenceNodeMap(mesh, nodeMap);
+  const pointFor = (iface, index) => {
+    const p = reference(iface.nodeKeys[index]);
+    if (p) return p;
+    const fallback = iface.points?.[index];
+    return fallback ? toVec(fallback) : null;
+  };
   const groups = new Map();
 
   for (const pair of pairs) {
@@ -71,8 +77,8 @@ export function buildWidthGroups(mesh, nodeMap) {
     const if2 = interfaces[String(i2Key)];
     if (!if1 || !if2) continue;
 
-    const a1Raw = reference(if1.nodeKeys[0]), b1Raw = reference(if1.nodeKeys[1]);
-    const a2Raw = reference(if2.nodeKeys[0]), b2Raw = reference(if2.nodeKeys[1]);
+    const a1Raw = pointFor(if1, 0), b1Raw = pointFor(if1, 1);
+    const a2Raw = pointFor(if2, 0), b2Raw = pointFor(if2, 1);
     if (!a1Raw || !b1Raw || !a2Raw || !b2Raw) continue;
 
     const a1 = toVec(a1Raw), b1 = toVec(b1Raw);

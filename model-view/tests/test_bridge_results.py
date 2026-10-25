@@ -10,7 +10,7 @@ OUTPUT = FOLDER / 'Bridge.json'
 HRX = FOLDER / 'Bridge.hrx'
 
 
-@unittest.skipUnless(OUTPUT.is_file(), 'Bridge bundle not installed')
+@unittest.skipUnless(OUTPUT.is_file(), 'Legacy Bridge.json bundle not installed (v2 is tested separately)')
 class BridgeResultTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

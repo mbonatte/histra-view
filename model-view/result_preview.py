@@ -86,6 +86,9 @@ def spring_values(spring):
 
 def project_interface(output_path, analysis_name, key):
     raw = load_raw(output_path)
+    if raw.get("schema_version") == "2.0.0" and "baseline_case" in raw:
+        from bridge_v2 import project_interface as project_bridge_interface
+        return project_bridge_interface(output_path, analysis_name, key)
     validate_metadata(raw)
     state = raw["analyses"][analysis_name]["committed_element_and_spring_state"]["interface_states"][str(key)]
     geometry = interface_geometry(raw["model_geometry_and_topology"]["interfaces"][str(key)], state)
@@ -98,9 +101,12 @@ def project_interface(output_path, analysis_name, key):
 
 def project_contours(output_path, analysis_name):
     """Actual saved normal-fibre stress on native C# interface cells."""
+    raw = load_raw(output_path)
+    if raw.get("schema_version") == "2.0.0" and "baseline_case" in raw:
+        from bridge_v2 import project_contours as project_bridge_contours
+        return project_bridge_contours(output_path, analysis_name)
     from histra.preprocessing.csharp_fibre_geometry import _csharp_interface_cells
 
-    raw = load_raw(output_path)
     validate_metadata(raw)
     analysis = raw["analyses"][analysis_name]
     states = analysis["committed_element_and_spring_state"]["interface_states"]
@@ -234,8 +240,11 @@ def project_curve_cases(hrx_path, raw, name="Pushover Results"):
     }
 
 
-def project_results(hrx_path, output_path):
+def project_results(hrx_path, output_path, analysis_name=None):
     raw = load_raw(output_path)
+    if raw.get("schema_version") == "2.0.0" and "baseline_case" in raw:
+        from bridge_v2 import project_bridge
+        return project_bridge(hrx_path, output_path, analysis_name)
     if "cases" in raw and raw.get("schema_version") != "1.1.0":
         return project_curve_cases(hrx_path, raw, Path(output_path).stem)
     validate_metadata(raw, hrx_path)

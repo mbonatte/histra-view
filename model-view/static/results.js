@@ -93,12 +93,12 @@ export class ResultsPage {
     this.$('resultDataset').onchange = () => { this.data = null; this.activate(); };
     this.$('modalAnalysis').onchange = () => this.selectModal();
     this.$('modalMode').onchange = () => { this.pause(); this.modePhase = 1; this.draw(); };
-    this.$('resultAnalysis').onchange = () => this.selectAnalysis();
     this.$('resultStep').oninput = () => { this.pause(); this.draw(); };
     this.$('resultColorBy').onchange = () => this.draw();
     this.$('resultScale').oninput = () => { this.autoScaled = false; this.draw(); };
     this.$('resultActual').onclick = () => { this.autoScaled = false; this.$('resultScale').value = '1'; this.draw(); };
     this.$('resultAuto').onclick = () => this.autoScale();
+    this.$('resultAnalysis').onchange = () => { this.loadAnalysis(); };
     this.$('resultPrevious').onclick = () => this.move(-1);
     this.$('resultNext').onclick = () => this.move(1);
     this.$('resultPlay').onclick = () => this.timer ? this.pause() : this.play();
@@ -210,8 +210,13 @@ export class ResultsPage {
       this.viewer.setOptions({ extrude: this.$('resultExtrude').checked });
       this.ghost.geometry = this.ghostGeometries[String(this.$('resultExtrude').checked)];
       this.$('resultAnalysis').replaceChildren(); this.$('modalAnalysis').replaceChildren(); this.$('modalMode').replaceChildren();
-      for (const analysis of data.analyses) this.$('resultAnalysis').add(new Option(analysis.name, analysis.name));
-      this.$('resultAnalysis').value = data.analyses.some(a => a.name === 'LiveLoad_0') ? 'LiveLoad_0' : data.analyses.some(a => a.name === 'LiveLoad_1') ? 'LiveLoad_1' : data.analyses.at(-1).name;
+      const analysisOptions = data.analysisCatalog?.length
+        ? data.analysisCatalog
+        : data.analyses.map(analysis => ({ name: analysis.name, label: analysis.name }));
+      for (const analysis of analysisOptions) this.$('resultAnalysis').add(new Option(analysis.label || analysis.name, analysis.name));
+      const analysisNames = analysisOptions.map(analysis => analysis.name);
+      this.$('resultAnalysis').value = data.defaultAnalysis
+        || (analysisNames.includes('LiveLoad_0') ? 'LiveLoad_0' : analysisNames.includes('LiveLoad_1') ? 'LiveLoad_1' : analysisNames.at(-1));
       for (const id of ['resultAnalysis', 'resultStep', 'resultPlay', 'resultPrevious', 'resultNext']) this.$(id).disabled = false;
       this.$('resultSource').textContent = data.name;
       for (const analysis of data.modal) this.$('modalAnalysis').add(new Option(analysis.name, analysis.name));
@@ -352,6 +357,47 @@ export class ResultsPage {
     this.$('modalMode').replaceChildren(...this.modal.modes.map((m, i) => new Option(`Mode ${m.number} · ${number(m.frequency)} Hz`, i)));
     this.modePhase = 1;
     if (this.section === 'modes') { this.pause(); this.draw(); }
+  }
+
+  async loadAnalysis() {
+    const name = this.$('resultAnalysis').value;
+    if (!name || this.analysisLoading) return;
+    if (this.data?.analyses?.some(analysis => analysis.name === name)) { this.selectAnalysis(); return; }
+    this.analysisLoading = true;
+    const select = this.$('resultAnalysis');
+    const previous = this.data?.analyses?.[0]?.name;
+    select.disabled = true;
+    const message = this.$('resultMessage');
+    message.textContent = 'Reading saved displacement history…';
+    message.classList.remove('hidden', 'error');
+    try {
+      const sourceId = this.$('resultDataset').value;
+      const response = await fetch(`/api/results/${encodeURIComponent(sourceId)}?analysis=${encodeURIComponent(name)}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Unable to read saved results.');
+      this.data.analyses = data.analyses;
+      this.data.modal = data.modal;
+      this.data.analysisCatalog = data.analysisCatalog || this.data.analysisCatalog;
+      this.data.defaultAnalysis = data.defaultAnalysis;
+      this.data.scourStage = data.scourStage;
+      this.data.formulation = data.formulation;
+      this.data.sourceSchema = data.sourceSchema;
+      this.data.modelSha256 = data.modelSha256;
+      this.data.units = data.units;
+      this.data.sourceUnits = data.sourceUnits;
+      this.data.title = data.title;
+      this.data.name = data.name;
+      this.$('resultSource').textContent = data.name;
+      message.classList.add('hidden');
+      this.selectAnalysis();
+    } catch (error) {
+      if (previous) select.value = previous;
+      message.textContent = error.message || String(error);
+      message.classList.add('error');
+    } finally {
+      this.analysisLoading = false;
+      select.disabled = false;
+    }
   }
 
   selectAnalysis() {

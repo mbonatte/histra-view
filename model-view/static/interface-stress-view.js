@@ -99,6 +99,11 @@ export class InterfaceStressView {
       }
       if (ticket !== this.ticket) return;
       if (data.modelSha256 !== modelSha256) throw new Error('The result model changed. Reload Results.');
+      if (data.strainAvailable === false) {
+        const strainOption = this.field.querySelector('option[value="strain"]');
+        if (strainOption) { strainOption.disabled = true; strainOption.textContent = 'Normal strain (not exported)'; }
+        if (this.field.value === 'strain') this.field.value = 'stress';
+      }
       this.data = data;
       this.build(); this.paint(); this.selectKey(this.selected);
     } catch (error) {
