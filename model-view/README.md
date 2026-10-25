@@ -44,8 +44,11 @@ python3 model-view/server.py --model /absolute/path/to/model.hrx --port 8766
   inspector. Lists only masonry material templates (including unassigned definitions) with
   search and an assigned-only filter. Masonry uses the C# editor's Rocking, Shear,
   and Sliding mechanism groups, local-direction columns, and original reference
-  diagrams. General properties include reference ranges and saved corrective
-  coefficients; **All properties** preserves the exact serialized definition.
+  diagrams. General properties groups the primary design quantities (specific
+  weight, E, G, fm, ft, τ₀, cohesion, friction) separately from identification
+  and assessment metadata. NTC simple-mode improvement options are disclosed
+  only for simple-mode materials; **All properties** preserves the exact
+  serialized definition.
 - Material units switch between MPa/N/mm/kN/m³, SI engineering units, and the
   C# kN/cm base representation. A Unit column identifies dimensional properties;
   ratios remain dimensionless and raw attributes remain unchanged.
@@ -60,7 +63,10 @@ python3 model-view/server.py --model /absolute/path/to/model.hrx --port 8766
   Standard cases are curve-only. Thickness orientation follows the displayed
   Quad plane. Displays actual control displacement, maximum nodal displacement
   and load factor alongside the scaled drawing. A linked force–displacement
-  preview appears beside the 3D view on wide screens.
+  preview appears beside the 3D view on wide screens. **Export PNG** captures
+  the current 3D view at 2×/3×/4× resolution with a white, screen-dark or
+  transparent background and an optional caption/legend; PNG is recommended for
+  LaTeX reports because the WebGL view is raster.
 - **Line of thrust & plastic hinges**: toggle **Line of thrust** in the Deformed
   shape view to render the funicular compression trajectory across opposite Quad
   interfaces (`DrawCurvaPressioni` parity) and mark **Plastic hinges** (red dots)

@@ -27,6 +27,22 @@
 .thrust-icon{width:18px;height:3px;background:#38bdf8;display:inline-block}.hinge-icon{color:#ef4444;font-size:14px;line-height:1;display:inline-block;margin-right:2px}
 .stress-camera button.active{background:#25473f;color:#a6ebdc;border-color:#3e7b6c}
 
+
+.export-dialog{border:1px solid #3a4c5b;background:#16222c;color:var(--text);border-radius:10px;padding:22px;width:min(430px,92vw);box-shadow:0 24px 80px #0008}
+.export-dialog::backdrop{background:#02070bcc;backdrop-filter:blur(2px)}
+.export-dialog h2{font-size:19px;margin:0 0 8px;letter-spacing:-.3px}
+.export-intro{font-size:11px;line-height:1.7;color:var(--muted);margin:0 0 17px}
+.export-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.export-dialog .field{margin:0}
+.export-dialog select{width:100%;background:#111a23;color:var(--text);border:1px solid #34414d;padding:8px;border-radius:5px;margin-top:6px}
+.export-dialog .toggle-row{margin:12px 0 0}
+.export-size{font:11px ui-monospace,monospace;color:#b7cfdd;margin:17px 0 0;padding:9px 10px;background:#111a23;border:1px solid #2d3b47;border-radius:5px}
+.export-status{font-size:11px;line-height:1.6;color:#8edbce;min-height:18px;margin:12px 0 0}
+.export-status.error{color:#ffae93}
+.export-actions{display:flex;gap:8px;margin-top:18px}
+.export-actions button:first-child{background:#254e47;border-color:#397568;color:#acf1e1;font-weight:600}
+.export-actions button{flex:1}
+
 /* Pushover Comparison & Import Styling */
 .result-source-actions{display:flex;gap:8px;align-items:flex-end;margin-bottom:18px}.result-source-actions .field{margin-bottom:0;flex:1}
 .sidebar-import-btn{padding:8px 10px;font-size:11px;background:#1e2d38;color:#9cc8db;border:1px solid #3b5062;border-radius:5px;white-space:nowrap;cursor:pointer}

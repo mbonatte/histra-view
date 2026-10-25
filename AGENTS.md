@@ -47,6 +47,10 @@ The viewer server requires `model-view/.venv`; setup is documented in
   switching in `results.js`. Standard cases are curve-only. Interface nodes can
   exceed the 3,216 Quad nodes, so use `mesh/interfaces[*].points` /
   `interface_node_xyz`, not only the mesh node map.
+- `model-view/static/export-image.js` captures the current WebGL view at high
+  resolution for reports. Keep `preserveDrawingBuffer` enabled on the renderer,
+  restore the renderer/camera/background after export, and do not claim PDF is
+  vector output: the 3D view is raster.
 - `model-view/static/thrust-line.js` computes the funicular thrust line and
   plastic hinges. Width grouping must use the **undeformed** mesh nodes from
   `mesh.nodes`; the deformed node map is only for drawing playback positions.

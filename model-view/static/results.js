@@ -4,6 +4,7 @@ import { decodeQuadDisplacements, deformedPoints, deformedQuadPoints, computeDis
 import { responseChart, ResponseCurves } from './result-charts.js';
 import { InterfaceResults } from './interface-results.js';
 import { computeThrustLines } from './thrust-line.js';
+import { downloadBlob, exportDimensions, exportViewerPng, sanitizeFilename } from './export-image.js';
 
 const number = value => value && Math.abs(value) < 1e-4 ? value.toExponential(3) : Number(value).toLocaleString(undefined, { maximumSignificantDigits: 6 });
 
@@ -68,7 +69,7 @@ export class ResultsPage {
       <section class="results-viewport has-force-preview" aria-label="Interactive deformed shape">
         <div class="results-canvas"></div>
         <div class="viewport-top"><span class="viewport-label"><span class="status-dot"></span> DEFORMED SHAPE</span><span class="result-scale-badge" id="resultScaleBadge">10× deformation</span></div>
-        <div class="view-toolbar" aria-label="Results camera controls"><button data-result-view="iso" class="active">3D</button><button data-result-view="front">Front</button><button data-result-view="top">Top</button><button data-result-view="side">Side</button><span></span><button data-result-projection="perspective" class="active" title="Perspective camera">Persp</button><button data-result-projection="ortho" title="Orthographic camera">Ortho</button><span></span><button id="resultFit">Fit ↗</button></div>
+        <div class="view-toolbar" aria-label="Results camera controls"><button data-result-view="iso" class="active">3D</button><button data-result-view="front">Front</button><button data-result-view="top">Top</button><button data-result-view="side">Side</button><span></span><button data-result-projection="perspective" class="active" title="Perspective camera">Persp</button><button data-result-projection="ortho" title="Orthographic camera">Ortho</button><span></span><button id="resultFit">Fit ↗</button><span></span><button id="resultExport" title="Export the current 3D view as a high-resolution PNG">Export PNG</button></div>
         <div class="disp-legend hidden" id="dispLegend">
           <span class="disp-legend-title" id="dispLegendTitle">|U| [mm]</span>
           <span class="disp-legend-min" id="dispLegendMin">0.00 mm</span>
@@ -83,7 +84,21 @@ export class ResultsPage {
           <input id="resultStep" type="range" min="0" max="0" step="1" value="0" disabled aria-label="Analysis step">
           <div class="result-timeline-labels"><span>Initial state</span><span id="resultFinalLabel">Final saved step</span></div>
         </div>
-      </section><section class="result-document hidden" id="resultDocuments"><div id="responseCurves"></div><div id="interfaceResults" class="hidden"></div></section>`;
+      </section><section class="result-document hidden" id="resultDocuments"><div id="responseCurves"></div><div id="interfaceResults" class="hidden"></div></section>
+      <dialog id="resultExportDialog" class="export-dialog" aria-labelledby="exportTitle">
+        <h2 id="exportTitle">Export view as PNG</h2>
+        <p class="export-intro">High-resolution PNG for reports and LaTeX. A PDF would embed this same raster; PNG keeps the export direct and lossless.</p>
+        <div class="export-grid">
+          <label class="field">Resolution<select id="exportScale" aria-label="Export resolution"><option value="2">2×</option><option value="3">3×</option><option value="4" selected>4×</option></select></label>
+          <label class="field">Background<select id="exportBackground" aria-label="Export background"><option value="white" selected>White</option><option value="screen">Screen dark</option><option value="transparent">Transparent</option></select></label>
+        </div>
+        <div class="toggle-row"><label for="exportCaption">Caption and legend</label><input id="exportCaption" type="checkbox" checked></div>
+        <div class="toggle-row"><label for="exportCrop">Tight crop</label><input id="exportCrop" type="checkbox" checked></div>
+        <div class="toggle-row"><label for="exportAxes">Axes and grid</label><input id="exportAxes" type="checkbox"></div>
+        <p class="export-size" id="exportSize">—</p>
+        <p class="export-status" id="exportStatus" role="status"></p>
+        <div class="export-actions"><button id="exportDownload">Download PNG</button><button id="exportClose">Close</button></div>
+      </dialog>`;
     this.$ = id => root.querySelector(`#${id}`);
     root.querySelector('.results-viewport').append(this.$('resultMiniChart'));
     this.curves = new ResponseCurves(this.$('responseCurves'), index => { this.$('resultStep').value = index; this.draw(); });
@@ -122,6 +137,15 @@ export class ResultsPage {
     this.$('resultHinges').onchange = () => this.draw();
     this.$('thrustFilter').onchange = () => this.draw();
     this.$('resultFit').onclick = () => this.viewer?.fit();
+    this.$('resultExport').onclick = () => this.openExportDialog();
+    this.$('exportScale').onchange = () => this.updateExportSize();
+    this.$('exportBackground').onchange = () => this.updateExportSize();
+    this.$('exportCrop').onchange = () => this.updateExportSize();
+    this.$('exportDownload').onclick = () => this.downloadExport();
+    this.$('exportClose').onclick = () => this.$('resultExportDialog').close();
+    this.$('resultExportDialog').addEventListener('close', () => {
+      this.$('exportStatus').textContent = '';
+    });
     for (const button of root.querySelectorAll('[data-result-view]')) button.onclick = () => {
       this.viewer?.setView(button.dataset.resultView);
       for (const other of root.querySelectorAll('[data-result-view]')) other.classList.toggle('active', other === button);
@@ -145,7 +169,7 @@ export class ResultsPage {
     for (const button of this.root.querySelectorAll('[data-result-section]')) button.disabled = true;
     this.$('resultMessage').classList.remove('hidden', 'error');
     this.$('resultMessage').textContent = 'Reading saved displacement history…';
-    for (const id of ['resultDataset', 'resultAnalysis', 'resultStep', 'resultPlay', 'resultPrevious', 'resultNext']) this.$(id).disabled = true;
+    for (const id of ['resultDataset', 'resultAnalysis', 'resultStep', 'resultPlay', 'resultPrevious', 'resultNext', 'resultExport']) this.$(id).disabled = true;
     try {
       if (!this.catalog) {
         const response = await fetch('/api/results/catalog');
@@ -217,7 +241,7 @@ export class ResultsPage {
       const analysisNames = analysisOptions.map(analysis => analysis.name);
       this.$('resultAnalysis').value = data.defaultAnalysis
         || (analysisNames.includes('LiveLoad_0') ? 'LiveLoad_0' : analysisNames.includes('LiveLoad_1') ? 'LiveLoad_1' : analysisNames.at(-1));
-      for (const id of ['resultAnalysis', 'resultStep', 'resultPlay', 'resultPrevious', 'resultNext']) this.$(id).disabled = false;
+      for (const id of ['resultAnalysis', 'resultStep', 'resultPlay', 'resultPrevious', 'resultNext', 'resultExport']) this.$(id).disabled = false;
       this.$('resultSource').textContent = data.name;
       for (const analysis of data.modal) this.$('modalAnalysis').add(new Option(analysis.name, analysis.name));
       for (const button of this.root.querySelectorAll('[data-result-section]')) button.disabled = false;
@@ -257,7 +281,7 @@ export class ResultsPage {
     for (const analysis of (data.analyses || [])) {
       this.$('resultAnalysis').add(new Option(analysis.name, analysis.name));
     }
-    for (const id of ['resultAnalysis', 'resultStep', 'resultPlay', 'resultPrevious', 'resultNext']) this.$(id).disabled = false;
+    for (const id of ['resultAnalysis', 'resultStep', 'resultPlay', 'resultPrevious', 'resultNext', 'resultExport']) this.$(id).disabled = false;
     this.$('resultSource').textContent = label;
 
     let option = Array.from(this.$('resultDataset').options).find(o => o.value === 'imported');
@@ -367,6 +391,7 @@ export class ResultsPage {
     const select = this.$('resultAnalysis');
     const previous = this.data?.analyses?.[0]?.name;
     select.disabled = true;
+    if (this.$('resultExport')) this.$('resultExport').disabled = true;
     const message = this.$('resultMessage');
     message.textContent = 'Reading saved displacement history…';
     message.classList.remove('hidden', 'error');
@@ -397,6 +422,7 @@ export class ResultsPage {
     } finally {
       this.analysisLoading = false;
       select.disabled = false;
+      if (this.$('resultExport')) this.$('resultExport').disabled = false;
     }
   }
 
@@ -653,6 +679,88 @@ export class ResultsPage {
 
     if (this.$('hingeCount')) this.$('hingeCount').textContent = res.hingeCount;
     this.viewer.needsRender = true;
+  }
+
+  openExportDialog() {
+    if (!this.viewer || (!this.step && this.section !== 'modes')) return;
+    this.$('exportStatus').textContent = '';
+    this.updateExportSize();
+    const dialog = this.$('resultExportDialog');
+    if (dialog.showModal) dialog.showModal();
+    else dialog.setAttribute('open', '');
+  }
+
+  updateExportSize() {
+    const canvas = this.root.querySelector('.results-canvas');
+    if (!canvas) return;
+    const { width, height } = exportDimensions(canvas.clientWidth, canvas.clientHeight, Number(this.$('exportScale').value));
+    const crop = this.$('exportCrop')?.checked;
+    const prefix = crop ? 'Up to ' : '';
+    this.$('exportSize').textContent = `${prefix}${width.toLocaleString()} × ${height.toLocaleString()} px${crop ? ' before tight crop' : ''} · ${(width / 300).toFixed(2)} in wide at 300 dpi`;
+  }
+
+  exportCaption() {
+    if (this.section === 'modes' && this.mode) {
+      return {
+        title: `${this.modal.name} · mode ${this.mode.number}`,
+        subtitle: `${number(this.mode.frequency)} Hz · ${number(this.mode.period)} s · ${number(this.$('resultScale').valueAsNumber)} cm amplitude`,
+        legend: [],
+      };
+    }
+    if (!this.step) return null;
+    const state = this.step;
+    const legend = [];
+    if (this.ghost?.visible) legend.push({ type: 'line', color: '#ffca7d', label: 'Undeformed' });
+    if (this.$('resultThrust')?.checked) legend.push({ type: 'line', color: '#38bdf8', label: 'Line of thrust' });
+    if (this.$('resultHinges')?.checked && Number(this.$('hingeCount')?.textContent) > 0) {
+      legend.push({ type: 'dot', color: '#ef4444', label: `Hinges (${this.$('hingeCount').textContent})` });
+    }
+    if (this.$('resultColorBy')?.value !== 'none' && !this.$('dispLegend')?.classList.contains('hidden')) {
+      legend.push({
+        type: 'gradient',
+        colors: ['#1933d9', '#19bfd9', '#33d94c', '#f2d919', '#e62619'],
+        label: `${this.$('dispLegendMin')?.textContent ?? ''} – ${this.$('dispLegendMax')?.textContent ?? ''}`,
+      });
+    }
+    return {
+      title: `${this.analysis.name} · step ${state.step}`,
+      subtitle: `${number(this.$('resultScale').valueAsNumber)}× deformation · max |U| ${number(state.maxDisplacement)} cm · λ ${number(state.loadFactor)}`,
+      legend,
+    };
+  }
+
+  async downloadExport() {
+    if (this.exporting || !this.viewer) return;
+    this.exporting = true;
+    const button = this.$('exportDownload');
+    const status = this.$('exportStatus');
+    button.disabled = true;
+    status.classList.remove('error');
+    status.textContent = 'Rendering high-resolution PNG…';
+    try {
+      const result = await exportViewerPng(this.viewer, {
+        scale: Number(this.$('exportScale').value),
+        background: this.$('exportBackground').value,
+        axes: this.$('exportAxes').checked,
+        crop: this.$('exportCrop').checked,
+        caption: this.$('exportCaption').checked ? this.exportCaption() : null,
+      });
+      const base = this.section === 'modes' && this.mode
+        ? `${this.modal.name}-mode-${this.mode.number}`
+        : `${this.analysis.name}-step-${this.step.step}`;
+      const background = this.$('exportBackground').value;
+      downloadBlob(result.blob, `${sanitizeFilename(base)}-${background}.png`);
+      const size = result.blob.size >= 1024 * 1024
+        ? `${(result.blob.size / 1024 / 1024).toFixed(2)} MB`
+        : `${Math.max(1, Math.round(result.blob.size / 1024))} KB`;
+      status.textContent = `Saved ${result.width.toLocaleString()} × ${result.height.toLocaleString()} px PNG · ${size}`;
+    } catch (error) {
+      status.textContent = error.message || String(error);
+      status.classList.add('error');
+    } finally {
+      this.exporting = false;
+      button.disabled = false;
+    }
   }
 
   autoScale() {

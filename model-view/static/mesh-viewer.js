@@ -190,7 +190,7 @@ export class QuadViewer {
     this._orthoHalfHeight = 100;
     this.projection = this.options.projection === 'ortho' ? 'ortho' : 'perspective';
     this.camera = this.projection === 'ortho' ? this.orthoCamera : this.perspCamera;
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.domElement.style.position = 'absolute';
