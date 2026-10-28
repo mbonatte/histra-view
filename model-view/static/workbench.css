@@ -451,21 +451,25 @@ footer i {
   display: flex;
   flex-shrink: 0;
   height: 34px;
-  padding: 0 8px;
+  padding: 0 4px;
   border-bottom: 1px solid var(--wb-line);
 }
 
 .tabs button {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
   height: 34px;
-  padding: 0 8px;
+  padding: 0 3px;
+  overflow: hidden;
   border: 0;
   border-bottom: 1.5px solid transparent;
   border-radius: 0;
   background: none;
   color: var(--wb-text-3);
-  font-size: 11px;
+  font-size: 9.5px;
   font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   transition: color 120ms ease, border-color 120ms ease;
 }
 

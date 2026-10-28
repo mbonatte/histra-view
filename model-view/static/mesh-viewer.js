@@ -218,6 +218,7 @@ export class QuadViewer {
 
     this.modelGroup = new THREE.Group();
     this.scene.add(this.modelGroup);
+    this.nodeMarker = null;
     this.raycaster = new THREE.Raycaster();
     this.pointer = new THREE.Vector2();
     this._pointerStart = null;
@@ -259,6 +260,7 @@ export class QuadViewer {
   }
 
   clear() {
+    this.clearNodeSelection();
     this._disposeObject(this.state.mesh);
     this._disposeObject(this.state.edgeLines);
     this._disposeObject(this.state.nodePoints);
@@ -409,6 +411,34 @@ export class QuadViewer {
 
   clearSelection() { this.selectQuad(null); }
 
+  selectNode(key) {
+    this.clearNodeSelection();
+    const point = this.state.nodes.get(Number(key));
+    if (!point) return;
+    const size = this.state.bounds.getSize(new THREE.Vector3());
+    const radius = Math.max(size.length() * 0.003, 0.05);
+    const geometry = new THREE.SphereGeometry(radius, 12, 8);
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xffff66,
+      depthTest: false,
+      depthWrite: false,
+    });
+    this.nodeMarker = new THREE.Mesh(geometry, material);
+    this.nodeMarker.position.copy(point);
+    this.nodeMarker.renderOrder = 11;
+    this.scene.add(this.nodeMarker);
+    this.needsRender = true;
+  }
+
+  clearNodeSelection() {
+    if (!this.nodeMarker) return;
+    this.scene.remove(this.nodeMarker);
+    this.nodeMarker.geometry.dispose();
+    this.nodeMarker.material.dispose();
+    this.nodeMarker = null;
+    this.needsRender = true;
+  }
+
   resize() {
     this.needsRender = true;
     const width = Math.max(1, this.container.clientWidth);
@@ -538,6 +568,7 @@ export class QuadViewer {
 
   destroy() {
     this.destroyed = true;
+    this.clearNodeSelection();
     this.controls.dispose();
     this._resizeObserver.disconnect();
     this.renderer.dispose();
@@ -545,6 +576,7 @@ export class QuadViewer {
   }
 
   _loadNormalized(model, modelPoints) {
+    this.clearNodeSelection();
     this.state.bounds.makeEmpty();
     this.state.name = model.name;
     this.state.nodes = model.nodes;

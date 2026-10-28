@@ -4,7 +4,17 @@ import { MaterialsPage } from './materials.js';
 import { ResultsPage } from './results.js';
 
 const $ = id => document.getElementById(id);
-const state = { model: null, tab: 'materials', hiddenMaterials: new Set(), selected: null, busy: false };
+const state = {
+  model: null, tab: 'materials', hiddenMaterials: new Set(), selected: null, busy: false,
+  quadIndex: new Map(), nodeMap: new Map(), materialMap: new Map(),
+};
+const TAB_META = {
+  materials: { title: 'ASSIGNED MATERIALS', help: 'Toggle visibility or inspect a material.', search: 'Find material…' },
+  elements: { title: 'MESH ELEMENTS', help: 'Search by key, material, or connected node, then click to focus.', search: 'Find element…' },
+  nodes: { title: 'MESH NODES', help: 'Search by key, name, or coordinate, then click to focus.', search: 'Find node…' },
+  loads: { title: 'ASSIGNED LOADS', help: 'Inspect applied values and directions.', search: 'Find load…' },
+  restraints: { title: 'SUPPORT DEFINITIONS', help: 'Inspect support locations and local DOFs.', search: 'Find restraint…' },
+};
 const materialsPage = new MaterialsPage();
 const resultsPage = new ResultsPage($('resultsPage'), (data, analysis, step) => {
   $('fileName').textContent = data.name;
@@ -48,6 +58,7 @@ function rawAttributes(attributes) {
 }
 
 function inspect(kind, record) {
+  if (kind !== 'node') viewer?.clearNodeSelection();
   state.selected = record ? { kind, id: record.id ?? record.key } : null;
   const panel = $('inspection');
   panel.replaceChildren();
@@ -56,7 +67,10 @@ function inspect(kind, record) {
     renderList();
     return;
   }
-  panel.append(element('div', 'eyebrow', kind.toUpperCase()), element('h2', '', record.name || `${kind} ${record.key}`));
+  const heading = kind === 'quad' ? `Element ${record.key}`
+    : kind === 'node' ? `Node ${record.key}`
+    : record.name || `${kind} ${record.key}`;
+  panel.append(element('div', 'eyebrow', kind.toUpperCase()), element('h2', '', heading));
   if (kind === 'material') {
     const a = record.attributes;
     panel.append(element('p', '', a.Description || a.PurposeType || 'Material definition'));
@@ -67,16 +81,30 @@ function inspect(kind, record) {
     fullProperties.onclick = () => materialsPage.open(record.key);
     panel.append(fullProperties);
   } else if (kind === 'quad') {
-    const material = state.model.materials.find(m => String(m.key) === String(record.material));
-    panel.append(properties({ Key: record.key, Material: material?.name ?? record.material,
-      'Material key': record.material, Layer: viewer.layerDefinitions.get(String(record.layer))?.name ?? record.layer,
-      Parent: `${record.parentType} ${record.parentKey}`, Nodes: record.nodeKeys.join(', '),
+    const materialKey = record.materialKey ?? record.material;
+    const layerKey = record.layerKey ?? record.layer;
+    const material = state.model.materials.find(m => String(m.key) === String(materialKey));
+    panel.append(properties({ Key: record.key, Material: material?.name ?? materialKey,
+      'Material key': materialKey, Layer: viewer.layerDefinitions.get(String(layerKey))?.name ?? layerKey,
+      Parent: `${record.parentTypeElement ?? record.parentType ?? '—'} ${record.parentKey ?? '—'}`,
+      Nodes: record.nodeKeys.join(', '),
       Thicknesses: vectorText(record.thicknesses) }));
     const button = element('button', '', 'Inspect material →');
     button.style.marginTop = '16px';
     button.disabled = !material;
     button.onclick = () => { setTab('materials'); inspect('material', material); };
     panel.append(button);
+  } else if (kind === 'node') {
+    const connected = state.model.quads.filter(quad => quad.nodeKeys.includes(String(record.key))).length;
+    panel.append(properties({
+      Key: record.key,
+      Name: record.name || `Node ${record.key}`,
+      X: format(record.point[0]),
+      Y: format(record.point[1]),
+      Z: format(record.point[2]),
+      'Connected elements': connected,
+    }));
+    panel.append(element('p', '', 'The node is marked in the 3D view. Turn on Mesh nodes to see all nodes.'));
   } else if (kind === 'load') {
     const condition = state.model.loadConditions.find(c => c.key === record.conditionKey);
     panel.append(properties({ Type: record.kind, 'Load condition': condition?.name || record.conditionKey,
@@ -104,9 +132,10 @@ function setTab(tab) {
   $('search').value = '';
   for (const button of document.querySelectorAll('[data-tab]')) button.setAttribute('aria-selected', String(button.dataset.tab === tab));
   $('conditionField').classList.toggle('hidden', tab !== 'loads');
-  $('listTitle').textContent = { materials: 'ASSIGNED MATERIALS', loads: 'ASSIGNED LOADS', restraints: 'SUPPORT DEFINITIONS' }[tab];
-  $('listHelp').textContent = { materials: 'Toggle visibility or inspect a material.', loads: 'Inspect applied values and directions.', restraints: 'Inspect support locations and local DOFs.' }[tab];
-  $('search').placeholder = `Find ${tab === 'materials' ? 'material' : tab === 'loads' ? 'load' : 'restraint'}…`;
+  const meta = TAB_META[tab] || TAB_META.materials;
+  $('listTitle').textContent = meta.title;
+  $('listHelp').textContent = meta.help;
+  $('search').placeholder = meta.search;
   renderList();
 }
 
@@ -115,29 +144,76 @@ function renderList() {
   const list = $('entityList');
   list.replaceChildren();
   const query = $('search').value.trim().toLowerCase();
-  const rows = state.model[state.tab].filter(record => {
-    if (state.tab === 'loads' && $('condition').value && record.conditionKey !== $('condition').value) return false;
-    return `${record.name} ${record.key} ${record.kind || ''} ${record.type || ''}`.toLowerCase().includes(query);
-  });
-  $('listCount').textContent = rows.length;
-  const kind = { materials: 'material', loads: 'load', restraints: 'restraint' }[state.tab];
-  for (const record of rows) {
+  const tab = state.tab;
+  let records;
+  if (tab === 'elements') {
+    records = state.model.quads.filter(record => {
+      const material = state.materialMap.get(String(record.materialKey));
+      return `${record.name || ''} ${record.key} quad element ${material?.name || ''} ${record.nodeKeys.join(' ')}`
+        .toLowerCase().includes(query);
+    });
+  } else if (tab === 'nodes') {
+    records = state.model.nodes.filter(record => (
+      `${record.name || ''} ${record.key} node ${record.point.join(' ')}`.toLowerCase().includes(query)
+    ));
+  } else {
+    records = state.model[tab].filter(record => {
+      if (tab === 'loads' && $('condition').value && record.conditionKey !== $('condition').value) return false;
+      return `${record.name} ${record.key} ${record.kind || ''} ${record.type || ''}`.toLowerCase().includes(query);
+    });
+  }
+  const searchable = tab === 'elements' || tab === 'nodes';
+  if (searchable && query) {
+    const score = record => {
+      const key = String(record.key);
+      return key === query ? 0 : key.startsWith(query) ? 1 : 2;
+    };
+    records.sort((left, right) => score(left) - score(right)
+      || String(left.key).localeCompare(String(right.key), undefined, { numeric: true }));
+  }
+  const visible = searchable && !query ? records.slice(0, 500) : records;
+  $('listCount').textContent = visible.length === records.length
+    ? String(visible.length)
+    : `${visible.length}/${records.length}`;
+  const kind = { materials: 'material', elements: 'quad', nodes: 'node', loads: 'load', restraints: 'restraint' }[tab];
+  for (const record of visible) {
     const row = element('div', 'entity');
-    row.classList.toggle('selected', state.selected?.kind === kind && state.selected.id === (record.id ?? record.key));
+    row.classList.toggle('selected', state.selected?.kind === kind && String(state.selected.id) === String(record.id ?? record.key));
     const button = element('button', 'inspect-button');
     const swatch = element('span', 'swatch');
-    swatch.style.background = record.color || (kind === 'load' ? '#ffbc66' : '#60d9c5');
+    const material = kind === 'quad' ? state.materialMap.get(String(record.materialKey)) : null;
+    swatch.style.background = record.color || material?.color || (kind === 'load' ? '#ffbc66' : '#60d9c5');
     const info = element('span', 'entity-info');
-    const title = kind === 'restraint' ? `Restraint ${record.key}` : record.name || `${kind} ${record.key}`;
+    const title = kind === 'restraint' ? `Restraint ${record.key}`
+      : kind === 'node' ? `Node ${record.key}`
+      : kind === 'quad' ? `Element ${record.key}`
+      : record.name || `${kind} ${record.key}`;
     const subtitle = kind === 'material' ? `${record.quadCount.toLocaleString()} quads · #${record.key}`
+      : kind === 'quad' ? `${material?.name || `Material ${record.materialKey}`} · ${record.nodeKeys.length} nodes · #${record.key}`
+      : kind === 'node' ? `X ${format(record.point[0])} · Y ${format(record.point[1])} · Z ${format(record.point[2])}`
       : kind === 'load' ? `${record.kind} · ${format(record.value)} · #${record.key}`
       : `${record.attributes.Type || record.type.replace('Geometry', '')} · ${Object.values(record.dofs).filter(d => d === 'Fixed').length}/6 fixed`;
     info.append(element('span', 'entity-name', title), element('span', 'entity-meta', subtitle));
     button.append(swatch, info);
     button.onclick = () => {
       viewer.clearSelection();
+      if (kind === 'node') {
+        viewer.selectNode(record.key);
+        inspect('node', record);
+        focusPoint([record.point], true);
+        return;
+      }
+      viewer.clearNodeSelection();
+      if (kind === 'quad') {
+        const index = state.quadIndex.get(String(record.key));
+        if (index != null) viewer.selectQuad(index);
+        else inspect('quad', record);
+        const points = record.nodeKeys.map(key => state.nodeMap.get(String(key))?.point).filter(Boolean);
+        if (points.length) focusPoint(points, true);
+        return;
+      }
       inspect(kind, record);
-      if (kind !== 'material' && record.points.length) focusPoint(record.points);
+      if (kind !== 'material' && record.points?.length) focusPoint(record.points);
     };
     row.append(button);
     if (kind === 'material') {
@@ -156,16 +232,36 @@ function renderList() {
     }
     list.append(row);
   }
-  if (!rows.length) list.append(element('p', 'muted', query ? 'No matching entities.' : 'No assigned entities in this view.'));
+  if (!records.length) {
+    list.append(element('p', 'muted', query ? 'No matching entities.' : 'No assigned entities in this view.'));
+  } else if (searchable && !query && records.length > visible.length) {
+    list.append(element('p', 'muted', `Showing the first ${visible.length} of ${records.length}. Type to narrow the list.`));
+  }
 }
 
-function focusPoint(points) {
+function focusPoint(points, zoom = false) {
   const center = points[0].map((_, i) => points.reduce((sum, p) => sum + p[i], 0) / points.length);
-  const delta = viewer.controls.target.clone();
+  const target = viewer.controls.target.clone();
   viewer.controls.target.set(...center);
-  delta.sub(viewer.controls.target);
-  viewer.camera.position.sub(delta);
+  target.sub(viewer.controls.target);
+  viewer.camera.position.sub(target);
+  if (zoom) {
+    const direction = viewer.camera.position.clone().sub(viewer.controls.target);
+    if (direction.lengthSq() < 1e-12) direction.set(1, -1, 0.72);
+    const bounds = viewer.state.bounds;
+    const span = Math.hypot(
+      bounds.max.x - bounds.min.x,
+      bounds.max.y - bounds.min.y,
+      bounds.max.z - bounds.min.z,
+    );
+    const extent = Math.max(0, ...points.map(point => Math.hypot(
+      point[0] - center[0], point[1] - center[1], point[2] - center[2]
+    )));
+    direction.normalize().multiplyScalar(Math.max(extent * 3, span * 0.08, 1));
+    viewer.camera.position.copy(viewer.controls.target).add(direction);
+  }
   viewer.controls.update();
+  viewer.needsRender = true;
 }
 
 function updateVisibility() {
@@ -206,6 +302,9 @@ function loadModel(model) {
   viewer.materialDefinitions = new Map(model.materials.map(m => [String(m.key), m]));
   viewer.layerDefinitions = new Map(model.layers.map(l => [String(l.key), l]));
   viewer.loadPreview(model, { name: model.name });
+  state.nodeMap = new Map(model.nodes.map(node => [String(node.key), node]));
+  state.materialMap = new Map(model.materials.map(material => [String(material.key), material]));
+  state.quadIndex = new Map(viewer.state.quads.map((quad, index) => [String(quad.key), index]));
   viewer.setView('iso');
   $('fileName').textContent = model.name;
   $('modelTitle').textContent = model.name.replace(/\.hrx$/i, '').replaceAll('_', ' ');
@@ -391,7 +490,7 @@ try {
     requestAnimationFrame(() => { viewer.resize(); viewer.needsRender = true; });
   };
   $('togglePanels').onclick = () => setFocusView(!document.body.classList.contains('focus-view'));
-  $('clearSelection').onclick = () => { viewer.clearSelection(); inspect(null, null); };
+  $('clearSelection').onclick = () => { viewer.clearSelection(); viewer.clearNodeSelection(); inspect(null, null); };
   $('resetVisibility').onclick = () => { state.hiddenMaterials.clear(); $('layer').value = ''; updateVisibility(); renderList(); };
   document.addEventListener('keydown', event => {
     if (['INPUT', 'SELECT', 'TEXTAREA'].includes(event.target.tagName)) return;

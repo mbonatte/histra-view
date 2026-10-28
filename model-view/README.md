@@ -61,7 +61,10 @@ python3 model-view/server.py --model /absolute/path/to/model.hrx --port 8766
 - Restraint geometry, selectable location markers, six local mechanical DOFs,
   stiffness attributes, and reference axes. Generated restraints replace their
   parent geometry definitions to avoid duplicate markers.
-- Mesh, material, load, and restraint picking; searchable entity lists.
+- Mesh, material, load, and restraint picking; searchable entity lists with
+  dedicated **Elements** and **Nodes** tabs. Element results highlight and focus
+  the Quad; node results place a marker at the node, focus the camera, and show
+  connected-element counts.
 - **Material properties** workspace page, linked from the header and material
   inspector. Lists only masonry material templates (including unassigned definitions) with
   search and an assigned-only filter. Masonry uses the C# editor's Rocking, Shear,

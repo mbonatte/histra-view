@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
-import { PerspectiveCamera, OrthographicCamera } from 'three';
+import { PerspectiveCamera, OrthographicCamera, Box3, Vector3 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 // Use the same renderer module in Node; only browser import-map URLs are resolved here.
@@ -50,6 +50,28 @@ for (const [name, deltaY] of [['zoom in', -120], ['zoom out', 120]]) {
     }
   });
 }
+
+test('selectNode adds and clears a focused node marker', () => {
+  const viewer = Object.create(QuadViewer.prototype);
+  viewer.state = {
+    nodes: new Map([[7, new Vector3(10, 20, 30)]]),
+    bounds: new Box3(new Vector3(0, 0, 0), new Vector3(100, 100, 100)),
+  };
+  viewer.scene = { add: object => { viewer.markerAdded = object; }, remove: object => { viewer.markerRemoved = object; } };
+  viewer.needsRender = false;
+
+  viewer.selectNode(7);
+  assert.ok(viewer.nodeMarker);
+  assert.equal(viewer.nodeMarker.position.x, 10);
+  assert.equal(viewer.nodeMarker.position.y, 20);
+  assert.equal(viewer.nodeMarker.position.z, 30);
+  assert.equal(viewer.markerAdded, viewer.nodeMarker);
+  assert.equal(viewer.needsRender, true);
+
+  viewer.clearNodeSelection();
+  assert.equal(viewer.nodeMarker, null);
+  assert.ok(viewer.markerRemoved);
+});
 
 test('setProjection switches between PerspectiveCamera and OrthographicCamera while preserving view scale and orientation', () => {
   const viewer = Object.create(QuadViewer.prototype);
