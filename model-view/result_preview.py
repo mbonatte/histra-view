@@ -21,6 +21,24 @@ NATIVE_UNITS = {"length": "cm", "force": "kN", "moment": "kN*cm", "stress": "kN/
 _RAW_CACHE = {}
 
 
+def is_csharp_results(output_path):
+    return Path(output_path).suffix.lower() == ".results"
+
+
+def is_histra_results(output_path):
+    return Path(output_path).suffix.lower() == ".histra"
+
+
+def csharp_hrx(output_path):
+    """Locate the HRX that belongs to a native C# ``.Results`` database."""
+    output_path = Path(output_path)
+    candidates = (output_path.with_suffix(".hrx"), output_path.with_suffix(".HRX"))
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    raise ValueError("The C# .Results database has no sibling .hrx model file.")
+
+
 def load_raw(output_path):
     output_path = Path(output_path)
     stamp = (output_path.stat().st_mtime_ns, output_path.stat().st_size)
@@ -85,6 +103,12 @@ def spring_values(spring):
 
 
 def project_interface(output_path, analysis_name, key):
+    if is_histra_results(output_path):
+        from histra_results import project_interface_histra
+        return project_interface_histra(output_path, analysis_name, int(key))
+    if is_csharp_results(output_path):
+        from csharp_results import project_interface_csharp
+        return project_interface_csharp(csharp_hrx(output_path), output_path, analysis_name, int(key))
     raw = load_raw(output_path)
     if raw.get("schema_version") == "2.0.0" and "baseline_case" in raw:
         from bridge_v2 import project_interface as project_bridge_interface
@@ -101,6 +125,12 @@ def project_interface(output_path, analysis_name, key):
 
 def project_contours(output_path, analysis_name):
     """Actual saved normal-fibre stress on native C# interface cells."""
+    if is_histra_results(output_path):
+        from histra_results import project_contours_histra
+        return project_contours_histra(output_path, analysis_name)
+    if is_csharp_results(output_path):
+        from csharp_results import project_contours_csharp
+        return project_contours_csharp(csharp_hrx(output_path), output_path, analysis_name)
     raw = load_raw(output_path)
     if raw.get("schema_version") == "2.0.0" and "baseline_case" in raw:
         from bridge_v2 import project_contours as project_bridge_contours
@@ -241,6 +271,12 @@ def project_curve_cases(hrx_path, raw, name="Pushover Results"):
 
 
 def project_results(hrx_path, output_path, analysis_name=None):
+    if is_histra_results(output_path):
+        from histra_results import project_histra
+        return project_histra(output_path, analysis_name)
+    if is_csharp_results(output_path):
+        from csharp_results import project_csharp
+        return project_csharp(hrx_path, output_path, analysis_name)
     raw = load_raw(output_path)
     if raw.get("schema_version") == "2.0.0" and "baseline_case" in raw:
         from bridge_v2 import project_bridge

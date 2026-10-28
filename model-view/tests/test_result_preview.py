@@ -5,7 +5,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from result_preview import project_results, spring_values, project_interface, project_contours, validate_metadata, NATIVE_UNITS
 
-FOLDER = Path(__file__).resolve().parents[2] / "wall_model"
+FOLDER = Path(__file__).resolve().parents[2] / "results" / "wall_model"
 HRX = FOLDER / "overturning_wall_elastic_foundation.hrx"
 OUTPUT = FOLDER / "overturning_wall_raw_output.json"
 

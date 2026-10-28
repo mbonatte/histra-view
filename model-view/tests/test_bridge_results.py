@@ -5,7 +5,7 @@ import unittest
 import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from result_preview import project_results, project_contours, project_interface
-FOLDER = Path(__file__).resolve().parents[2] / '3D_bridge'
+FOLDER = Path(__file__).resolve().parents[2] / 'results' / '3D_bridge'
 OUTPUT = FOLDER / 'Bridge.json'
 HRX = FOLDER / 'Bridge.hrx'
 

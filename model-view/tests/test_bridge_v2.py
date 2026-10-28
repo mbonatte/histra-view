@@ -8,7 +8,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from bridge_v2 import project_bridge, project_contours, project_interface, cache_stamp
 
-FOLDER = Path(__file__).resolve().parents[2] / "3D_bridge"
+FOLDER = Path(__file__).resolve().parents[2] / "results" / "3D_bridge"
 HRX = FOLDER / "Bridge.hrx"
 OUTPUT = FOLDER / "pdelta_soft_subgrade_phase4_results.json"
 
@@ -56,6 +56,53 @@ class BridgeV2ProjectionTests(unittest.TestCase):
         self.assertTrue(np.isfinite(values).all())
         self.assertGreater(stress["max"], stress["min"])
         self.assertGreaterEqual(stress["min"], 0.0)
+
+    def test_complete_stress_field_catalog(self):
+        fields = {field["id"]: field for field in self.analysis["stressFields"]}
+        self.assertEqual(len(fields), 19)
+        for field_id in (
+            "globalStressX", "globalStressY", "globalStressZ",
+            "globalStressXY", "globalStressXZ", "globalStressYZ",
+            "principalTensile", "principalCompressive", "vonMises",
+            "localStressNormal", "localStressInPlane", "localStressOutOfPlane",
+        ):
+            self.assertTrue(fields[field_id]["available"], field_id)
+            values = np.asarray(fields[field_id]["quadCornerValues"], dtype=float)
+            self.assertEqual(values.shape, (2520, 4), field_id)
+            self.assertTrue(np.isfinite(values).all(), field_id)
+        self.assertEqual(fields["vonMises"]["min"], self.analysis["finalStress"]["min"])
+        self.assertEqual(fields["vonMises"]["max"], self.analysis["finalStress"]["max"])
+        for field_id in ("localStrainNormal", "localStrainInPlane", "localStrainOutOfPlane",
+                         "plasticStrainNormal", "plasticStrainRatioNormal"):
+            self.assertFalse(fields[field_id]["available"], field_id)
+            self.assertIn("reason", fields[field_id])
+
+    def test_face_tensor_fields_include_through_thickness(self):
+        fields = {field["id"]: field for field in self.analysis["stressFields"]}
+        for field_id in (
+            "globalStressX", "globalStressY", "globalStressZ",
+            "globalStressXY", "globalStressXZ", "globalStressYZ",
+            "principalTensile", "principalCompressive", "vonMises",
+            "localStressNormal", "localStressInPlane", "localStressOutOfPlane",
+        ):
+            face_values = np.asarray(fields[field_id]["quadFaceValues"], dtype=float)
+            self.assertEqual(face_values.shape, (2520, 6, 4), field_id)
+            self.assertTrue(np.isfinite(face_values).all(), field_id)
+        y_field = fields["globalStressY"]
+        face_y = np.asarray(y_field["quadFaceValues"], dtype=float)
+        self.assertLess(face_y.min(), 0.0)
+        self.assertGreater(face_y.max(), 0.0)
+        self.assertFalse(np.allclose(face_y[:, 0], face_y[:, 1]))
+        self.assertAlmostEqual(y_field["min"], face_y.min(), places=6)
+        self.assertAlmostEqual(y_field["max"], face_y.max(), places=6)
+        grids = fields["vonMises"].get("quadFaceGrids")
+        self.assertIsNotNone(grids)
+        textured = [face for quad in grids for face in quad if face is not None]
+        self.assertGreater(len(textured), 0)
+        self.assertTrue(all(face["n"] >= 2 and face["m"] >= 2 for face in textured))
+        self.assertTrue(all(len(face["values"]) == face["n"] * face["m"] for face in textured))
+        self.assertEqual(np.asarray(self.analysis["finalStress"]["quadFaceValues"]).shape,
+                         (2520, 6, 4))
 
     def test_lazy_analysis_selection(self):
         other = project_bridge(HRX, OUTPUT, "Pushover_Span1_Half")
