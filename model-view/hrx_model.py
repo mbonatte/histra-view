@@ -87,11 +87,13 @@ def parse_hrx(data: bytes, name="Model.hrx"):
         if key in seen or len(set(refs)) != 4 or any(k not in nodes for k in refs):
             raise ValueError(f"Quad {key} has duplicate keys or invalid node references.")
         seen.add(key)
+        reference = e.find("ReferenceSystem")
         quads.append({**record(e), "nodeKeys": refs, "materialKey": e.get("MaterialKey", "0"),
                       "layerKey": e.get("LayerKey", "0"), "parentKey": e.get("ParentKey", "0"),
                       "parentTypeElement": e.get("ParentTypeElement", ""),
                       "thicknesses": [number(e.get(f"Thickness{i}")) for i in range(1, 5)],
-                      "normals": [vector(e.get(f"Normal{i}")) for i in range(1, 5)]})
+                      "normals": [vector(e.get(f"Normal{i}")) for i in range(1, 5)],
+                      "referenceSystem": dict(reference.attrib) if reference is not None else {}})
     if not quads:
         raise ValueError("No serialized Quad mesh found. Generate the mesh before viewing this model.")
     templates = {e.get("Key"): e for e in root.findall("Template")}
