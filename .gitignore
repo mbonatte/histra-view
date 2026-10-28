@@ -44,7 +44,5 @@ Thumbs.db
 *.swp
 *~
 
-# Local bridge scour C# dataset and archive
-results/*.rar
-results/Bridge_scour_3d_Distributed_PDelta/*
-!results/Bridge_scour_3d_Distributed_PDelta/README.md
+# Local result datasets and archives
+results/
