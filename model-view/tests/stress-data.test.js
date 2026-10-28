@@ -17,6 +17,24 @@ test('little-endian contour data preserves signed MPa and cell coordinates', () 
   assert.deepEqual(contourGroups(data,'all',1).map(g=>g.key),[813,1]);
   assert.deepEqual(contourGroups(data,'selected',1).map(g=>g.key),[1]);
 });
+test('optional sliding stress and phase arrays decode with the same cell mapping', () => {
+  const f = fixture();
+  f.slidingStress = pack([.5, .7]);
+  f.slidingOutOfPlaneStress = pack([.1, .2]);
+  f.slidingPhase = Buffer.from([0, 1]).toString('base64');
+  f.slidingOutOfPlanePhase = Buffer.from([1, 0]).toString('base64');
+  const data = decodeContours(f);
+  assert.ok(Math.abs(data.slidingStress[0] - .5) < 1e-6);
+  assert.ok(Math.abs(data.slidingStress[1] - .7) < 1e-6);
+  assert.ok(Math.abs(data.slidingOutOfPlaneStress[0] - .1) < 1e-6);
+  assert.ok(Math.abs(data.slidingOutOfPlaneStress[1] - .2) < 1e-6);
+  assert.deepEqual([...data.slidingPhase], [0, 1]);
+  assert.deepEqual([...data.slidingOutOfPlanePhase], [1, 0]);
+  const bad = fixture();
+  bad.slidingStress = pack([.5]);
+  assert.throws(() => decodeContours(bad), /sizes/);
+});
+
 test('rejects invalid lengths, nonfinite values and ambiguous interface mappings', () => {
   for (const mutate of [f=>f.positions=pack([0]), f=>f.stress=pack([NaN,1]), f=>f.groups[1].start=0, f=>f.groups[1].key=813, f=>f.phase=Buffer.from([0,9]).toString('base64')]) {
     const f=fixture();mutate(f);assert.throws(()=>decodeContours(f));

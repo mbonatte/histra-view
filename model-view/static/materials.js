@@ -120,14 +120,15 @@ export class MaterialsPage {
     content.append(node('p', 'material-footnote', 'Display conversion only · HRX base units: kN and cm · 1 = dimensionless · — = not serialized. All properties preserves the original values. Reference diagrams are schematic; the hysteresis preview is calculated using Python spring laws.'));
   }
 
-  table(title, columns, groups, attributes, raw = false) {
+  table(title, columns, groups, attributes, raw = false, showUnits = true) {
+    const unitColumn = !raw && showUnits;
     const section = node('section', 'property-section');
     section.append(node('h2', '', title));
     const wrap = node('div', 'property-table-wrap');
     const table = node('table', 'material-table');
     const head = node('thead');
     const tr = node('tr');
-    for (const label of ['Parameter', ...(raw ? [] : ['Unit']), ...columns]) { const th = node('th', '', label); th.scope = 'col'; tr.append(th); }
+    for (const label of ['Parameter', ...(unitColumn ? ['Unit'] : []), ...columns]) { const th = node('th', '', label); th.scope = 'col'; tr.append(th); }
     head.append(tr);
     table.append(head);
     for (const [group, rows] of groups) {
@@ -135,7 +136,7 @@ export class MaterialsPage {
       if (group) {
         const row = node('tr', 'property-group');
         const cell = node('th', '', group);
-        cell.colSpan = columns.length + (raw ? 1 : 2);
+        cell.colSpan = columns.length + 1 + (unitColumn ? 1 : 0);
         row.append(cell); body.append(row);
       }
       for (const [label, ...keys] of rows) {
@@ -143,7 +144,7 @@ export class MaterialsPage {
         const labelCell = node('th', '', label);
         labelCell.scope = 'row';
         row.append(labelCell);
-        if (!raw) {
+        if (unitColumn) {
           const key = keys[0];
           let unit = unitFor(key, this.units);
           if (unit === '—' && attributes[key] !== undefined && attributes[key] !== '' && Number.isFinite(Number(attributes[key]))) unit = '1';
@@ -225,27 +226,66 @@ export class MaterialsPage {
   }
 
   general(a, content, masonry) {
-    const groups = [['Definition', [['Name', 'Name'], ['Description', 'Description'], ['Material type', 'PurposeType'], ['Specific weight, W', a.w !== undefined ? 'w' : 'Gamma']]]];
     if (masonry) {
-      groups.push(['Masonry typology', [['Typology', 'existentMasonryMaterial'], ['Existing masonry', 'IsExistent'], ['Knowledge level', 'LC_'],
-        ['Stiffness value selection', 'ValueSetting'], ['Strength value selection', 'ValueSettingStrength'], ['Partial safety factor, γM', 'gammam']]]);
+      // The General tab is deliberately limited to the quantities a structural
+      // engineer reads first. Reference ranges and NTC improvement options are
+      // not mixed into this summary; the serialized values remain in All properties.
+      const basic = [
+        ['Specific weight, W', a.w !== undefined ? 'w' : 'Gamma'],
+        ['Young’s modulus, E', 'Ehor'],
+        ['Shear modulus, G', 'Gd'],
+        ['Compressive strength, fm', 'FmHor'],
+        ['Tensile strength, ft', 'FtmHor'],
+        ['Shear strength, τ₀', 'fvk0d'],
+        ['Cohesion, c', 'CohesionSlidingHor'],
+        ['Friction coefficient, μ (sliding)', 'FrictionRatioSlidingHor'],
+        ['Friction ratio, μ (shear)', 'FrictionRatioShear'],
+      ];
+      content.append(this.table('Basic properties', ['Design value'], [['', basic]], a));
+      content.append(this.table('Identification', ['Value'], [['', [
+        ['Name', 'Name'], ['Description', 'Description'], ['Material type', 'PurposeType'],
+      ]]], a, false, false));
+      content.append(this.table('Assessment basis', ['Value'], [['', [
+        ['Masonry typology', 'existentMasonryMaterial'],
+        ['Existing masonry', 'IsExistent'],
+        ['Knowledge level', 'LC_'],
+        ['Partial safety factor, γM', 'gammam'],
+      ]]], a, false, false));
+      if (a.SimpleMode === 'true') {
+        const corrections = [
+          ['Malta', 'Good mortar', 'MaltaValue'],
+          ['Giunti', 'Thin joints (< 10 mm)', 'GiuntiValue'],
+          ['Ricorsi', 'Brick rows or listature', 'RicorsiValue'],
+          ['Connessioni', 'Transverse connections', 'ConnessioniValue'],
+          ['Nucleo', 'Poor-quality or large core', 'NucleoValue'],
+          ['Iniezioni', 'Grout injection', 'IniezioniValue'],
+          ['Intonaco', 'Reinforced plaster', 'IntonacoValue'],
+          ['Diatoni', 'Artificial diatoni', 'DiatoniValue'],
+          ['Ristilatura', 'Reinforced stitching', 'RistilaturaValue'],
+        ].filter(([, , valueKey]) => Number(a[valueKey]) >= 0);
+        const details = node('details', 'material-advanced-details');
+        details.append(node('summary', '', 'NTC simple-mode improvement options'));
+        details.append(node('p', 'material-note', 'Flags serialized by HiStrA’s NTC simple-mode editor (Circ. 2019 n. 7). “Coefficient if applied” is the saved multiplier for that option; the viewer does not recalculate the combined coefficient.'));
+        if (corrections.length) {
+          details.append(this.table('Improvement options', ['Applied', 'Coefficient if applied'],
+            [['', corrections.map(([flag, label, valueKey]) => [label, flag, valueKey])]], a, false, false));
+        } else {
+          details.append(node('p', 'material-note', 'No improvement options are applicable to the saved typology.'));
+        }
+        content.append(details);
+      } else {
+        content.append(node('p', 'material-note', 'Advanced-mode material: NTC simple-mode improvement options are not applied to the saved design values. All serialized fields remain in All properties.'));
+      }
+      content.append(node('p', 'material-note', 'Values are the saved design values in HRX; changing units is display-only. Directional/orthotropic values remain in the Rocking, Shear, and Sliding tabs. This viewer does not recompute the material.'));
     } else {
       const fields = [['Young’s modulus, E', 'E'], ['Shear modulus, G', 'G'], ['Poisson ratio, ν', 'Poisson'], ['Thermal expansion, α', 'Alfa'],
         ['Compressive strength', 'fykCompr'], ['Tensile strength', 'fykTraz'], ['Steel law', 'SteelType']].filter(([, key]) => a[key] !== undefined);
-      if (fields.length) groups.push(['Mechanical properties', fields]);
-    }
-    content.append(this.table('General properties', ['Saved value'], groups, a));
-    if (masonry) {
-      content.append(this.table('Reference ranges', ['Minimum', 'Mean', 'Maximum', 'Saved design value'], [
-        ['', [['Compressive strength, fm', 'fm_min', 'fm_med', 'fm_max', 'FmHor'],
-          ['Shear strength, τ₀', 'fvk0_min', 'fvk0_med', 'fvk0_max', 'fvk0d'],
-          ['Young’s modulus, E', 'E_min', 'E_med', 'E_max', 'Ehor'],
-          ['Shear modulus, G', 'G_min', 'G_med', 'G_max', 'Gd']]],
-      ], a));
-      const corrections = ['Malta', 'Giunti', 'Ricorsi', 'Connessioni', 'Nucleo', 'Iniezioni', 'Intonaco', 'Diatoni', 'Ristilatura'];
-      const labels = ['Good-quality mortar', 'Thin joints', 'Regular courses', 'Transverse connections', 'Poor-quality core', 'Grout injection', 'Reinforced plaster', 'Through stones', 'Repointing'];
-      content.append(this.table('Corrective coefficients', ['Enabled', 'Saved coefficient'], [['', corrections.map((key, i) => [labels[i], key, `${key}Value`])]], a));
-      content.append(node('p', 'material-note', 'Reference ranges and design values are shown as saved. Coefficients are not applied or recalculated by this viewer.'));
+      if (fields.length) {
+        content.append(this.table('Basic properties', ['Design value'], [['', [['Specific weight, W', a.w !== undefined ? 'w' : 'Gamma'], ...fields]]], a));
+      }
+      content.append(this.table('Identification', ['Value'], [['', [
+        ['Name', 'Name'], ['Description', 'Description'], ['Material type', 'PurposeType'],
+      ]]], a, false, false));
     }
   }
 

@@ -49,14 +49,28 @@ export function decodeContours(raw) {
     displacement: floats(raw.displacement),
     strain: raw.strain ? floats(raw.strain) : floats(raw.displacement),
     phase: bytes(raw.phase),
+    slidingStress: raw.slidingStress ? floats(raw.slidingStress) : null,
+    slidingOutOfPlaneStress: raw.slidingOutOfPlaneStress ? floats(raw.slidingOutOfPlaneStress) : null,
+    slidingPhase: raw.slidingPhase ? bytes(raw.slidingPhase) : null,
+    slidingOutOfPlanePhase: raw.slidingOutOfPlanePhase ? bytes(raw.slidingOutOfPlanePhase) : null,
   };
-  if (data.positions.length !== raw.cellCount * 12 || ['stress', 'force', 'area', 'displacement', 'strain', 'phase'].some(k => data[k].length !== raw.cellCount)) throw new Error('Contour array sizes do not match.');
+  const required = ['stress', 'force', 'area', 'displacement', 'strain', 'phase'];
+  if (data.slidingStress) required.push('slidingStress');
+  if (data.slidingOutOfPlaneStress) required.push('slidingOutOfPlaneStress');
+  if (data.slidingPhase) required.push('slidingPhase');
+  if (data.slidingOutOfPlanePhase) required.push('slidingOutOfPlanePhase');
+  if (data.positions.length !== raw.cellCount * 12 || required.some(k => data[k].length !== raw.cellCount)) throw new Error('Contour array sizes do not match.');
   let start = 0;
   for (const g of raw.groups) {
     if (g.start !== start || g.count !== g.nrow * g.ncol) throw new Error('Invalid interface cell mapping.');
     start += g.count;
   }
-  if (start !== raw.cellCount || new Set(raw.groups.map(g => g.key)).size !== raw.groups.length || !data.phase.every(p => p < raw.phaseNames.length)) throw new Error('Invalid contour mapping.');
+  if (start !== raw.cellCount || new Set(raw.groups.map(g => g.key)).size !== raw.groups.length
+      || !data.phase.every(p => p < raw.phaseNames.length)
+      || (data.slidingPhase && !data.slidingPhase.every(p => p < raw.phaseNames.length))
+      || (data.slidingOutOfPlanePhase && !data.slidingOutOfPlanePhase.every(p => p < raw.phaseNames.length))) {
+    throw new Error('Invalid contour mapping.');
+  }
   return data;
 }
 

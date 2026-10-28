@@ -113,10 +113,18 @@ test('computeThrustLines connects opposite interfaces and forms valid segments',
   assert.equal(res.hingeCount, 1);
   assert.equal(res.hinges[0].key, 2);
   assert.deepEqual(res.hinges[0].position, [20, 10, 0]); // node 4
+  assert.equal(res.maxForce, 100);
 
   // Material filtering
   const resFiltered = computeThrustLines(mesh, step, slotMap, nodeMap, { materialFilter: 'backfill' });
   assert.equal(resFiltered.segmentCount, 0, 'backfill has no valid pair due to tension');
+
+  const resMin = computeThrustLines(mesh, step, slotMap, nodeMap, { minForce: 150 });
+  assert.equal(resMin.segmentCount, 0);
+  assert.equal(resMin.hingeCount, 0);
+  const resAbove = computeThrustLines(mesh, step, slotMap, nodeMap, { minForce: 50 });
+  assert.equal(resAbove.segmentCount, 1);
+  assert.equal(resAbove.hingeCount, 1);
 });
 
 test('computeThrustLines with combineWidth computes force-weighted width centroid and hinges', () => {
@@ -164,6 +172,7 @@ test('computeThrustLines with combineWidth computes force-weighted width centroi
   const resSymm = computeThrustLines(mesh, stepSymm, slotMap, nodeMap, { combineWidth: true });
   assert.equal(resSymm.segmentCount, 1);
   assert.deepEqual(Array.from(resSymm.positions), [10, 0, 0, 10, 0, 10]);
+  assert.ok(resSymm.maxForce >= 100);
 
   // Asymmetric compression: N2 = -300 on slice 1 (y=+10), N2 = -100 on slice 2 (y=-10)
   // Expected y = (300*10 + 100*(-10)) / 400 = 5

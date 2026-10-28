@@ -10,7 +10,7 @@ const svgEl = (tag, attrs, text) => { const n = document.createElementNS('http:/
 export class InterfaceStressView {
   constructor(root, onSelect, onStep) {
     this.root = root; this.onSelect = onSelect; this.onStep = onStep; this.cache = new Map();
-    root.innerHTML = `<div class="stress-controls"><label>Color by<select aria-label="3D interface field"><option value="stress">Normal stress σn [MPa] · final step</option><option value="strain">Normal strain εn [cm] · final step</option><option value="phase">Constitutive phase · final step</option><option value="normalForce">Normal force N2 [kN] · selected step</option></select></label><label>Show<select aria-label="3D interface scope"><option value="supports">Restraint interfaces</option><option value="all">All interfaces in the model</option><option value="selected">Selected interface only</option></select></label><label class="stress-range-field">Color range<div class="stress-range-inputs"><input type="number" class="stress-min-input" step="any" placeholder="Min" aria-label="Color range minimum value"><span>to</span><input type="number" class="stress-max-input" step="any" placeholder="Max" aria-label="Color range maximum value"><button type="button" class="stress-auto-range" title="Reset to auto symmetric range">Auto</button></div></label><label class="stress-structure"><input type="checkbox" checked> Show structure</label><span class="stress-count"></span></div>
+    root.innerHTML = `<div class="stress-controls"><label>Color by<select aria-label="3D interface field"><option value="stress">Normal stress σn [MPa] · final step</option><option value="strain">Normal strain εn [cm] · final step</option><option value="phase">Normal phase · final step</option><option value="sliding">Sliding stress τ [MPa] · final step</option><option value="slidingOut">Out-of-plane sliding τ23 [MPa] · final step</option><option value="slidingPhase">Sliding phase · final step</option><option value="slidingOutPhase">Out-of-plane sliding phase · final step</option><option value="normalForce">Normal force N2 [kN] · selected step</option></select></label><label>Show<select aria-label="3D interface scope"><option value="supports">Restraint interfaces</option><option value="all">All interfaces in the model</option><option value="selected">Selected interface only</option></select></label><label class="stress-range-field">Color range<div class="stress-range-inputs"><input type="number" class="stress-min-input" step="any" placeholder="Min" aria-label="Color range minimum value"><span>to</span><input type="number" class="stress-max-input" step="any" placeholder="Max" aria-label="Color range maximum value"><button type="button" class="stress-auto-range" title="Reset to auto symmetric range">Auto</button></div></label><label class="stress-structure"><input type="checkbox" checked> Show structure</label><span class="stress-count"></span></div>
       <div class="stress-layout"><section class="stress-scene"><div class="stress-canvas" aria-label="Clickable 3D interface stress contours"></div><div class="stress-camera"><button data-stress-view="iso">3D</button><button data-stress-view="below">From below</button><button data-stress-view="front">Front</button><button data-stress-projection="perspective" class="active" title="Perspective camera">Persp</button><button data-stress-projection="ortho" title="Orthographic camera">Ortho</button><button class="stress-fit">Fit model</button></div><div class="stress-notice" role="status">Reading saved fibre contours…</div><div class="stress-hover">Click a colored interface to inspect it.</div></section>
       <aside class="stress-picked"><div class="eyebrow">SELECTED INTERFACE</div><h2 class="stress-picked-title">Click a colored surface</h2><p class="stress-picked-meta">Each colored cell is one saved normal spring.</p><div class="stress-picked-actions"><button class="stress-focus">Zoom to selection</button><button class="stress-isolate">Isolate</button></div><div class="stress-map" aria-label="Selected interface stress contour"></div><p class="stress-readout">Hover a cell for its stress, force and phase.</p><p class="stress-extrema"></p><p class="stress-field-note"></p></aside></div><div class="stress-legend"></div><p class="stress-help">Click to select · drag to orbit · scroll to zoom. Colors represent stress or strain on interface surfaces. Blue = compression, red = tension/opening. The selected interface is outlined in white.</p>`;
     [this.field, this.scope] = root.querySelectorAll('select');
@@ -22,7 +22,7 @@ export class InterfaceStressView {
     this.field.onchange = () => {
       this.customMin = null;
       this.customMax = null;
-      if (this.field.value !== 'normalForce' && this.analysis && this.stepIndex !== this.analysis.steps.length - 1) this.onStep(this.analysis.steps.length - 1);
+      if (this.field.value !== 'normalForce' && !this.perStep && this.analysis && this.stepIndex !== this.analysis.steps.length - 1) this.onStep(this.analysis.steps.length - 1);
       this.paint();
     };
     this.scope.onchange = () => { this.paint(); if (this.scope.value === 'selected') this.focus(); };
@@ -55,9 +55,28 @@ export class InterfaceStressView {
   }
 
   async update(analysis, mesh, stepIndex, modelSha256, selected, sourceId) {
-    const changed = this.analysis !== analysis || this.sourceId !== sourceId;
+    const stepValue = analysis.steps[stepIndex]?.step;
+    const perStep = ['benchmark', 'bridge_scour'].includes(sourceId) || sourceId.startsWith('imported_');
+    const changed = this.analysis !== analysis || this.sourceId !== sourceId
+      || (perStep && this.stepValue !== stepValue);
     this.sourceId = sourceId;
     this.analysis = analysis; this.stepIndex = stepIndex; this.selected = selected ?? this.selected; this.modelSha256 = modelSha256;
+    this.stepValue = stepValue; this.perStep = perStep;
+    const suffix = perStep ? 'selected step' : 'final step';
+    const labels = {
+      stress: `Normal stress σn [MPa] · ${suffix}`,
+      strain: `Normal strain εn [cm] · ${suffix}`,
+      phase: `Normal phase · ${suffix}`,
+      sliding: `Sliding stress τ [MPa] · ${suffix}`,
+      slidingOut: `Out-of-plane sliding τ23 [MPa] · ${suffix}`,
+      slidingPhase: `Sliding phase · ${suffix}`,
+      slidingOutPhase: `Out-of-plane sliding phase · ${suffix}`,
+      normalForce: 'Normal force N2 [kN] · selected step'
+    };
+    for (const [value, text] of Object.entries(labels)) {
+      const option = this.field.querySelector(`option[value="${value}"]`);
+      if (option && !option.disabled) option.textContent = text;
+    }
     if (!this.viewer) {
       this.viewer = new QuadViewer(this.root.querySelector('.stress-canvas'), { extrude: true, opacity: .12, edges: false, colorBy: 'single' });
       this.viewer.loadPreview(mesh); this.viewer.grid.visible = false;
@@ -89,13 +108,18 @@ export class InterfaceStressView {
     this.data = null; if (this.surface) this.surface.visible = false; this.pickMeshes = [];
     this.showNotice('Reading saved fibre contours…');
     try {
-      let data = this.cache.get(`${sourceId}:${analysis.name}`);
+      const cacheKey = perStep
+        ? `${sourceId}:${analysis.name}:${stepValue}`
+        : `${sourceId}:${analysis.name}`;
+      let data = this.cache.get(cacheKey);
       if (!data) {
-        const response = await fetch(`/api/results/${encodeURIComponent(sourceId)}/contours?analysis=${encodeURIComponent(analysis.name)}`);
+        const stepQuery = perStep ? `&step=${encodeURIComponent(stepValue)}` : '';
+        const response = await fetch(`/api/results/${encodeURIComponent(sourceId)}/contours?analysis=${encodeURIComponent(analysis.name)}${stepQuery}`);
         const raw = await response.json();
         if (!response.ok) throw new Error(raw.error || 'Unable to read contours.');
         data = decodeContours(raw);
-        this.cache.set(`${sourceId}:${analysis.name}`, data);
+        this.cache.set(cacheKey, data);
+        if (this.cache.size > 4) this.cache.delete(this.cache.keys().next().value);
       }
       if (ticket !== this.ticket) return;
       if (data.modelSha256 !== modelSha256) throw new Error('The result model changed. Reload Results.');
@@ -105,6 +129,20 @@ export class InterfaceStressView {
         if (this.field.value === 'strain') this.field.value = 'stress';
       }
       this.data = data;
+      const slidingOption = this.field.querySelector('option[value="sliding"]');
+      const slidingOutOption = this.field.querySelector('option[value="slidingOut"]');
+      const slidingPhaseOption = this.field.querySelector('option[value="slidingPhase"]');
+      const slidingOutPhaseOption = this.field.querySelector('option[value="slidingOutPhase"]');
+      for (const [option, available] of [
+        [slidingOption, Boolean(data.slidingStress)],
+        [slidingOutOption, Boolean(data.slidingOutOfPlaneStress)],
+        [slidingPhaseOption, Boolean(data.slidingPhase)],
+        [slidingOutPhaseOption, Boolean(data.slidingOutOfPlanePhase)],
+      ]) {
+        if (!option) continue;
+        option.disabled = !available;
+        if (!available && this.field.value === option.value) this.field.value = 'stress';
+      }
       this.build(); this.paint(); this.selectKey(this.selected);
     } catch (error) {
       if (ticket !== this.ticket) return;
@@ -145,12 +183,29 @@ export class InterfaceStressView {
     });
   }
 
+  isPhaseField() {
+    return ['phase', 'slidingPhase', 'slidingOutPhase'].includes(this.field.value);
+  }
+
+  valueAt(cell, group) {
+    if (this.field.value === 'normalForce') {
+      return resultantAt(this.analysis, this.stepIndex, group.key).forces[1];
+    }
+    if (this.field.value === 'strain') return (this.data.strain || this.data.displacement)[cell];
+    if (this.field.value === 'sliding') return this.data.slidingStress?.[cell] ?? 0;
+    if (this.field.value === 'slidingOut') return this.data.slidingOutOfPlaneStress?.[cell] ?? 0;
+    return this.data.stress[cell];
+  }
+
   paint() {
     if (!this.data || !this.surface) return;
     const final = this.stepIndex === this.analysis.steps.length - 1, snapshot = this.field.value !== 'normalForce';
-    if (snapshot && !final) {
+    const missingSnapshot = snapshot && (this.perStep
+      ? this.data.step !== this.analysis.steps[this.stepIndex].step
+      : !final);
+    if (missingSnapshot) {
       this.surface.visible = false; this.pickMeshes = []; this.highlight();
-      this.showNotice(`Stress, strain and phase contours are saved at final step ${this.data.step}.`);
+      this.showNotice(`Stress, strain and phase contours are available at final step ${this.data.step}.`);
       const button = el('button', 'Show final-step contour'); button.onclick = () => this.onStep(this.analysis.steps.length - 1); this.notice.append(button);
       this.root.querySelector('.stress-map').replaceChildren();
       this.root.querySelector('.stress-readout').textContent = '';
@@ -160,22 +215,17 @@ export class InterfaceStressView {
       this.viewer.needsRender = true; return;
     }
     this.notice.classList.add('hidden'); this.surface.visible = true;
-    if (this.field.value === 'phase') this.rangeField.classList.add('hidden');
+    const phaseField = this.isPhaseField();
+    if (phaseField) this.rangeField.classList.add('hidden');
     else this.rangeField.classList.remove('hidden');
 
     this.groups = contourGroups(this.data, this.scope.value, this.selected);
     const keys = new Set(this.groups.map(g => g.key)); this.pickMeshes = this.groupMeshes.filter(m => keys.has(m.userData.group.key));
     const indices = [], values = [];
     for (const g of this.groups) {
-      const force = this.field.value === 'normalForce' ? resultantAt(this.analysis, this.stepIndex, g.key).forces[1] : 0;
       for (let c = g.start; c < g.start + g.count; c++) {
         indices.push(c*4,c*4+1,c*4+2,c*4,c*4+2,c*4+3);
-        const val = this.field.value === 'normalForce'
-          ? force
-          : (this.field.value === 'strain'
-             ? (this.data.strain || this.data.displacement)[c]
-             : this.data.stress[c]);
-        values.push(val);
+        if (!phaseField) values.push(this.valueAt(c, g));
       }
     }
     this.autoMagnitude = maximumMagnitude(values);
@@ -186,16 +236,14 @@ export class InterfaceStressView {
 
     const color = new THREE.Color();
     for (const g of this.groups) {
-      const force = this.field.value === 'normalForce' ? resultantAt(this.analysis, this.stepIndex, g.key).forces[1] : 0;
       for (let c = g.start; c < g.start + g.count; c++) {
-        if (this.field.value === 'phase') color.set(phaseColors[this.data.phaseNames[this.data.phase[c]]] || '#8193a5');
-        else {
-          const v = this.field.value === 'normalForce'
-            ? force
-            : (this.field.value === 'strain'
-               ? (this.data.strain || this.data.displacement)[c]
-               : this.data.stress[c]);
-          color.setRGB(...stressColor(v, this.rangeMin, this.rangeMax), THREE.SRGBColorSpace);
+        if (phaseField) {
+          const phaseArray = this.field.value === 'slidingOutPhase'
+            ? this.data.slidingOutOfPlanePhase
+            : this.field.value === 'slidingPhase' ? this.data.slidingPhase : this.data.phase;
+          color.set(phaseColors[this.data.phaseNames[phaseArray[c]]] || '#8193a5');
+        } else {
+          color.setRGB(...stressColor(this.valueAt(c, g), this.rangeMin, this.rangeMax), THREE.SRGBColorSpace);
         }
         for (let vertex = 0; vertex < 4; vertex++) color.toArray(this.colors, c*12+vertex*3);
       }
@@ -204,8 +252,8 @@ export class InterfaceStressView {
     this.surface.geometry.computeBoundingSphere();
     this.root.querySelector('.stress-count').textContent = `${this.groups.length} interface${this.groups.length === 1 ? "" : "s"} · ${values.length.toLocaleString()} fibres`;
     this.drawLegend(); this.drawSelection(); this.highlight(); this.viewer.needsRender = true;
-    this.root.querySelector('.stress-help').textContent = this.field.value === 'phase'
-      ? 'Click a colored interface to select it. Colors identify constitutive phase at the final saved step.'
+    this.root.querySelector('.stress-help').textContent = phaseField
+      ? `Click a colored interface to select it. Colors identify constitutive phase at ${this.perStep ? 'the selected saved step' : 'the final saved step'}.`
       : (this.field.value === 'strain'
          ? 'Click to select · drag to orbit · scroll to zoom. Colors represent normal strain/deformation on interface surfaces. Blue = compression, red = opening. The selected interface is outlined in white.'
          : 'Click to select · drag to orbit · scroll to zoom. Colors represent stress on interface surfaces. Blue = compression, red = tension. The selected interface is outlined in white.');
@@ -213,14 +261,17 @@ export class InterfaceStressView {
 
   drawLegend() {
     const legend = this.root.querySelector('.stress-legend'); legend.replaceChildren();
-    if (this.field.value === 'phase') {
+    if (this.isPhaseField()) {
       for (const phase of this.data.phaseNames) { const item = el('span', phase); item.style.borderColor = phaseColors[phase] || '#8193a5'; legend.append(item); }
     } else {
-      const title = this.field.value === 'stress'
-        ? `Normal stress σn [MPa] · final step ${this.data.step}`
-        : (this.field.value === 'strain'
-           ? `Normal strain εn [cm] · final step ${this.data.step}`
-           : `Normal force N2 [kN] · step ${this.analysis.steps[this.stepIndex].step}`);
+      const titles = {
+        stress: `Normal stress σn [MPa] · step ${this.data.step}`,
+        strain: `Normal strain εn [cm] · step ${this.data.step}`,
+        sliding: `Sliding stress τ [MPa] · step ${this.data.step}`,
+        slidingOut: `Out-of-plane sliding τ23 [MPa] · step ${this.data.step}`,
+        normalForce: `Normal force N2 [kN] · step ${this.analysis.steps[this.stepIndex].step}`
+      };
+      const title = titles[this.field.value] || titles.stress;
       legend.append(
         el('span', title),
         el('span', fmt(this.rangeMin)),
@@ -259,7 +310,9 @@ export class InterfaceStressView {
     if (!this.data) return '';
     if (this.field.value === 'normalForce') return `Interface #${key} · N2 ${fmt(resultantAt(this.analysis, this.stepIndex, key).forces[1])} kN · step ${this.analysis.steps[this.stepIndex].step}`;
     const strain = (this.data.strain || this.data.displacement)?.[cell];
-    return `Interface #${key} · σn ${fmt(this.data.stress[cell])} MPa · εn ${fmt(strain)} cm · F ${fmt(this.data.force[cell])} kN · ${this.data.phaseNames[this.data.phase[cell]]}`;
+    const sliding = this.data.slidingStress?.[cell];
+    const slidingOut = this.data.slidingOutOfPlaneStress?.[cell];
+    return `Interface #${key} · σn ${fmt(this.data.stress[cell])} MPa · τ ${fmt(sliding)} MPa · τ23 ${fmt(slidingOut)} MPa · εn ${fmt(strain)} cm · F ${fmt(this.data.force[cell])} kN · ${this.data.phaseNames[this.data.phase[cell]]}`;
   }
 
   drawSelection() {
@@ -270,7 +323,9 @@ export class InterfaceStressView {
       : `Parents ${g.parents.join(' / ')}`;
     this.root.querySelector('.stress-picked-meta').textContent = `${parentDesc} · ${g.nrow} × ${g.ncol} normal springs`;
     const map = this.root.querySelector('.stress-map'); map.replaceChildren();
-    if (this.field.value !== 'normalForce' && this.stepIndex !== this.analysis.steps.length - 1) return;
+    if (this.field.value !== 'normalForce'
+        && (this.perStep ? this.data.step !== this.analysis.steps[this.stepIndex].step
+                         : this.stepIndex !== this.analysis.steps.length - 1)) return;
     const local = c => [0,1,2,3].map(corner => {
       const p = Array.from(this.data.positions.slice(c*12+corner*3,c*12+corner*3+3)).map((v,i) => v-g.origin[i]);
       return [p.reduce((s,v,i)=>s+v*g.e1[i],0),p.reduce((s,v,i)=>s+v*g.e3[i],0)];
@@ -282,12 +337,12 @@ export class InterfaceStressView {
     const x=v=>160+(v-(xmin+xmax)/2)*scale,y=v=>130-(v-(ymin+ymax)/2)*scale;
     const svg=svgEl('svg',{viewBox:'0 0 320 265',role:'img','aria-label':`Selected interface ${g.key} ${this.field.value} contour`});
     const force = this.field.value === 'normalForce' ? resultantAt(this.analysis,this.stepIndex,g.key).forces[1] : null;
+    const phaseArray = this.field.value === 'slidingOutPhase'
+      ? this.data.slidingOutOfPlanePhase
+      : this.field.value === 'slidingPhase' ? this.data.slidingPhase : this.data.phase;
     for(let c=g.start;c<g.start+g.count;c++) {
-      let v = force;
-      if (v === null) {
-        v = this.field.value === 'strain' ? (this.data.strain || this.data.displacement)[c] : this.data.stress[c];
-      }
-      const fill=this.field.value==='phase' ? phaseColors[this.data.phaseNames[this.data.phase[c]]] || '#8193a5' : cssColor(stressColor(v, this.rangeMin, this.rangeMax));
+      const v = force !== null ? force : this.valueAt(c, g);
+      const fill=this.isPhaseField() ? phaseColors[this.data.phaseNames[phaseArray[c]]] || '#8193a5' : cssColor(stressColor(v, this.rangeMin, this.rangeMax));
       const polygon=svgEl('polygon',{points:local(c).map(p=>`${x(p[0])},${y(p[1])}`).join(' '),fill,stroke:c===this.selectedCell?'#fff':'#111820','stroke-width':c===this.selectedCell?2:0.35,tabindex:0});
       polygon.append(svgEl('title',{},this.cellText(g.key,c)));
       polygon.onpointerenter=polygon.onfocus=()=>{this.root.querySelector('.stress-readout').textContent=this.cellText(g.key,c);};
@@ -297,15 +352,16 @@ export class InterfaceStressView {
     svg.append(svgEl('text',{x:15,y:258,fill:'#9ab0c0','font-size':10},'Local interface plane · actual fibre cells'));
     map.append(svg);
     this.root.querySelector('.stress-readout').textContent=this.cellText(g.key,this.selectedCell);
-    const vals = this.field.value === 'strain'
-      ? (this.data.strain || this.data.displacement).slice(g.start, g.start + g.count)
-      : this.data.stress.slice(g.start, g.start + g.count);
+    const vals = this.isPhaseField()
+      ? []
+      : Array.from({ length: g.count }, (_, index) => this.valueAt(g.start + index, g));
+    const units = { stress: 'MPa', strain: 'cm', sliding: 'MPa', slidingOut: 'MPa' };
     this.root.querySelector('.stress-extrema').textContent=this.field.value==='normalForce'
       ? `Normal resultant: ${fmt(force)} kN`
-      : (this.field.value === 'strain'
-         ? `Selected εn: ${fmt(Math.min(...vals))} to ${fmt(Math.max(...vals))} cm`
-         : `Selected σn: ${fmt(Math.min(...vals))} to ${fmt(Math.max(...vals))} MPa`);
-    this.root.querySelector('.stress-field-note').textContent=this.field.value==='normalForce' ? 'N2 is a resultant shown uniformly over the face. Switch to Normal stress or strain for the final fibre field.' : `Saved spring values at final step ${this.data.step}. Same scale as the 3D view; no averaging across interfaces.`;
+      : (this.isPhaseField()
+         ? 'Constitutive phases shown by colour.'
+         : `${this.field.value === 'strain' ? 'Selected εn' : 'Selected value'}: ${fmt(Math.min(...vals))} to ${fmt(Math.max(...vals))} ${units[this.field.value] || ''}`);
+    this.root.querySelector('.stress-field-note').textContent=this.field.value==='normalForce' ? 'N2 is a resultant shown uniformly over the face. Switch to a fibre field or phase for the saved spring values.' : `Saved spring values at step ${this.data.step}. Same scale as the 3D view; no averaging across interfaces.`;
   }
 
   highlight() {

@@ -17,7 +17,7 @@ export class InterfaceResults {
     this.root = root; this.onStep = onStep;
     root.innerHTML = `<div class="eyebrow">INTERFACE RESULTS</div><h1>Stress contours</h1><p class="interface-intro">Select a colored interface directly in the 3D view. Its fibre contour and values appear on the right.</p><div class="interface-visual"></div>
       <details class="interface-browser"><summary>Find an interface by ID</summary><div class="interface-filters"><input type="search" aria-label="Find interface" placeholder="Interface ID, parent or phase…"><label><input type="checkbox" checked> Restraints only</label><span class="interface-count"></span></div><select size="6" aria-label="Interface by ID" class="interface-id-picker"></select></details>
-      <details class="interface-advanced"><summary>Forces, moments, thrust history & exports</summary><p class="result-note">Forces and moments have a saved value at every step. Playback switches the 3D field to normal force N2; spring stress and phase contours are available at the final step only.</p><div class="interface-step-controls"><button aria-label="Play interface history">▶ Play</button><button aria-label="Previous interface step">‹</button><button aria-label="Next interface step">›</button><input type="range" min="0" max="0" value="0" step="1" aria-label="Interface analysis step"><output></output></div><div class="interface-detail"><p>Select an interface in the model.</p></div></details>`;
+      <details class="interface-advanced"><summary>Forces, moments, thrust history & exports</summary><p class="result-note">Forces and moments have a saved value at every step. Playback switches the 3D field to normal force N2; native C# stress/phase contours follow the selected step, while bridge/native sources use their final spring snapshot.</p><div class="interface-step-controls"><button aria-label="Play interface history">▶ Play</button><button aria-label="Previous interface step">‹</button><button aria-label="Next interface step">›</button><input type="range" min="0" max="0" value="0" step="1" aria-label="Interface analysis step"><output></output></div><div class="interface-detail"><p>Select an interface in the model.</p></div></details>`;
     this.stressView = new InterfaceStressView(root.querySelector('.interface-visual'), key => this.select(key), onStep);
     this.advanced = root.querySelector('.interface-advanced');
     this.advanced.ontoggle = () => {
@@ -28,7 +28,11 @@ export class InterfaceResults {
     };
     const controls = root.querySelector('.interface-step-controls');
     this.stepSlider = controls.querySelector('input'); this.stepLabel = controls.querySelector('output'); this.playButton = controls.querySelector('button');
-    const forceStep = index => { this.pause(); this.stressView.field.value = 'normalForce'; this.onStep(index); };
+    const forceStep = index => {
+      this.pause();
+      if (!(['benchmark', 'bridge_scour'].includes(this.sourceId) || this.sourceId.startsWith('imported_'))) this.stressView.field.value = 'normalForce';
+      this.onStep(index);
+    };
     this.stepSlider.oninput = () => forceStep(Number(this.stepSlider.value));
     const transport = controls.querySelectorAll('button');
     transport[0].onclick = () => this.timer ? this.pause() : this.play();
@@ -80,12 +84,14 @@ export class InterfaceResults {
     // additional force/sliding details only when their disclosure is opened.
     if (!this.advanced.open) return;
     try {
-      const response = await fetch(`/api/results/${encodeURIComponent(this.sourceId)}/interface?analysis=${encodeURIComponent(this.analysis.name)}&key=${key}`);
+      const step = this.analysis.steps[this.stepIndex]?.step;
+      const stepQuery = ['benchmark', 'bridge_scour'].includes(this.sourceId) || this.sourceId.startsWith('imported_') ? `&step=${encodeURIComponent(step)}` : '';
+      const response = await fetch(`/api/results/${encodeURIComponent(this.sourceId)}/interface?analysis=${encodeURIComponent(this.analysis.name)}&key=${key}${stepQuery}`);
       const data = await response.json();
       if (ticket !== this.ticket) return;
       if (!response.ok) throw new Error(data.error || 'Unable to read interface.');
-      const finalResultant = resultantAt(this.analysis, this.analysis.steps.length - 1, key);
-      if (data.modelSha256 !== this.modelSha256 || ![...data.forces, ...data.moments].every((v, i) => v === [...finalResultant.forces, ...finalResultant.moments][i])) {
+      const expectedResultant = resultantAt(this.analysis, this.stepIndex, key);
+      if (data.modelSha256 !== this.modelSha256 || ![...data.forces, ...data.moments].every((v, i) => v === [...expectedResultant.forces, ...expectedResultant.moments][i])) {
         throw new Error('Result files changed. Reload Results to load a consistent dataset.');
       }
       this.detail = data;
@@ -103,7 +109,7 @@ export class InterfaceResults {
       this.finalButton = finalButton; detail.append(this.snapshotNotice, finalButton);
       this.snapshotPanel = node('section'); detail.append(this.snapshotPanel);
       const snapshot = this.snapshotPanel;
-      snapshot.append(node('h3', `Spring snapshot · final step ${this.analysis.steps.at(-1).step}`));
+      snapshot.append(node('h3', `Spring snapshot · step ${this.analysis.steps[this.stepIndex].step}`));
       const p1Type = data.geometry.parent_type_element1 || 'Element';
       const p2Type = data.geometry.parent_type_element2 || 'Element';
       detail.append(node('p', `Parents: ${p1Type} #${data.geometry.parent_element_key1} / ${p2Type} #${data.geometry.parent_element_key2} · material ${this.analysis.interfaces.find(i => i.key === key).materialKey}`, 'result-note'));
@@ -140,7 +146,10 @@ export class InterfaceResults {
 
   play() {
     if (!this.analysis || this.timer) return;
-    this.stressView.field.value = 'normalForce'; this.stressView.paint();
+    if (!(['benchmark', 'bridge_scour'].includes(this.sourceId) || this.sourceId.startsWith('imported_'))) {
+      this.stressView.field.value = 'normalForce';
+      this.stressView.paint();
+    }
     if (this.stepIndex === this.analysis.steps.length - 1) this.onStep(0);
     this.playButton.textContent = 'Ⅱ Pause'; this.playButton.setAttribute('aria-label', 'Pause interface history');
     this.timer = setInterval(() => {
@@ -172,8 +181,12 @@ export class InterfaceResults {
       const row = node('div'); row.append(node('dt', label), node('dd', value)); props.append(row);
     }
     this.currentPanel.append(props, node('p', !e ? `Near-zero normal force (|N2| ≤ ${fmt(tol)} kN): thrust point omitted.` : e.compression ? 'Compression thrust point shown in green on the undeformed interface.' : 'Normal resultant is tensile: no compression thrust point.', 'result-note'));
-    const final = this.stepIndex === this.analysis.steps.length - 1;
-    this.snapshotPanel.classList.toggle('hidden', !final); this.finalButton.classList.toggle('hidden', final);
+    const final = ['benchmark', 'bridge_scour'].includes(this.sourceId) || this.sourceId.startsWith('imported_')
+      ? this.detail?.step === this.analysis.steps[this.stepIndex].step
+      : this.stepIndex === this.analysis.steps.length - 1;
+    const atFinal = this.stepIndex === this.analysis.steps.length - 1;
+    this.snapshotPanel.classList.toggle('hidden', !final);
+    this.finalButton.classList.toggle('hidden', atFinal);
     this.snapshotNotice.textContent = final ? '' : 'Spring stress and phase histories are not saved at this step. The stage-end snapshot is available at the final step.';
     if (this.historyQuantity.value === 'thrust') this.drawThrustPath();
     else {

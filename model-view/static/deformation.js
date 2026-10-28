@@ -106,6 +106,49 @@ export function displacementColormap(t) {
   return [last.r, last.g, last.b];
 }
 
+export function grayColormap(t) {
+  const v = 0.14 + 0.76 * Math.max(0, Math.min(1, Number(t) || 0));
+  return [v, v, v];
+}
+
+function interpolateRgbStops(stops, t) {
+  t = Math.max(0, Math.min(1, Number(t) || 0));
+  for (let i = 0; i < stops.length - 1; i++) {
+    const a = stops[i], b = stops[i + 1];
+    if (t <= b[0]) {
+      const f = (t - a[0]) / (b[0] - a[0] || 1);
+      return [a[1] + f * (b[1] - a[1]), a[2] + f * (b[2] - a[2]), a[3] + f * (b[3] - a[3])];
+    }
+  }
+  const last = stops[stops.length - 1];
+  return [last[1], last[2], last[3]];
+}
+
+const TURBO_STOPS = [
+  [0.00, 0.19, 0.07, 0.23], [0.10, 0.27, 0.45, 0.93],
+  [0.20, 0.10, 0.72, 0.92], [0.30, 0.13, 0.93, 0.65],
+  [0.40, 0.48, 1.00, 0.35], [0.50, 0.84, 0.97, 0.15],
+  [0.60, 1.00, 0.72, 0.10], [0.70, 1.00, 0.39, 0.03],
+  [0.80, 0.87, 0.13, 0.02], [0.90, 0.54, 0.02, 0.01],
+  [1.00, 0.48, 0.02, 0.01],
+];
+const VIRIDIS_STOPS = [
+  [0.000, 0.267, 0.005, 0.329], [0.125, 0.254, 0.239, 0.529],
+  [0.250, 0.164, 0.416, 0.556], [0.375, 0.104, 0.557, 0.511],
+  [0.500, 0.063, 0.671, 0.431], [0.625, 0.184, 0.769, 0.337],
+  [0.750, 0.478, 0.821, 0.318], [0.875, 0.741, 0.873, 0.150],
+  [1.000, 0.993, 0.906, 0.144],
+];
+const COOLWARM_STOPS = [
+  [0.00, 0.23, 0.30, 0.75], [0.25, 0.45, 0.60, 0.86],
+  [0.50, 0.865, 0.865, 0.865], [0.75, 0.95, 0.55, 0.40],
+  [1.00, 0.70, 0.00, 0.15],
+];
+
+export const turboColormap = t => interpolateRgbStops(TURBO_STOPS, t);
+export const viridisColormap = t => interpolateRgbStops(VIRIDIS_STOPS, t);
+export const coolwarmColormap = t => interpolateRgbStops(COOLWARM_STOPS, t);
+
 export function csharpStressColormap(t) {
   t = Math.max(0, Math.min(1, Number(t) || 0));
   const stops = [
@@ -138,6 +181,8 @@ export function computeScalarContours({
   values,
   min,
   max,
+  faceValues = null,
+  faceGrids = null,
   colormap = displacementColormap,
   makeColor = (r, g, b) => [r, g, b]
 }) {
@@ -160,7 +205,53 @@ export function computeScalarContours({
     }
     quadColors[q] = corners;
   }
-  return { quadColors, min: minimum, max: maximum };
+  let quadFaceColors = null;
+  if (faceValues) {
+    if (faceValues.length !== quadCount * 24) throw new Error('Face values must provide six faces with four corners per Quad.');
+    quadFaceColors = new Array(quadCount);
+    for (let q = 0; q < quadCount; q++) {
+      const faces = new Array(6);
+      for (let face = 0; face < 6; face++) {
+        const corners = new Array(4);
+        for (let v = 0; v < 4; v++) {
+          const raw = faceValues[q * 24 + face * 4 + v];
+          const value = Number.isFinite(raw) ? raw : minimum;
+          const rgb = colormap((value - minimum) / range);
+          corners[v] = makeColor(rgb[0], rgb[1], rgb[2]);
+        }
+        faces[face] = corners;
+      }
+      quadFaceColors[q] = faces;
+    }
+  }
+  let quadFaceGrids = null;
+  if (faceGrids) {
+    if (faceGrids.length !== quadCount) throw new Error('Face grids must provide one entry per Quad.');
+    quadFaceGrids = new Array(quadCount);
+    for (let q = 0; q < quadCount; q++) {
+      const faces = new Array(6).fill(null);
+      for (let face = 0; face < 6; face++) {
+        const grid = faceGrids[q]?.[face];
+        if (!grid) continue;
+        if (!Number.isInteger(grid.n) || !Number.isInteger(grid.m) || grid.n < 2 || grid.m < 2) {
+          throw new Error('Face grids need valid n/m dimensions.');
+        }
+        if (!Array.isArray(grid.values) || grid.values.length !== grid.n * grid.m) {
+          throw new Error('Face grid values do not match n × m.');
+        }
+        const colors = new Array(grid.values.length);
+        for (let index = 0; index < grid.values.length; index++) {
+          const raw = grid.values[index];
+          const value = Number.isFinite(raw) ? raw : minimum;
+          const rgb = colormap((value - minimum) / range);
+          colors[index] = makeColor(rgb[0], rgb[1], rgb[2]);
+        }
+        faces[face] = { n: grid.n, m: grid.m, colors };
+      }
+      quadFaceGrids[q] = faces;
+    }
+  }
+  return { quadColors, quadFaceColors, quadFaceGrids, min: minimum, max: maximum };
 }
 
 export function computeDisplacementContours({
@@ -170,14 +261,17 @@ export function computeDisplacementContours({
   quadDisplacements,
   component = 'magnitude',
   phase = 1,
+  min = null,
+  max = null,
+  colormap = displacementColormap,
   makeColor = (r, g, b) => [r, g, b]
 }) {
   const quadCount = quads.length;
   const flatQuadDisp = quadDisplacements ? decodeQuadDisplacements(quadDisplacements, quadCount) : null;
   const values = new Float32Array(quadCount * 4);
 
-  let min = Infinity;
-  let max = -Infinity;
+  let naturalMin = Infinity;
+  let naturalMax = -Infinity;
 
   let offset = 0;
   for (let q = 0; q < quadCount; q++) {
@@ -207,21 +301,24 @@ export function computeDisplacementContours({
       else val = Math.hypot(ux, uy, uz) * 10;
 
       values[q * 4 + v] = val;
-      if (val < min) min = val;
-      if (val > max) max = val;
+      if (val < naturalMin) naturalMin = val;
+      if (val > naturalMax) naturalMax = val;
     }
   }
 
-  if (!Number.isFinite(min)) { min = 0; max = 0; }
-  const range = (max - min) || 1e-12;
+  const dataMin = Number.isFinite(naturalMin) ? naturalMin : 0;
+  const dataMax = Number.isFinite(naturalMax) ? naturalMax : 0;
+  const usedMin = Number.isFinite(min) ? min : dataMin;
+  const usedMax = Number.isFinite(max) ? max : dataMax;
+  const range = (usedMax - usedMin) || 1e-12;
 
   const quadColors = new Array(quadCount);
   for (let q = 0; q < quadCount; q++) {
     const cCorners = new Array(4);
     for (let v = 0; v < 4; v++) {
       const val = values[q * 4 + v];
-      const t = (val - min) / range;
-      const rgb = displacementColormap(t);
+      const t = (val - usedMin) / range;
+      const rgb = colormap(t);
       cCorners[v] = makeColor(rgb[0], rgb[1], rgb[2]);
     }
     quadColors[q] = cCorners;
@@ -229,8 +326,10 @@ export function computeDisplacementContours({
 
   return {
     quadColors,
-    min,
-    max,
+    min: usedMin,
+    max: usedMax,
+    dataMin,
+    dataMax,
     component,
     unit: 'mm'
   };

@@ -226,11 +226,18 @@ export function computeThrustLines(mesh, step, slotMap, nodeMap, options = {}) {
   const threshold = options.hingeThreshold ?? 0.85;
   const tol = options.normalTolerance ?? 1e-5;
   const combineWidth = Boolean(options.combineWidth);
+  const minForce = Math.max(0, Number(options.minForce) || 0);
+  const carriesMinimum = value => value >= minForce - tol;
 
   const ifaceCache = new Map();
   const segmentPositions = [];
   const hingesMap = new Map();
   const toVec = p => Array.isArray(p) ? p : [p.x, p.y, p.z];
+  let maxForce = 0;
+  const trackForce = value => {
+    const force = Number(value);
+    if (Number.isFinite(force) && force > maxForce) maxForce = force;
+  };
 
   function getIfaceThrust(iKey) {
     let res = ifaceCache.get(iKey);
@@ -251,16 +258,23 @@ export function computeThrustLines(mesh, step, slotMap, nodeMap, options = {}) {
       }
 
       const res1 = getIfaceThrust(i1Key);
-      if (res1?.isHinge && !hingesMap.has(i1Key)) {
+      const res2 = getIfaceThrust(i2Key);
+      const c1 = res1 ? -res1.n2 : 0;
+      const c2 = res2 ? -res2.n2 : 0;
+      trackForce(c1);
+      trackForce(c2);
+      const keep1 = Boolean(res1) && carriesMinimum(c1);
+      const keep2 = Boolean(res2) && carriesMinimum(c2);
+
+      if (keep1 && res1.isHinge && !hingesMap.has(i1Key)) {
         hingesMap.set(i1Key, { key: i1Key, position: res1.hingePoint, thrustPoint: res1.point, ratio: res1.eta });
       }
 
-      const res2 = getIfaceThrust(i2Key);
-      if (res2?.isHinge && !hingesMap.has(i2Key)) {
+      if (keep2 && res2.isHinge && !hingesMap.has(i2Key)) {
         hingesMap.set(i2Key, { key: i2Key, position: res2.hingePoint, thrustPoint: res2.point, ratio: res2.eta });
       }
 
-      if (res1 && res2) {
+      if (keep1 && keep2) {
         segmentPositions.push(
           res1.point[0], res1.point[1], res1.point[2],
           res2.point[0], res2.point[1], res2.point[2]
@@ -274,6 +288,7 @@ export function computeThrustLines(mesh, step, slotMap, nodeMap, options = {}) {
       hinges: Array.from(hingesMap.values()),
       hingeCount: hingesMap.size,
       compressedCount: ifaceCache.size,
+      maxForce,
     };
   }
 
@@ -315,7 +330,10 @@ export function computeThrustLines(mesh, step, slotMap, nodeMap, options = {}) {
       }
     }
 
-    if (c1Total > tol && c2Total > tol) {
+    trackForce(c1Total);
+    trackForce(c2Total);
+
+    if (c1Total > tol && c2Total > tol && carriesMinimum(c1Total) && carriesMinimum(c2Total)) {
       const cp1 = [p1x / c1Total, p1y / c1Total, p1z / c1Total];
       const cp2 = [p2x / c2Total, p2y / c2Total, p2z / c2Total];
 
@@ -364,5 +382,6 @@ export function computeThrustLines(mesh, step, slotMap, nodeMap, options = {}) {
     hinges: Array.from(hingesMap.values()),
     hingeCount: hingesMap.size,
     compressedCount: ifaceCache.size,
+    maxForce,
   };
 }

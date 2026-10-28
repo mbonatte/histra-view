@@ -593,21 +593,34 @@ export class QuadViewer {
       const base = quad.points ? quad.points.map(p => p.clone()) : quad.nodeKeys.map(key => this.state.nodes.get(key).clone());
       const color = quad.colors || quad.color || this.state.categoryColors.get(this._categoryValue(quad));
       if (!useExtrusion) {
-        this._pushQuadFace(data, base, color, quadIndex);
+        if (quad.faceGrids?.[0]) this._pushFaceGrid(data, base, quad.faceGrids[0], quadIndex);
+        else this._pushQuadFace(data, base, quad.faceColors?.[0] ?? color, quadIndex);
         for (let index = 0; index < 4; index += 1) this._addSegment(data.edgePositions, base[index], base[(index + 1) % 4]);
         return;
       }
       const normal = quad.normal.lengthSq() > 1e-18 ? quad.normal.clone().normalize() : computedNormal(base);
       const top = base.map((point, index) => point.clone().addScaledVector(quad.normals?.[index] ?? normal, quad.thicknesses[index] * Number(this.options.thicknessScale) * 0.5));
       const bottom = base.map((point, index) => point.clone().addScaledVector(quad.normals?.[index] ?? normal, -quad.thicknesses[index] * Number(this.options.thicknessScale) * 0.5));
-      this._pushQuadFace(data, top, color, quadIndex);
-      this._pushQuadFace(data, bottom, color, quadIndex, true);
-      for (let index = 0; index < 4; index += 1) {
+      // Face order matches the projected C# faces: 0 top, 1 bottom, 2..5 sides.
+      const sideFaces = [0, 1, 2, 3].map(index => {
         const next = (index + 1) % 4;
-        const sideColor = Array.isArray(color) ? [color[index], color[next], color[next], color[index]] : color;
-        this._pushQuadFace(data, [top[index], top[next], bottom[next], bottom[index]], sideColor, quadIndex);
-        this._addSegment(data.edgePositions, top[index], top[next]);
-        this._addSegment(data.edgePositions, bottom[index], bottom[next]);
+        return [top[index], top[next], bottom[next], bottom[index]];
+      });
+      const facePoints = [top, bottom, ...sideFaces];
+      const faceColors = [0, 1, 2, 3, 4, 5].map(index => {
+        if (quad.faceColors?.[index]) return quad.faceColors[index];
+        if (index < 2 || !Array.isArray(color)) return color;
+        const side = index - 2;
+        const next = (side + 1) % 4;
+        return [color[side], color[next], color[next], color[side]];
+      });
+      for (let face = 0; face < 6; face += 1) {
+        if (quad.faceGrids?.[face]) this._pushFaceGrid(data, facePoints[face], quad.faceGrids[face], quadIndex);
+        else this._pushQuadFace(data, facePoints[face], faceColors[face], quadIndex, face === 1);
+      }
+      for (let index = 0; index < 4; index += 1) {
+        this._addSegment(data.edgePositions, top[index], top[(index + 1) % 4]);
+        this._addSegment(data.edgePositions, bottom[index], bottom[(index + 1) % 4]);
         this._addSegment(data.edgePositions, top[index], bottom[index]);
       }
     });
@@ -632,6 +645,39 @@ export class QuadViewer {
       target.colors.push(col.r, col.g, col.b);
     }
     target.triangleToQuad.push(quadIndex);
+  }
+
+  _pushFaceGrid(target, points, grid, quadIndex) {
+    const { n, m, colors } = grid;
+    const pointAt = (u, v) => {
+      const a = (1 - u) * (1 - v) / 4;
+      const b = (1 + u) * (1 - v) / 4;
+      const c = (1 + u) * (1 + v) / 4;
+      const d = (1 - u) * (1 + v) / 4;
+      return new THREE.Vector3(
+        a * points[0].x + b * points[1].x + c * points[2].x + d * points[3].x,
+        a * points[0].y + b * points[1].y + c * points[2].y + d * points[3].y,
+        a * points[0].z + b * points[1].z + c * points[2].z + d * points[3].z
+      );
+    };
+    for (let row = 0; row < n - 1; row += 1) {
+      for (let column = 0; column < m - 1; column += 1) {
+        const u0 = -1 + 2 * column / (m - 1);
+        const u1 = -1 + 2 * (column + 1) / (m - 1);
+        const v0 = -1 + 2 * row / (n - 1);
+        const v1 = -1 + 2 * (row + 1) / (n - 1);
+        const a = pointAt(u0, v0);
+        const b = pointAt(u1, v0);
+        const c = pointAt(u1, v1);
+        const d = pointAt(u0, v1);
+        const i0 = row * m + column;
+        const i1 = i0 + 1;
+        const i3 = i0 + m;
+        const i2 = i3 + 1;
+        this._pushTriangle(target, a, b, c, [colors[i0], colors[i1], colors[i2]], quadIndex);
+        this._pushTriangle(target, a, c, d, [colors[i0], colors[i2], colors[i3]], quadIndex);
+      }
+    }
   }
 
   _pushQuadFace(target, points, color, quadIndex, reverse = false) {
