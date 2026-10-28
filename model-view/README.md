@@ -5,6 +5,28 @@ is independent of the Python numerical runtime; material previews use its spring
 laws in an isolated worker. Opening a model never prepares it or runs an analysis.
 The original C# export, solver, and legacy viewer remain untouched.
 
+### Importing results
+
+**Import Results** is the primary workflow. Select either:
+
+- a matching HRX model together with a native C# `.Results` database;
+- a self-contained `.histra` archive (static or modal-only);
+- an RAR/ZIP archive containing the HRX and result pair;
+- a projected result `.json` file, optionally with its HRX model.
+
+Modal-only `.histra` archives open as modal sources. The browser uploads the files to a temporary local import session, projects
+them read-only, and opens the Results page. Imported files are registered as a
+temporary result source so the analysis selector and per-step fields keep
+working for the session; imported files are removed when the server restarts. Large native `.Results` uploads are
+streamed to disk. Static `.histra` imports open with stress-map descriptors,
+then prefetch the map values in the background as soon as the model is visible;
+selecting a stress colour uses the prefetched payload when ready and shows
+progress if it is still being built. The initial import therefore does not wait
+for the six-face field projection. For large archives (more than 1,000 Quads)
+the lazy payload omits the adaptive face grids because building those grids for
+`Scozzese_Vert.histra` exceeded the browser import timeout. Preloaded sources
+under `results/` are optional and may be removed.
+
 ## Run
 
 From this repository's root:
@@ -16,7 +38,7 @@ model-view/.venv/bin/python -m pip install -r model-view/requirements-preview.tx
 python3 model-view/server.py
 ```
 
-Open http://127.0.0.1:8765. The bundled `model_example.hrx` opens automatically.
+Open http://127.0.0.1:8765. The page starts blank; use **Open HRX** or **Import Results** to load what you want.
 Choose **Open HRX** or drag a file onto the page to inspect another model. Uploads
 are processed locally in memory and are not saved. Python 3.10+ and a WebGL-capable
 browser are required; Three.js is served locally after installation.
@@ -59,30 +81,67 @@ python3 model-view/server.py --model /absolute/path/to/model.hrx --port 8766
   selection, deformation scale (including actual size and auto scale), undeformed
   outline, edges, physical extrusion and camera presets. The native bridge v2
   bundle (`pdelta_soft_subgrade_phase4_results.json` + per-case summary/NPZ)
-  loads one P-Delta analysis at a time through the analysis selector; its
-  Standard cases are curve-only. The **Color map** selector includes a
-  **Von Mises stress** field derived from the final interface normal and sliding
-  spring stresses (C# tensor construction); it is a final-step snapshot, so
-  playback is disabled while it is selected. Thickness orientation follows the
-  displayed Quad plane. Displays actual control displacement, maximum nodal
-  displacement and load factor alongside the scaled drawing. A linked
-  force–displacement preview appears beside the 3D view on wide screens. **Export PNG** captures
-  the current 3D view at 2×/3×/4× resolution with a white, screen-dark or
-  transparent background and an optional caption/legend; PNG is recommended for
-  LaTeX reports because the WebGL view is raster.
+  and the `2d_bridge` normalized native bundle load one analysis at a time
+  through the analysis selector; the 3D Standard cases are curve-only. A native
+  C# `.Results` database beside its HRX
+  (`results/benchmark/benchmark.hrx` + `benchmark.Results`) is discovered as the
+  **C# benchmark (native Results)** source. The new
+  **Bridge scour 3D distributed P-Delta (C# Results)** source reads
+  `results/Bridge_scour_3d_Distributed_PDelta/`. It reads saved Quad and
+  interface states directly, reconstructs every saved step with the C# Quad
+  vertex kinematics, and exposes the same response, thrust-line and stress
+  views. For the large bridge-scour source the initial analysis omits the heavy
+  stress arrays; selecting a stress map fetches the final-step fields lazily and
+  caches them per analysis/step. The official native bridge archive
+  `results/native_soil_15e3/native_soil_15e3.histra` is discovered as
+  **Native soil 15e3** and is an optional preloaded source; it is not loaded automatically. It exposes all 104 embedded cases. Arc-length load factors are not stored by the C# database and are shown
+  as `—`; vertical reaction changes remain available. The **Color map** selector
+  follows the C# result menu: global stress σX/σY/σZ, global shear τXY/τXZ/τYZ,
+  principal tensile/compressive stress, Von Mises, local interface normal and
+  shear stresses, and native C# Quad diagonal sigma/phase. Where the saved
+  source contains spring lengths, it also
+  exposes local interface normal/in-plane/out-of-plane strains and plastic
+  strain; fields that the source cannot reconstruct remain visible but disabled
+  with the reason. Bridge v2/native maps carry C#-style six-face corner values
+  and adaptive face grids for faces larger than 2×2; native C# `.Results` maps
+  carry the six-face corner path. Both include through-thickness interfaces and
+  colour each Quad face independently. This is not yet byte-exact C# texture
+  parity because the final edge-superposition path remains approximate. These
+  maps use the final interface-spring snapshot, so playback is disabled while
+  one is selected. The colour range can be fixed with
+  explicit min/max values or returned to the current auto range, and the palette
+  can be switched between C# stress, blue–green–red, Turbo, Viridis,
+  blue–white–red and grayscale; both settings also apply to PNG captions.
+  Thickness orientation follows the displayed Quad plane. Displays actual
+  control displacement, maximum nodal displacement and load factor alongside the
+  scaled drawing. A linked force–displacement preview appears beside the 3D view
+  on wide screens. **Export PNG** captures the current 3D view at 2×/3×/4×
+  resolution with a white, screen-dark or transparent background and an optional
+  caption/legend; PNG is recommended for LaTeX reports because the WebGL view is
+  raster.
+  The bridge-specific gap analysis and deferred fidelity work are recorded in
+  [`RESULTS_FIDELITY.md`](RESULTS_FIDELITY.md).
 - **Line of thrust & plastic hinges**: toggle **Line of thrust** in the Deformed
   shape view to render the funicular compression trajectory across opposite Quad
   interfaces (`DrawCurvaPressioni` parity) and mark **Plastic hinges** (red dots)
   where eccentricity reaches the section limit ($|e_x| / (L/2) \ge 0.85$). Filter
   between structural blocks (arches, piers & foundations), all blocks, or individual
-  materials. Updates dynamically across steps and deformation scales. **Width
+  materials. Updates dynamically across steps and deformation scales. A
+  **minimum compression force** slider spans zero to the current maximum and
+  starts at 10% of that maximum; it hides thrust segments and hinges whose
+  normal resultant is below the chosen threshold. **Width
   centroid line** (default) collapses the parallel width slices and adjacent
   through-thickness columns into one section-resultant line; turn it off to inspect
   the per-slice C#-parity segments.
-- **Modal shapes**: ten modes each for `Modal_0` and `Modal_1`, with frequency,
-  period, effective mass percentages and normalized shape animation. Amplitude
-  is an explicit visualization setting; animation uses a two-second display
-  cycle rather than the high physical frequencies.
+- **Modal shapes**: native modal analyses, modal-only `.histra` archives, and
+  modal attachments (`*_values.json` + `*_shapes.npz`) stored beside a static
+  `.histra` case. Each modal shape is projected from the solver's 7-DOF Quad
+  vectors to nodal displacements and normalized for display. Frequency, period,
+  effective mass percentages and normalized shape animation are available.
+  Mode order can be sorted by frequency or effective mass X/Y/Z; the default is
+  effective mass Y descending. The modal case selector includes every available
+  modal case. Amplitude is an explicit visualization setting; animation uses a
+  two-second display cycle rather than the high physical frequencies.
 - **Response curves**: added vertical force, load factor, three HiStrA reaction
   components and elastic/dissipated energies versus control displacement or
   saved step, with step picking and CSV export. Missing initial energies are
@@ -92,12 +151,15 @@ python3 model-view/server.py --model /absolute/path/to/model.hrx --port 8766
   default; choose **All interfaces in the model** for all 884 interfaces, or
   **Selected interface only** to isolate and zoom in. The 3D faces and the
   selected physical fibre map share one symmetric compression/tension scale.
-  Hover a cell for saved stress, force and phase. Constitutive phase coloring
-  is also available. Cells use the C#-parity native interface geometry.
-  Stress and phase are final-step snapshots, not interpolated histories or
-  continuum stresses inside the quads. Intermediate steps hide these snapshots
-  and offer a final-step shortcut. Normal force N2 can be played at every saved
-  step; it is explicitly a resultant painted uniformly over each interface.
+  Hover a cell for saved stress, force and phase. Normal phase, sliding stress,
+  out-of-plane sliding stress, sliding phase and out-of-plane phase coloring are
+  also available.
+  Cells use the C#-parity native interface geometry.
+  Stress and phase are saved snapshots, not interpolated histories or continuum
+  stresses inside the quads. Bridge/native sources expose the final snapshot;
+  native C# `.Results` fetches the contour for the selected saved step. Normal
+  force N2 can be played at every saved step; it is explicitly a resultant
+  painted uniformly over each interface.
   A collapsed ID finder replaces the selection table. Forces, moments, thrust
   history, sliding-link values and CSV exports are in a separate disclosure.
   Normal stress is fibre force divided by area, converted from kN/cm² to MPa;
@@ -113,27 +175,56 @@ python3 model-view/server.py --model /absolute/path/to/model.hrx --port 8766
   fibre contours for all interfaces, with packed little-endian float32 geometry,
   stress, force, area and displacement arrays, plus phase codes and interface
   cell ranges. Only this contour data is requested when the stress view opens.
-  `GET /api/results/bridge` returns one bridge analysis (the default unless
+  `GET /api/results/benchmark` and `GET /api/results/bridge_scour` return one
+  native C# analysis (each source selects its own default, overridable with
+  `?analysis=...`) plus the static catalog and modal shapes. Its `/contours` and
+  `/interface` endpoints accept a saved `step` when supplied. Static analyses carry `stressFields`, the same ordered
+  C# stress/strain descriptors used by the color-map selector; unavailable
+  fields include a reason instead of fabricated values. Bridge v2/native and
+  native C# `.Results` descriptors include `quadFaceValues` with shape
+  `[quad][6][4]` and keep `quadCornerValues` as the four-corner fallback.
+  Bridge v2/native descriptors may also include `quadFaceGrids`, with six
+  `{n,m,values}` entries per Quad for faces whose C# texture resolution exceeds
+  2×2. `GET /api/results/<native-csharp-source>/fields?analysis=...&step=...` returns
+  the same field catalog for one saved native C# step; the browser uses it when
+  a stress map is played or scrubbed.
+  `GET /api/results/bridge` returns one 3D bridge analysis (the default unless
   `?analysis=Pushover_...` is supplied) plus the analysis catalog.
+  `GET /api/results/bridge2d` returns one 2D bridge analysis from
+  `results/2d_bridge/results/manifest.json`. The `/contours` and `/interface` endpoints
+  use the same projection. `GET /api/results/native_soil` returns one case from
+  the `.histra` archive `results/native_soil_15e3/native_soil_15e3.histra`, with the
+  same auxiliary endpoints.
   `GET /api/results/bridge/contours?analysis=Pushover_...` returns the final-step
   interface contours with 9×9 fibre cells and explicit offsets.
   `GET /api/results/bridge/interface?analysis=Pushover_...&key=...` returns one
   interface's final spring values and thrust geometry.
+  The native C# source additionally accepts `&step=...` on `/fields`,
+  `/contours` and `/interface`, so Quad and interface maps can be rendered at
+  any saved step.
 
 ## Saved bridge results
 
-The bridge source reads the native v2.0.0 bundle:
-`3D_bridge/pdelta_soft_subgrade_phase4_results.json` plus one
-`pdelta_scour4_soft_<case>.summary.json` and `.fields.npz` per P-Delta case.
-The aggregate manifest selects the default analysis and supplies the catalog;
-the field file supplies the mesh, per-step node and Quad displacements,
-interface resultants/moments, final spring state and 9×9 fibre contours. Units
-are declared as cm/kN/kN·cm/MPa and are served unchanged.
+The bridge sources read native v2.0.0 bundles:
+
+- `results/3D_bridge/pdelta_soft_subgrade_phase4_results.json` plus one
+  `pdelta_scour4_soft_<case>.summary.json` and `.fields.npz` per P-Delta case;
+- `results/2d_bridge/results/manifest.json` plus `results/native/<case>.summary.json`
+  and `.fields.npz` for the four 2D pushover cases;
+- `results/native_soil_15e3/native_soil_15e3.histra`, a self-contained
+  `histra-results` ZIP archive with its HRX model and 104 native cases.
+
+The manifest selects the default analysis and supplies the catalog; the field
+file supplies the mesh, per-step node and Quad displacements, interface
+resultants/moments, final spring state and fibre contours. Units are declared as
+cm/kN/kN·cm/MPa and are served unchanged. The adapter derives mesh sizes from
+the bundle, so new bridge models are not tied to the 3D bridge topology.
 
 The browser requests one analysis at a time (`?analysis=Pushover_...`) so a
-four-case bundle is never serialized into a single page payload. The `Vert`
+multi-case bundle is never serialized into a single page payload. The 3D `Vert`
 baseline is available as an analysis. Standard cases are `curve_only` and are
-not offered for 3D display. No pickle is loaded.
+not offered for 3D display. No pickle is loaded. New model folders should follow
+[`../MODEL_RESULTS_LAYOUT.md`](../MODEL_RESULTS_LAYOUT.md).
 
 ## Saved wall results
 
