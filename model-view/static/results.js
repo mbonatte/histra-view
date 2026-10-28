@@ -1,18 +1,85 @@
 import * as THREE from 'three';
 import { QuadViewer } from './mesh-viewer.js';
-import { decodeQuadDisplacements, deformedPoints, deformedQuadPoints, computeDisplacementContours, computeScalarContours, csharpStressColormap } from './deformation.js';
+import { decodeQuadDisplacements, deformedPoints, deformedQuadPoints, computeDisplacementContours, computeScalarContours, csharpStressColormap, displacementColormap, grayColormap, turboColormap, viridisColormap, coolwarmColormap } from './deformation.js';
 import { responseChart, ResponseCurves } from './result-charts.js';
 import { InterfaceResults } from './interface-results.js';
 import { computeThrustLines } from './thrust-line.js';
 import { downloadBlob, exportDimensions, exportViewerPng, sanitizeFilename } from './export-image.js';
 
-const number = value => value && Math.abs(value) < 1e-4 ? value.toExponential(3) : Number(value).toLocaleString(undefined, { maximumSignificantDigits: 6 });
+const number = value => {
+  if (value == null || !Number.isFinite(Number(value))) return '—';
+  const numeric = Number(value);
+  return numeric !== 0 && Math.abs(numeric) < 1e-4
+    ? numeric.toExponential(3)
+    : numeric.toLocaleString(undefined, { maximumSignificantDigits: 6 });
+};
+
+const PALETTES = {
+  csharp: {
+    label: 'C# stress',
+    colormap: csharpStressColormap,
+    colors: ['#00008b', '#0000ff', '#00bfff', '#add8e6', '#00ff00', '#90ee90', '#ffff00', '#ffa500', '#ff0000'],
+  },
+  displacement: {
+    label: 'Blue–green–red',
+    colormap: displacementColormap,
+    colors: ['#1933d9', '#19bfd9', '#33d94c', '#f2d919', '#e62619'],
+  },
+  turbo: {
+    label: 'Turbo',
+    colormap: turboColormap,
+    colors: ['#30123b', '#4458cb', '#1a9bd9', '#21d48e', '#7bf43a', '#d5e21a', '#ffb81a', '#f66b0d', '#d32e00', '#8a0b00', '#7a0403'],
+  },
+  viridis: {
+    label: 'Viridis',
+    colormap: viridisColormap,
+    colors: ['#440154', '#414d8a', '#2a6f8e', '#1b8f82', '#2aab6c', '#5dc863', '#a2d84f', '#d8e219', '#fde725'],
+  },
+  coolwarm: {
+    label: 'Blue–white–red',
+    colormap: coolwarmColormap,
+    colors: ['#3b4cbf', '#7399db', '#dddddd', '#f28c66', '#b30026'],
+  },
+  gray: {
+    label: 'Grayscale',
+    colormap: grayColormap,
+    colors: ['#242424', '#4a4a4a', '#777777', '#a4a4a4', '#d1d1d1'],
+  },
+};
+
+const PHASE_HEX = ['#67cbb4', '#ed796d', '#bb78e7', '#7ba4e5', '#53c7db', '#e7bb6b', '#c1d375', '#ff4f87', '#f4a34f', '#f4d44f'];
+const phaseColormap = value => {
+  const color = new THREE.Color(PHASE_HEX[Math.max(0, Math.min(PHASE_HEX.length - 1, Math.round(value * (PHASE_HEX.length - 1))))]);
+  return [color.r, color.g, color.b];
+};
+PALETTES.phase = {
+  label: 'Constitutive phase',
+  colormap: phaseColormap,
+  colors: PHASE_HEX,
+};
+
+const paletteSpec = (name, field) => {
+  if (name && name !== 'auto' && PALETTES[name]) return PALETTES[name];
+  if (field?.kind === 'stress') return PALETTES.csharp;
+  if (field?.kind === 'plastic') return PALETTES.gray;
+  if (field?.kind === 'phase') return PALETTES.phase;
+  return PALETTES.displacement;
+};
 
 export class ResultsPage {
   constructor(root, onSummary = () => {}) {
     this.root = root;
     this.onSummary = onSummary;
     this.section = 'shape';
+    this.colorRangeCustom = null;
+    this.stepFieldCache = new Map();
+    this.stepFields = null;
+    this.pendingStepField = null;
+    this.prefetchAttempted = new Set();
+    this.prefetchTimer = null;
+    this.thrustSliderInitialized = false;
+    this.thrustMaxForce = 0;
+    this.importedData = null;
     root.innerHTML = `
       <aside class="results-sidebar">
         <div class="panel-title">ANALYSIS RESULTS <span class="count">DEFORMATION</span></div>
@@ -23,11 +90,11 @@ export class ResultsPage {
           <p class="results-description">Explore movement through each analysis stage.</p>
           <div class="result-source-actions">
             <label class="field">Result source<select id="resultDataset" disabled aria-label="Result source"></select></label>
-            <button id="sidebarImportResult" class="sidebar-import-btn" type="button" title="Import results (.json)">📁 Import file…</button>
+            <button id="sidebarImportResult" class="sidebar-import-btn" type="button" title="Import HRX + .Results, .histra, .json, or archive">📁 Import file…</button>
           </div>
           <p id="resultDiagnostics" class="result-diagnostics hidden" role="status"></p>
           <label class="field">Analysis<select id="resultAnalysis" disabled aria-label="Result analysis"></select></label>
-          <div id="modeControls" class="hidden"><label class="field">Modal analysis<select id="modalAnalysis" aria-label="Modal analysis"></select></label><label class="field">Mode<select id="modalMode" aria-label="Mode number"></select></label><dl class="properties"><div><dt>Frequency</dt><dd id="modalFrequency">—</dd></div><div><dt>Period</dt><dd id="modalPeriod">—</dd></div><div><dt>Effective mass X/Y/Z</dt><dd id="modalMass">—</dd></div></dl><p class="result-note">Shape normalized to maximum nodal |U| = 1. Scale sets display amplitude in cm. Animation uses a 2-second display cycle, independently of the physical frequency.</p></div>
+          <div id="modeControls" class="hidden"><label class="field">Modal analysis<select id="modalAnalysis" aria-label="Modal analysis"></select></label><label class="field">Mode order<select id="modalSort" aria-label="Modal order"><option value="massY" selected>Effective mass Y (descending)</option><option value="massX">Effective mass X (descending)</option><option value="massZ">Effective mass Z (descending)</option><option value="frequency">Frequency (ascending)</option></select></label><label class="field">Mode<select id="modalMode" aria-label="Mode number"></select></label><dl class="properties"><div><dt>Frequency</dt><dd id="modalFrequency">—</dd></div><div><dt>Period</dt><dd id="modalPeriod">—</dd></div><div><dt>Effective mass X/Y/Z</dt><dd id="modalMass">—</dd></div></dl><p class="result-note">Shape normalized to maximum nodal |U| = 1. Scale sets display amplitude in cm. Animation uses a 2-second display cycle, independently of the physical frequency.</p></div>
           <div id="resultDrawingControls">
           <label class="field">Deformation scale
             <div class="result-scale-row"><input id="resultScale" type="number" min="0" max="1000000" step="any" value="10" aria-label="Deformation scale"><span>×</span></div>
@@ -40,8 +107,26 @@ export class ResultsPage {
               <option value="x">Displacement Ux (X direction)</option>
               <option value="y">Displacement Uy (Y direction)</option>
               <option value="z">Displacement Uz (Z / vertical)</option>
-              <option value="vonMises">Von Mises stress [MPa] · final step</option>
             </select>
+          </label>
+          <label class="field">Color palette
+            <select id="resultPalette" aria-label="Color palette">
+              <option value="auto" selected>Auto (field default)</option>
+              <option value="csharp">C# stress</option>
+              <option value="displacement">Blue–green–red</option>
+              <option value="turbo">Turbo</option>
+              <option value="viridis">Viridis</option>
+              <option value="coolwarm">Blue–white–red</option>
+              <option value="gray">Grayscale</option>
+            </select>
+          </label>
+          <label class="field">Color range
+            <div class="result-range-row">
+              <input id="resultColorMin" type="number" step="any" placeholder="Auto min" aria-label="Color range minimum">
+              <span>to</span>
+              <input id="resultColorMax" type="number" step="any" placeholder="Auto max" aria-label="Color range maximum">
+              <button id="resultColorAuto" type="button">Auto</button>
+            </div>
           </label>
           <div class="toggle-row"><label for="resultGhost">Undeformed outline</label><input id="resultGhost" type="checkbox" checked></div>
           <div class="toggle-row"><label for="resultEdges">Element edges</label><input id="resultEdges" type="checkbox" checked></div>
@@ -50,6 +135,12 @@ export class ResultsPage {
           <div class="toggle-row hidden" id="thrustCentroidRow"><label for="resultThrustCentroid">Width centroid line</label><input id="resultThrustCentroid" type="checkbox" checked></div>
           <div class="toggle-row hidden" id="thrustHingesRow"><label for="resultHinges">Plastic hinges <span class="hinge-badge">●</span></label><input id="resultHinges" type="checkbox" checked></div>
           <label class="field hidden" id="thrustFilterField">Thrust blocks<select id="thrustFilter" aria-label="Filter thrust line by element group"><option value="all">All structural blocks</option></select></label>
+          <label class="field hidden" id="thrustMinForceField">Minimum compression force [kN]
+            <div class="thrust-range-row">
+              <input id="resultThrustMinForce" type="range" min="0" max="1" step="any" value="0" aria-label="Minimum compression force for thrust line">
+              <output id="resultThrustMinForceValue" for="resultThrustMinForce">0 / 0 kN</output>
+            </div>
+          </label>
           </div>
           <dl class="properties result-properties">
             <div id="resultScourRow" class="hidden"><dt>Scour stage</dt><dd id="resultScour">—</dd></div>
@@ -106,11 +197,30 @@ export class ResultsPage {
     this.interfaces = new InterfaceResults(this.$('interfaceResults'), index => { this.$('resultStep').value = index; this.draw(); });
     this.$('sidebarImportResult').onclick = () => document.getElementById('resultFileInput')?.click();
     for (const button of root.querySelectorAll('[data-result-section]')) button.onclick = () => this.showSection(button.dataset.resultSection);
-    this.$('resultDataset').onchange = () => { this.data = null; this.activate(); };
-    this.$('modalAnalysis').onchange = () => this.selectModal();
+    this.$('resultDataset').onchange = () => {
+      if (this.$('resultDataset').value.startsWith('imported') && this.importedData) {
+        this.data = this.importedData;
+        this.selectAnalysis();
+        return;
+      }
+      this.data = null;
+      this.activate();
+    };
+    this.$('modalAnalysis').onchange = () => {
+      if (this.$('modalMode')) this.$('modalMode').value = '';
+      this.selectModal();
+    };
+    this.$('modalSort').onchange = () => {
+      if (this.$('modalMode')) this.$('modalMode').value = '';
+      this.selectModal();
+    };
     this.$('modalMode').onchange = () => { this.pause(); this.modePhase = 1; this.draw(); };
     this.$('resultStep').oninput = () => { this.pause(); this.draw(); };
-    this.$('resultColorBy').onchange = () => { this.syncColorMode(); this.draw(); };
+    this.$('resultColorBy').onchange = () => { this.colorRangeCustom = null; this.syncColorMode(); this.draw(); };
+    this.$('resultPalette').onchange = () => this.draw();
+    this.$('resultColorMin').onchange = () => this.applyColorRangeInputs();
+    this.$('resultColorMax').onchange = () => this.applyColorRangeInputs();
+    this.$('resultColorAuto').onclick = () => { this.colorRangeCustom = null; this.draw(); };
     this.$('resultScale').oninput = () => { this.autoScaled = false; this.draw(); };
     this.$('resultActual').onclick = () => { this.autoScaled = false; this.$('resultScale').value = '1'; this.draw(); };
     this.$('resultAuto').onclick = () => this.autoScale();
@@ -132,11 +242,13 @@ export class ResultsPage {
       this.$('thrustCentroidRow').classList.toggle('hidden', !active);
       this.$('thrustHingesRow').classList.toggle('hidden', !active);
       this.$('thrustFilterField').classList.toggle('hidden', !active || this.$('thrustFilter').options.length <= 1);
+      this.$('thrustMinForceField').classList.toggle('hidden', !active);
       this.draw();
     };
     this.$('resultThrustCentroid').onchange = () => this.draw();
     this.$('resultHinges').onchange = () => this.draw();
     this.$('thrustFilter').onchange = () => this.draw();
+    this.$('resultThrustMinForce').oninput = () => this.draw();
     this.$('resultFit').onclick = () => this.viewer?.fit();
     this.$('resultExport').onclick = () => this.openExportDialog();
     this.$('exportScale').onchange = () => this.updateExportSize();
@@ -175,10 +287,16 @@ export class ResultsPage {
       if (!this.catalog) {
         const response = await fetch('/api/results/catalog');
         const catalog = await response.json();
-        if (!response.ok || !catalog.sources?.length) throw new Error(catalog.error || 'No saved result sources found.');
+        if (!response.ok) throw new Error(catalog.error || 'Unable to read result sources.');
         this.catalog = catalog;
-        this.$('resultDataset').replaceChildren(...this.catalog.sources.map(source => new Option(source.label, source.id)));
-        this.$('resultDataset').value = this.catalog.defaultSource;
+        this.$('resultDataset').replaceChildren(...(catalog.sources || []).map(source => new Option(source.label, source.id)));
+        this.$('resultDataset').value = catalog.defaultSource || '';
+        if (!catalog.sources?.length) {
+          const message = this.$('resultMessage');
+          message.textContent = 'No result source is preloaded. Use Import Results and select an HRX plus a .Results/.histra/.json file.';
+          message.classList.remove('hidden');
+          return;
+        }
       }
       const sourceId = this.$('resultDataset').value;
       this.$('resultSource').textContent = this.catalog.sources.find(source => source.id === sourceId).label;
@@ -215,6 +333,7 @@ export class ResultsPage {
           if (hasBackfill) this.$('thrustFilter').value = 'structural';
         }
         this.$('thrustFilterField').classList.toggle('hidden', !this.$('resultThrust').checked || this.$('thrustFilter').options.length <= 1);
+        this.$('thrustMinForceField').classList.toggle('hidden', !this.$('resultThrust').checked);
       }
       this.viewer.setOptions({ extrude: true, edges: this.$('resultEdges').checked }, { rebuild: false });
       this.viewer.modelGroup.visible = true;
@@ -267,6 +386,7 @@ export class ResultsPage {
 
   loadDirectResults(data, label = 'Imported results') {
     this.deactivate();
+    this.importedData = data;
     this.data = data;
     this.$('resultDiagnostics').classList.add('hidden');
     this.$('resultMessage').classList.add('hidden');
@@ -279,21 +399,33 @@ export class ResultsPage {
     }
 
     this.$('resultAnalysis').replaceChildren();
-    for (const analysis of (data.analyses || [])) {
-      this.$('resultAnalysis').add(new Option(analysis.name, analysis.name));
+    const analysisOptions = data.analysisCatalog?.length ? data.analysisCatalog : (data.analyses || []);
+    for (const analysis of analysisOptions) {
+      this.$('resultAnalysis').add(new Option(analysis.label || analysis.name, analysis.name));
     }
+    this.$('resultAnalysis').value = data.defaultAnalysis
+      || data.analyses?.[0]?.name
+      || analysisOptions[0]?.name
+      || '';
     for (const id of ['resultAnalysis', 'resultStep', 'resultPlay', 'resultPrevious', 'resultNext', 'resultExport']) this.$(id).disabled = false;
     this.$('resultSource').textContent = label;
 
-    let option = Array.from(this.$('resultDataset').options).find(o => o.value === 'imported');
+    const sourceId = data.sourceId || 'imported';
+    let option = Array.from(this.$('resultDataset').options).find(o => o.value === sourceId);
     if (!option) {
-      option = new Option(`📁 ${label}`, 'imported');
+      option = new Option(`📁 ${label}`, sourceId);
       this.$('resultDataset').add(option, 0);
     } else {
       option.textContent = `📁 ${label}`;
     }
-    this.$('resultDataset').value = 'imported';
+    this.$('resultDataset').value = sourceId;
     this.$('resultDataset').disabled = false;
+
+    this.$('modalAnalysis').replaceChildren();
+    this.$('modalMode').replaceChildren();
+    for (const analysis of data.modal || []) this.$('modalAnalysis').add(new Option(analysis.name, analysis.name));
+    this.$('modalAnalysis').value = data.modal?.[0]?.name || '';
+    this.selectModal();
 
     if (data.mesh && data.mesh.nodes?.length) {
       if (!this.viewer) {
@@ -362,6 +494,7 @@ export class ResultsPage {
     this.$('thrustCentroidRow')?.classList.toggle('hidden', !isShape || !this.$('resultThrust')?.checked);
     this.$('thrustHingesRow')?.classList.toggle('hidden', !isShape || !this.$('resultThrust')?.checked);
     this.$('thrustFilterField')?.classList.toggle('hidden', !isShape || !this.$('resultThrust')?.checked || this.$('thrustFilter')?.options.length <= 1);
+    this.$('thrustMinForceField')?.classList.toggle('hidden', !isShape || !this.$('resultThrust')?.checked);
     this.$('resultScale').closest('label').firstChild.textContent = section === 'modes' ? 'Mode amplitude [cm]' : 'Deformation scale';
     this.root.querySelector('.viewport-label').lastChild.textContent = section === 'modes' ? ' MODAL SHAPE' : ' DEFORMED SHAPE';
     this.root.querySelector('.result-properties').classList.toggle('hidden', section === 'modes');
@@ -380,7 +513,21 @@ export class ResultsPage {
 
   selectModal() {
     if (!this.modal) return;
-    this.$('modalMode').replaceChildren(...this.modal.modes.map((m, i) => new Option(`Mode ${m.number} · ${number(m.frequency)} Hz`, i)));
+    const previous = this.$('modalMode').value;
+    const order = this.$('modalSort')?.value || 'massY';
+    const sorted = this.modal.modes.map((mode, index) => ({ mode, index }));
+    sorted.sort((left, right) => {
+      if (order === 'frequency') return (left.mode.frequency - right.mode.frequency) || (left.mode.number - right.mode.number);
+      const component = order === 'massX' ? 0 : order === 'massZ' ? 2 : 1;
+      return (right.mode.massPercent?.[component] || 0) - (left.mode.massPercent?.[component] || 0)
+        || (left.mode.number - right.mode.number);
+    });
+    this.$('modalMode').replaceChildren(...sorted.map(({ mode, index }) => {
+      const yMass = Number(mode.massPercent?.[1] || 0);
+      return new Option(`Mode ${mode.number} · ${number(mode.frequency)} Hz · Y mass ${number(yMass)}%`, index);
+    }));
+    const options = [...this.$('modalMode').options];
+    this.$('modalMode').value = options.some(option => option.value === previous) ? previous : options[0]?.value || '0';
     this.modePhase = 1;
     if (this.section === 'modes') { this.pause(); this.draw(); }
   }
@@ -428,29 +575,177 @@ export class ResultsPage {
     }
   }
 
+  applyColorRangeInputs() {
+    const min = this.$('resultColorMin').valueAsNumber;
+    const max = this.$('resultColorMax').valueAsNumber;
+    this.colorRangeCustom = Number.isFinite(min) && Number.isFinite(max) && max > min
+      ? { min, max }
+      : null;
+    this.draw();
+  }
+
+  colorRangeFor(dataMin, dataMax) {
+    const custom = this.colorRangeCustom;
+    if (custom && Number.isFinite(custom.min) && Number.isFinite(custom.max) && custom.max > custom.min) {
+      return { min: custom.min, max: custom.max, auto: false };
+    }
+    return { min: dataMin, max: dataMax, auto: true };
+  }
+
+  setColorRangeInputs(dataMin, dataMax, usedMin, usedMax) {
+    const minInput = this.$('resultColorMin');
+    const maxInput = this.$('resultColorMax');
+    const format = value => Number.isFinite(value) ? String(Number(value.toPrecision(7))) : '';
+    if (document.activeElement !== minInput) minInput.value = format(usedMin ?? dataMin);
+    if (document.activeElement !== maxInput) maxInput.value = format(usedMax ?? dataMax);
+  }
+
+  stepFieldKey() {
+    const record = this.step;
+    return record ? `${this.analysis?.name || ''}|${record.step}` : null;
+  }
+
+  async loadStepFields({ quiet = false } = {}) {
+    if (!(this.data?.nativeCsharp || this.data?.lazyFields) || !this.analysis || !this.step) return;
+    const key = this.stepFieldKey();
+    if (!key || this.stepFieldCache.has(key) || this.pendingStepField) return;
+    this.pendingStepField = key;
+    const message = this.$('resultMessage');
+    if (!quiet) {
+      message.textContent = `Reading step ${this.step.step} stress fields…`;
+      message.classList.remove('hidden', 'error');
+    }
+    try {
+      const response = await fetch(
+        `/api/results/${encodeURIComponent(this.data.sourceId)}/fields?analysis=${encodeURIComponent(this.analysis.name)}` +
+        `&step=${encodeURIComponent(this.step.step)}`
+      );
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || 'Unable to read step stress fields.');
+      this.stepFieldCache.set(key, payload);
+      if (this.stepFieldCache.size > 16) {
+        this.stepFieldCache.delete(this.stepFieldCache.keys().next().value);
+      }
+      if (this.stepFieldKey() === key) {
+        this.stepFields = payload;
+        message.classList.add('hidden');
+        this.draw();
+      }
+    } catch (error) {
+      if (quiet) {
+        this.prefetchAttempted.add(key);
+        if (this.stepFieldKey() === key && !message.classList.contains('hidden')) {
+          message.textContent = error.message;
+          message.classList.add('error');
+        }
+      } else {
+        message.textContent = error.message;
+        message.classList.add('error');
+      }
+    } finally {
+      this.pendingStepField = null;
+      this.scheduleFieldPrefetch();
+    }
+  }
+
+  scheduleFieldPrefetch() {
+    if (!this.data?.lazyFields || !this.analysis) return;
+    clearTimeout(this.prefetchTimer);
+    this.prefetchTimer = setTimeout(() => {
+      if (!this.data?.lazyFields || !this.analysis) return;
+      const key = this.stepFieldKey();
+      if (!key || this.stepFieldCache.has(key) || this.pendingStepField || this.prefetchAttempted.has(key)) return;
+      this.loadStepFields({ quiet: true });
+    }, 0);
+  }
+
+  fieldHasValues(field) {
+    return Boolean(field?.quadCornerValues || field?.quadFaceValues || field?.quadFaceGrids);
+  }
+
+  fieldById(id) {
+    const stepFields = this.stepFields
+      && this.stepFields.analysis === this.analysis?.name
+      && this.stepFields.step === this.step?.step
+      ? this.stepFields.stressFields : null;
+    const field = (stepFields || this.analysis?.stressFields || []).find(item => item.id === id);
+    if (field) return field;
+    if (id === 'vonMises' && this.analysis?.finalStress) {
+      return {
+        id: 'vonMises',
+        label: 'Von Mises stress',
+        unit: 'MPa',
+        kind: 'stress',
+        step: this.analysis.finalStress.step,
+        available: true,
+        ...this.analysis.finalStress,
+      };
+    }
+    return null;
+  }
+
+  buildColorOptions() {
+    const select = this.$('resultColorBy');
+    if (!select) return;
+    const current = select.value;
+    for (const option of [...select.querySelectorAll('option[data-result-field]')]) option.remove();
+    const fields = this.analysis?.stressFields || [];
+    for (const field of fields) {
+      const suffix = !field.available ? ' · unavailable' : field.partial ? ' · partial' : '';
+      const option = new Option(`${field.label} [${field.unit}]${suffix}`, field.id);
+      option.disabled = !field.available;
+      option.title = field.reason || (field.available
+        ? 'Final-step interface-spring field'
+        : 'This result format does not contain the required saved spring data');
+      option.dataset.resultField = field.id;
+      select.add(option);
+    }
+    if (!fields.length && this.analysis?.finalStress) {
+      const option = new Option('Von Mises stress [MPa]', 'vonMises');
+      option.title = 'Final saved interface-spring snapshot';
+      option.dataset.resultField = 'vonMises';
+      select.add(option);
+    }
+    if (!fields.length && !this.analysis?.finalStress) {
+      select.value = 'magnitude';
+      return;
+    }
+    const currentOption = [...select.options].find(option => option.value === current && !option.disabled);
+    if (!currentOption) {
+      const vonMises = [...select.options].find(option => option.value === 'vonMises' && !option.disabled);
+      select.value = vonMises ? 'vonMises' : 'magnitude';
+    }
+  }
+
   syncColorMode() {
     const select = this.$('resultColorBy');
     if (!select) return;
-    const option = [...select.options].find(item => item.value === 'vonMises');
-    const available = Boolean(this.analysis?.finalStress);
     const modes = this.section === 'modes';
-    if (option) {
-      option.disabled = !available || modes;
-      option.title = available ? 'Final saved interface-spring snapshot (MPa)' : 'No final-step spring stress data for this source';
+    const field = this.fieldById(select.value);
+    if (field && (!field.available || modes)) {
+      select.value = 'magnitude';
     }
-    if (select.value === 'vonMises' && (!available || modes)) select.value = 'magnitude';
-    const stress = select.value === 'vonMises' && available && !modes;
+    const scalar = Boolean(this.fieldById(select.value)?.available) && !modes;
+    const perStep = Boolean(this.data?.nativeCsharp);
     if (this.analysis) {
-      this.$('resultStep').disabled = stress;
-      this.$('resultPlay').disabled = stress;
-      this.$('resultPrevious').disabled = stress || modes;
-      this.$('resultNext').disabled = stress || modes;
-      if (stress) this.$('resultStep').value = this.analysis.steps.length - 1;
+      this.$('resultStep').disabled = scalar && !perStep;
+      this.$('resultPlay').disabled = scalar && !perStep;
+      this.$('resultPrevious').disabled = (scalar && !perStep) || modes;
+      this.$('resultNext').disabled = (scalar && !perStep) || modes;
+      if (scalar && !perStep) this.$('resultStep').value = this.analysis.steps.length - 1;
     }
   }
 
   selectAnalysis() {
     this.pause();
+    clearTimeout(this.prefetchTimer);
+    this.colorRangeCustom = null;
+    this.stepFields = null;
+    this.stepFieldCache.clear();
+    this.prefetchAttempted.clear();
+    this.thrustSliderInitialized = false;
+    this.thrustSliderWasEmpty = true;
+    this.buildColorOptions();
     this.$('resultStep').max = this.analysis.steps.length - 1;
     this.$('resultStep').value = this.analysis.steps.length - 1;
     this.$('resultOutcome').textContent = this.analysis.outcome;
@@ -473,6 +768,28 @@ export class ResultsPage {
     this.syncColorMode();
     if (this.autoScaled) this.autoScale();
     else this.draw();
+    this.scheduleFieldPrefetch();
+  }
+
+  syncThrustMinForce(maxForce) {
+    const slider = this.$('resultThrustMinForce');
+    const output = this.$('resultThrustMinForceValue');
+    if (!slider || !output) return false;
+    const maximum = Math.max(0, Number(maxForce) || 0);
+    const rangeMax = maximum > 0 ? maximum : 1;
+    const previous = Number(slider.value) || 0;
+    slider.max = String(rangeMax);
+    let value = previous;
+    if (!this.thrustSliderInitialized || this.thrustSliderWasEmpty) {
+      value = maximum > 0 ? maximum * 0.1 : 0;
+      this.thrustSliderInitialized = true;
+    }
+    this.thrustSliderWasEmpty = maximum <= 0;
+    if (maximum <= 0) value = 0;
+    value = Math.min(Math.max(0, value), rangeMax);
+    slider.value = String(value);
+    output.textContent = `${number(value)} / ${number(maximum)} kN`;
+    return value !== previous;
   }
 
   draw() {
@@ -483,8 +800,31 @@ export class ResultsPage {
     input.setCustomValidity('');
     const modal = this.section === 'modes';
     const requestedColor = this.$('resultColorBy')?.value || 'magnitude';
-    const stressMap = requestedColor === 'vonMises' && !modal && Boolean(this.analysis?.finalStress);
-    if (stressMap && Number(this.$('resultStep').value) !== this.analysis.steps.length - 1) {
+    const nativeCsharp = Boolean(this.data?.nativeCsharp);
+    const lazyFields = Boolean(this.data?.lazyFields);
+    const requestedField = this.fieldById(requestedColor);
+    const scalarRequested = !modal && Boolean(requestedField?.available);
+    const atFinalStep = Number(this.$('resultStep').value) === this.analysis.steps.length - 1;
+    const needsFieldValues = scalarRequested && (nativeCsharp || lazyFields)
+      && (!atFinalStep || !this.fieldHasValues(requestedField));
+    if (needsFieldValues) {
+      const key = this.stepFieldKey();
+      const cached = this.stepFieldCache.get(key);
+      if (!cached) {
+        this.stepFields = null;
+        const message = this.$('resultMessage');
+        message.textContent = `Reading step ${this.step.step} stress fields…`;
+        message.classList.remove('hidden', 'error');
+        this.loadStepFields();
+        return;
+      }
+      this.stepFields = cached;
+    } else if (!(nativeCsharp || lazyFields) || !scalarRequested) {
+      this.stepFields = null;
+    }
+    const activeField = this.fieldById(requestedColor);
+    const scalarMap = !modal && Boolean(activeField?.available);
+    if (scalarMap && !nativeCsharp && !atFinalStep) {
       this.$('resultStep').value = this.analysis.steps.length - 1;
     }
     if ((this.section === 'shape' || modal) && this.data.mesh?.nodes?.length && (!modal || this.mode)) {
@@ -520,33 +860,49 @@ export class ResultsPage {
           quad.normals = this.baseNormals[i].normals?.map(n => n.clone().applyQuaternion(rotation));
         });
         this.viewer.state.bounds.copy(bounds);
-        const colorMode = this.$('resultColorBy')?.value || 'magnitude';
-        if (stressMap) {
-          const stress = this.analysis.finalStress;
+        const requestedMode = this.$('resultColorBy')?.value || 'magnitude';
+        const colorMode = ['magnitude', 'x', 'y', 'z', 'none'].includes(requestedMode) ? requestedMode : 'magnitude';
+        if (scalarMap) {
+          const field = activeField;
+          const palette = paletteSpec(this.$('resultPalette')?.value, field);
+          const range = this.colorRangeFor(field.min, field.max);
           const res = computeScalarContours({
             quads: this.viewer.state.quads,
-            values: stress.quadCornerValues.flat(),
-            min: stress.min,
-            max: stress.max,
-            colormap: csharpStressColormap,
+            values: field.quadCornerValues.flat(),
+            min: range.min,
+            max: range.max,
+            faceValues: field.quadFaceValues ? field.quadFaceValues.flat(3) : null,
+            faceGrids: field.quadFaceGrids || null,
+            colormap: palette.colormap,
             makeColor: (r, g, b) => new THREE.Color(r, g, b)
           });
           this.viewer.state.quads.forEach((quad, i) => {
             quad.colors = res.quadColors[i];
+            quad.faceColors = res.quadFaceColors?.[i] ?? null;
+            quad.faceGrids = res.quadFaceGrids?.[i] ?? null;
           });
+          this.setColorRangeInputs(field.min, field.max, res.min, res.max);
           const dispLeg = this.$('dispLegend');
           if (dispLeg) {
             dispLeg.classList.remove('hidden');
-            this.$('dispLegendTitle').textContent = `Von Mises (interface springs) [MPa] · step ${stress.step}`;
-            this.$('dispLegendMin').textContent = `${number(res.min)} MPa`;
-            this.$('dispLegendMid').textContent = `${number((res.min + res.max) / 2)} MPa`;
-            this.$('dispLegendMax').textContent = `${number(res.max)} MPa`;
-            this.root.querySelector('.disp-gradient')?.classList.add('stress');
+            const unit = field.unit === '–' ? '' : (field.unit || '');
+            const unitSuffix = unit ? ` ${unit}` : '';
+            this.$('dispLegendTitle').textContent = `${field.label}${unit ? ` [${unit}]` : ''}${field.partial ? ' · partial' : ''} · step ${field.step}`;
+            this.$('dispLegendMin').textContent = `${number(res.min)}${unitSuffix}`;
+            this.$('dispLegendMid').textContent = `${number((res.min + res.max) / 2)}${unitSuffix}`;
+            this.$('dispLegendMax').textContent = `${number(res.max)}${unitSuffix}`;
+            const gradient = this.root.querySelector('.disp-gradient');
+            if (gradient) {
+              gradient.style.background = `linear-gradient(90deg, ${palette.colors.join(',')})`;
+              gradient.classList.toggle('stress', field.kind === 'stress');
+            }
           }
         } else if (colorMode !== 'none') {
           if (!this.nodeKeyToIndex && this.data.mesh?.nodes) {
             this.nodeKeyToIndex = new Map(this.data.mesh.nodes.map((n, i) => [String(n.key), i]));
           }
+          const palette = paletteSpec(this.$('resultPalette')?.value, null);
+          const custom = this.colorRangeCustom;
           const res = computeDisplacementContours({
             quads: this.viewer.state.quads,
             nodeKeyToIndex: this.nodeKeyToIndex,
@@ -554,11 +910,17 @@ export class ResultsPage {
             quadDisplacements: record.quadDisplacements,
             component: colorMode,
             phase: modal ? (this.modePhase ?? 1) : 1,
+            min: custom?.min,
+            max: custom?.max,
+            colormap: palette.colormap,
             makeColor: (r, g, b) => new THREE.Color(r, g, b)
           });
           this.viewer.state.quads.forEach((quad, i) => {
             quad.colors = res.quadColors[i];
+            quad.faceColors = null;
+            quad.faceGrids = null;
           });
+          this.setColorRangeInputs(res.dataMin, res.dataMax, res.min, res.max);
           const dispLeg = this.$('dispLegend');
           if (dispLeg) {
             dispLeg.classList.remove('hidden');
@@ -572,14 +934,24 @@ export class ResultsPage {
             this.$('dispLegendMin').textContent = `${res.min.toFixed(2)} mm`;
             this.$('dispLegendMid').textContent = `${((res.min + res.max) / 2).toFixed(2)} mm`;
             this.$('dispLegendMax').textContent = `${res.max.toFixed(2)} mm`;
-            this.root.querySelector('.disp-gradient')?.classList.remove('stress');
+            const gradient = this.root.querySelector('.disp-gradient');
+            if (gradient) {
+              gradient.style.background = `linear-gradient(90deg, ${palette.colors.join(',')})`;
+              gradient.classList.remove('stress');
+            }
           }
         } else {
           this.viewer.state.quads.forEach(quad => {
             quad.colors = null;
             quad.color = null;
+            quad.faceColors = null;
+            quad.faceGrids = null;
           });
-          this.root.querySelector('.disp-gradient')?.classList.remove('stress');
+          const gradient = this.root.querySelector('.disp-gradient');
+          if (gradient) {
+            gradient.style.background = '';
+            gradient.classList.remove('stress');
+          }
           this.$('dispLegend')?.classList.add('hidden');
         }
         this.viewer.rebuild();
@@ -656,7 +1028,10 @@ export class ResultsPage {
     }
 
     const mesh = this.data.mesh;
-    if (!mesh.thrustPairs?.length) return;
+    if (!mesh.thrustPairs?.length) {
+      this.syncThrustMinForce(0);
+      return;
+    }
 
     if (!this.slotMap || this.slotMapAnalysis !== this.analysis) {
       this.slotMap = new Map(this.analysis.interfaceOrder.map((key, index) => [Number(key), index]));
@@ -670,12 +1045,24 @@ export class ResultsPage {
     }
     const showHinges = Boolean(this.$('resultHinges')?.checked);
     const combineWidth = Boolean(this.$('resultThrustCentroid')?.checked);
+    const readMinForce = () => Math.max(0, Number(this.$('resultThrustMinForce')?.value) || 0);
+    let minForce = readMinForce();
 
-    const res = computeThrustLines(mesh, this.step, k => this.slotMap.get(Number(k)), nodeMap, {
+    let res = computeThrustLines(mesh, this.step, k => this.slotMap.get(Number(k)), nodeMap, {
       materialFilter,
       hingeThreshold: 0.85,
       combineWidth,
+      minForce,
     });
+    if (this.syncThrustMinForce(res.maxForce)) {
+      minForce = readMinForce();
+      res = computeThrustLines(mesh, this.step, k => this.slotMap.get(Number(k)), nodeMap, {
+        materialFilter,
+        hingeThreshold: 0.85,
+        combineWidth,
+        minForce,
+      });
+    }
 
     if (res.positions.length > 0) {
       if (!this.thrustLineMesh) {
@@ -769,13 +1156,12 @@ export class ResultsPage {
       legend.push({ type: 'dot', color: '#ef4444', label: `Hinges (${this.$('hingeCount').textContent})` });
     }
     if (this.$('resultColorBy')?.value !== 'none' && !this.$('dispLegend')?.classList.contains('hidden')) {
-      const stress = this.$('resultColorBy').value === 'vonMises';
+      const field = this.fieldById(this.$('resultColorBy').value);
+      const palette = paletteSpec(this.$('resultPalette')?.value, field);
       legend.push({
         type: 'gradient',
-        colors: stress
-          ? ['#00008b', '#0000ff', '#00bfff', '#add8e6', '#00ff00', '#90ee90', '#ffff00', '#ffa500', '#ff0000']
-          : ['#1933d9', '#19bfd9', '#33d94c', '#f2d919', '#e62619'],
-        label: `${stress ? 'Von Mises ' : ''}${this.$('dispLegendMin')?.textContent ?? ''} – ${this.$('dispLegendMax')?.textContent ?? ''}`,
+        colors: palette.colors,
+        label: `${field ? `${field.label} ` : ''}${this.$('dispLegendMin')?.textContent ?? ''} – ${this.$('dispLegendMax')?.textContent ?? ''}`,
       });
     }
     return {

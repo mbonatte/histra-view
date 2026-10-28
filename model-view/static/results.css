@@ -11,6 +11,8 @@
 .results-sidebar{background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:auto}
 .results-controls{padding:25px 22px}.results-controls h1{font-size:23px}.results-description{font-size:12px;color:var(--muted);line-height:1.7;margin:10px 0 26px}
 .results-controls .field{margin-bottom:18px}.result-scale-row{display:flex;align-items:center;gap:10px;margin-top:7px}.result-scale-row input{width:100%;min-width:0;background:#111a23;color:var(--text);border:1px solid #34414d;padding:9px;border-radius:5px;font:13px ui-monospace,monospace}.result-scale-row input:invalid{border-color:var(--amber)}
+.result-range-row{display:flex;align-items:center;gap:6px;margin-top:7px}.result-range-row input{width:100%;min-width:0;background:#111a23;color:var(--text);border:1px solid #34414d;padding:8px;border-radius:5px;font:12px ui-monospace,monospace}.result-range-row span{font-size:10px;color:var(--muted)}.result-range-row button{white-space:nowrap;font-size:10px;padding:8px 9px}
+.thrust-range-row{display:flex;align-items:center;gap:10px;margin-top:7px}.thrust-range-row input[type=range]{flex:1;min-width:0;accent-color:var(--teal);margin:0;cursor:pointer}.thrust-range-row output{min-width:78px;text-align:right;font:10px ui-monospace,monospace;color:#b5c8d4;white-space:nowrap}
 .result-scale-actions{display:flex;gap:8px;margin:-7px 0 24px}.result-scale-actions button{flex:1;font-size:11px}.result-properties{margin-top:25px}.result-properties>div{grid-template-columns:1.25fr 1fr}.result-note{font-size:10px;color:var(--muted);line-height:1.8;margin-top:19px}
 .result-source{padding:18px 22px;border-top:1px solid var(--border);margin-top:auto}.result-source p{font:10px ui-monospace,monospace;color:var(--muted);overflow-wrap:anywhere;line-height:1.8;margin:8px 0 0}
 .results-viewport.has-force-preview .results-canvas{right:300px}#resultMiniChart{position:absolute;right:24px;top:145px;width:270px;background:#17232de8;border:1px solid var(--border);border-radius:7px;padding:12px;margin:0}.results-viewport #resultMiniChart .curve-label{font-size:10px}
@@ -26,7 +28,6 @@
 .stress-range-field{display:flex;flex-direction:column;gap:6px;font-size:10px;color:#a2b6c5}.stress-range-inputs{display:flex;align-items:center;gap:5px}.stress-range-inputs input{background:#111a23;color:var(--text);border:1px solid #3b4d5b;border-radius:4px;padding:6px;font:11px ui-monospace,monospace;width:68px}.stress-range-inputs span{font-size:10px;color:var(--muted)}.stress-range-inputs button{font-size:10px;padding:5px 8px;background:#1c2c38}
 .thrust-icon{width:18px;height:3px;background:#38bdf8;display:inline-block}.hinge-icon{color:#ef4444;font-size:14px;line-height:1;display:inline-block;margin-right:2px}
 .stress-camera button.active{background:#25473f;color:#a6ebdc;border-color:#3e7b6c}
-
 
 .export-dialog{border:1px solid #3a4c5b;background:#16222c;color:var(--text);border-radius:10px;padding:22px;width:min(430px,92vw);box-shadow:0 24px 80px #0008}
 .export-dialog::backdrop{background:#02070bcc;backdrop-filter:blur(2px)}
@@ -50,9 +51,11 @@
 .sidebar-import-btn{padding:8px 10px;font-size:11px;background:#1e2d38;color:#9cc8db;border:1px solid #3b5062;border-radius:5px;white-space:nowrap;cursor:pointer}
 .sidebar-import-btn:hover{background:#263846;color:#ffffff;border-color:#4a6880}
 
-.disp-legend{position:absolute;top:55px;left:24px;display:flex;align-items:center;gap:8px;padding:6px 11px;background:#17232de8;border:1px solid #344654;border-radius:6px;color:#bad0dd;font:10px ui-monospace,monospace;pointer-events:none;z-index:10;box-shadow:0 4px 12px rgba(0,0,0,0.3)}
-.disp-legend-title{font-weight:600;color:#8edbce;margin-right:2px}
-.disp-gradient{width:90px;height:9px;display:inline-block;background:linear-gradient(90deg,rgb(25,51,217),rgb(25,191,217),rgb(51,217,76),rgb(242,217,25),rgb(230,38,25));border-radius:3px;border:1px solid rgba(255,255,255,0.18)}
+/* The contour key sits below the camera toolbar, never on top of its buttons.
+   z-index 1 keeps it under the toolbar if the viewport is very short. */
+.disp-legend{position:absolute;top:76px;left:16px;right:auto;display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;max-width:calc(100% - 32px);padding:5px 9px;background:rgba(18,21,25,.94);border:1px solid var(--wb-line-strong,#343c45);border-radius:3px;color:var(--wb-text-2,#9da7b1);font:9px/1.45 var(--wb-mono,"SFMono-Regular","Cascadia Mono","Roboto Mono","Liberation Mono",ui-monospace,monospace);pointer-events:none;z-index:1;box-shadow:none;backdrop-filter:blur(8px)}
+.disp-legend-title{font-weight:600;color:var(--wb-text-3,#747f89);letter-spacing:.04em;margin-right:2px}
+.disp-gradient{width:80px;height:7px;display:inline-block;background:linear-gradient(90deg,rgb(25,51,217),rgb(25,191,217),rgb(51,217,76),rgb(242,217,25),rgb(230,38,25));border-radius:1px;border:1px solid var(--wb-line-strong,#343c45)}
 
 
 

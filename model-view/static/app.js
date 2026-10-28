@@ -272,24 +272,55 @@ async function readModel(file = null) {
   }
 }
 
-async function readResults(file) {
+const RESULT_EXTENSIONS = new Set(['.results', '.histra', '.json', '.rar', '.zip']);
+const MODEL_EXTENSIONS = new Set(['.hrx', '.xml']);
+
+function importId() {
+  return crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+async function uploadImportFile(file, id, role) {
+  const response = await fetch(
+    `/api/results/import?import_id=${encodeURIComponent(id)}&role=${encodeURIComponent(role)}` +
+    `&name=${encodeURIComponent(file.name)}`,
+    { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: file }
+  );
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || `Upload of ${file.name} failed.`);
+  return payload;
+}
+
+async function readResultFiles(files) {
   if (state.busy) return;
+  const selected = [...files];
+  if (!selected.length) return;
+  const modelFile = selected.find(file => MODEL_EXTENSIONS.has(PathLike(file.name)));
+  const resultFile = selected.find(file => RESULT_EXTENSIONS.has(PathLike(file.name)));
+  if (!resultFile) {
+    if (modelFile) return readModel(modelFile);
+    showMessage('Select an HRX model and a .Results, .histra, or .json result file.', true);
+    return;
+  }
+  if (resultFile.name.toLowerCase().endsWith('.results') && !modelFile) {
+    showMessage('A native C# .Results import also needs its matching HRX model.', true);
+    return;
+  }
   state.busy = true;
   $('openResultFile').disabled = true;
-  showMessage(`Importing results from ${file.name}…`);
-  $('status').textContent = 'Reading results JSON';
+  showMessage(`Importing ${resultFile.name}${modelFile ? ` with ${modelFile.name}` : ''}…`);
+  $('status').textContent = 'Uploading result files';
   try {
-    const response = await fetch('/api/results/import', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/octet-stream' },
-      body: file
-    });
+    const id = importId();
+    if (modelFile) await uploadImportFile(modelFile, id, 'model');
+    await uploadImportFile(resultFile, id, 'results');
+    $('status').textContent = 'Reading result files';
+    const response = await fetch(`/api/results/import/complete?import_id=${encodeURIComponent(id)}`, { method: 'POST' });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
     location.hash = '#results';
-    resultsPage.loadDirectResults(data, file.name);
-    $('fileName').textContent = file.name;
-    $('status').textContent = `Imported ${file.name}`;
+    resultsPage.loadDirectResults(data, resultFile.name);
+    $('fileName').textContent = resultFile.name;
+    $('status').textContent = `Imported ${resultFile.name}`;
     if (data.mesh?.nodes?.length) {
       $('stats').textContent = `${data.mesh.nodes.length} nodes / ${data.mesh.quads.length} quads`;
     } else {
@@ -304,6 +335,21 @@ async function readResults(file) {
     $('openResultFile').disabled = false;
     $('resultFileInput').value = '';
   }
+}
+
+function PathLike(name) {
+  return `.${String(name).toLowerCase().split('.').pop()}`;
+}
+
+function showBlankStart() {
+  $('fileName').textContent = 'No model loaded';
+  $('status').textContent = 'Select a model or result';
+  $('stats').textContent = 'No model loaded';
+  $('modelTitle').textContent = 'Open a model to begin';
+  $('modelSubtitle').textContent = 'Use Open HRX or Import Results';
+  $('entityCount').textContent = '0';
+  $('message').textContent = 'Open an HRX model or import a result file to begin. You can also drop files here.';
+  $('message').classList.remove('hidden', 'error');
 }
 
 try {
@@ -323,7 +369,7 @@ try {
   $('openFile').onclick = () => $('fileInput').click();
   $('fileInput').onchange = () => { if ($('fileInput').files[0]) readModel($('fileInput').files[0]); };
   $('openResultFile').onclick = () => $('resultFileInput').click();
-  $('resultFileInput').onchange = () => { if ($('resultFileInput').files[0]) readResults($('resultFileInput').files[0]); };
+  $('resultFileInput').onchange = () => { if ($('resultFileInput').files.length) readResultFiles($('resultFileInput').files); };
   $('loadExample').onclick = () => readModel();
   $('search').oninput = renderList;
   $('condition').onchange = () => { renderList(); updateOverlays(); };
@@ -337,26 +383,37 @@ try {
   };
   $('grid').onchange = () => { viewer.grid.visible = $('grid').checked; viewer.needsRender = true; };
   $('fitView').onclick = () => viewer.fit();
+  const setFocusView = enabled => {
+    document.body.classList.toggle('focus-view', enabled);
+    $('togglePanels').setAttribute('aria-pressed', String(enabled));
+    $('togglePanels').textContent = enabled ? 'Exit focus' : 'Focus';
+    $('togglePanels').title = enabled ? 'Show side panels (\\)' : 'Hide side panels (\\)';
+    requestAnimationFrame(() => { viewer.resize(); viewer.needsRender = true; });
+  };
+  $('togglePanels').onclick = () => setFocusView(!document.body.classList.contains('focus-view'));
   $('clearSelection').onclick = () => { viewer.clearSelection(); inspect(null, null); };
   $('resetVisibility').onclick = () => { state.hiddenMaterials.clear(); $('layer').value = ''; updateVisibility(); renderList(); };
   document.addEventListener('keydown', event => {
     if (['INPUT', 'SELECT', 'TEXTAREA'].includes(event.target.tagName)) return;
     if (event.key.toLowerCase() === 'f') (location.hash === '#results' ? resultsPage.viewer : viewer)?.fit();
+    if (event.key === '\\' && (!location.hash || location.hash === '#model')) {
+      setFocusView(!document.body.classList.contains('focus-view'));
+    }
     if (event.key === 'Escape') { viewer.clearSelection(); inspect(null, null); }
   });
   document.addEventListener('dragover', event => { event.preventDefault(); $('dropHint').classList.remove('hidden'); });
   document.addEventListener('dragleave', event => { if (!event.relatedTarget) $('dropHint').classList.add('hidden'); });
   document.addEventListener('drop', event => {
     event.preventDefault(); $('dropHint').classList.add('hidden');
-    const file = event.dataTransfer?.files?.[0];
-    if (!file) return;
-    if (file.name.toLowerCase().endsWith('.json')) {
-      readResults(file);
+    const files = [...(event.dataTransfer?.files || [])];
+    if (!files.length) return;
+    if (files.some(file => RESULT_EXTENSIONS.has(PathLike(file.name)))) {
+      readResultFiles(files);
     } else {
-      readModel(file);
+      readModel(files[0]);
     }
   });
-  readModel();
+  showBlankStart();
 } catch (error) {
   showMessage(`The 3D viewer could not start: ${error.message}. Check that WebGL is available.`, true);
   $('status').textContent = 'Viewer unavailable';

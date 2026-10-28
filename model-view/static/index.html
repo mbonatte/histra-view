@@ -8,18 +8,19 @@
   <link rel="stylesheet" href="/static/style.css">
   <link rel="stylesheet" href="/static/materials.css">
   <link rel="stylesheet" href="/static/results.css">
+  <link rel="stylesheet" href="/static/workbench.css">
   <script type="importmap">{"imports":{"three":"/vendor/three.module.js"}}</script>
 </head>
 <body>
   <header>
     <a class="brand" href="/" aria-label="HiStrA home"><span class="brand-icon">H</span>HiStrA<span class="brand-divider"></span><span class="brand-subtitle">Model view</span></a>
-    <div class="file-heading"><span class="status-dot"></span><span id="fileName">Loading model…</span><span class="read-only">READ ONLY</span></div>
+    <div class="file-heading"><span class="status-dot"></span><span id="fileName">No model loaded</span><span class="read-only">READ ONLY</span></div>
     <nav class="page-nav" aria-label="Workspace pages"><a href="#model" id="modelNav" aria-current="page">3D model</a><a href="#materials" id="materialsNav">Material properties</a><a href="#results" id="resultsNav">Results</a></nav>
     <div class="header-actions">
-      <button id="openFile" class="primary" title="Import an HRX model (.hrx, .xml)">＋ Open HRX</button>
+      <button id="openFile" class="primary" title="Import an HRX model (.hrx, .xml)" onclick="document.getElementById('fileInput').click()">＋ Open HRX</button>
       <input id="fileInput" type="file" accept=".hrx,.xml" hidden>
-      <button id="openResultFile" class="secondary" title="Import analysis results (.json)">＋ Import Results</button>
-      <input id="resultFileInput" type="file" accept=".json" hidden>
+      <button id="openResultFile" class="secondary" title="Import analysis results (HRX + .Results, .histra, .json, or archive)" onclick="document.getElementById('resultFileInput').click()">＋ Import Results</button>
+      <input id="resultFileInput" type="file" accept=".json,.hrx,.xml,.Results,.histra,.rar,.zip" multiple hidden>
     </div>
   </header>
   <div class="workspace" id="modelWorkspace">
@@ -38,28 +39,31 @@
         <input id="search" class="search" type="search" placeholder="Find material…" aria-label="Search entities">
         <div id="entityList" class="entity-list"></div>
       </div>
-      <div class="sidebar-bottom"><button id="resetVisibility">↺ Show all materials</button><button id="loadExample">Load example</button></div>
+      <div class="sidebar-bottom"><button id="resetVisibility">↺ Show all materials</button><button id="loadExample" class="hidden">Load example</button></div>
     </aside>
     <main id="viewport" aria-label="Interactive 3D model" tabindex="0">
       <div class="viewport-top"><span class="viewport-label"><span class="status-dot"></span> MODEL SPACE</span><span id="dimensions">Z up · HRX native units</span></div>
-      <div class="view-toolbar" aria-label="Camera controls"><button data-view="iso" class="active">3D</button><button data-view="front">Front</button><button data-view="top">Top</button><button data-view="side">Side</button><span></span><button data-projection="perspective" class="active" title="Perspective camera">Persp</button><button data-projection="ortho" title="Orthographic camera">Ortho</button><span></span><button id="fitView" title="Fit model (F)">Fit ↗</button></div>
-      <div id="message" class="message" role="status">Reading the example model…</div>
+      <div class="view-toolbar" aria-label="Camera controls"><button data-view="iso" class="active">3D</button><button data-view="front">Front</button><button data-view="top">Top</button><button data-view="side">Side</button><span></span><button data-projection="perspective" class="active" title="Perspective camera">Persp</button><button data-projection="ortho" title="Orthographic camera">Ortho</button><span></span><button id="fitView" title="Fit model (F)">Fit ↗</button><span></span><button id="togglePanels" class="focus-toggle" aria-pressed="false" title="Toggle side panels (\)">Focus</button></div>
+      <div id="message" class="message" role="status">Open an HRX model or import a result file to begin.</div>
       <div class="viewport-bottom"><div class="symbol-legend"><span><i class="legend-line material-line"></i>Mesh</span><span><i class="legend-line load-line"></i>Applied load</span><span><i class="legend-line restraint-line"></i>Restraint</span></div><div class="axis-key"><b class="x">X</b><b class="y">Y</b><b class="z">Z</b></div></div>
       <div class="navigation-hint">Drag to orbit <span>·</span> Scroll to zoom <span>·</span> Right-drag to pan <span>·</span> Click to inspect</div>
-      <div id="dropHint" class="drop-hint hidden">Drop an HRX model (.hrx) or Results file (.json) to import</div>
+      <div id="dropHint" class="drop-hint hidden">Drop an HRX model or Results file (.Results, .histra, .json, .rar, .zip) to import</div>
     </main>
     <aside class="inspector">
       <div class="panel-title">DISPLAY SETTINGS</div>
       <section class="settings">
+        <div class="settings-section-label">View</div>
         <label class="field">Color by<select id="colorBy" aria-label="Color by"><option value="material">Material</option><option value="layer">Layer</option><option value="parent">Parent element</option><option value="thickness">Thickness</option><option value="single">Uniform</option></select></label>
         <label class="field">Layer<select id="layer" aria-label="Layer"><option value="">All layers</option></select></label>
+        <div class="toggle-row"><label for="grid">Ground grid</label><input id="grid" type="checkbox" checked></div>
+        <label class="field range-field">Mesh opacity <output id="opacityValue">100%</output><input id="opacity" type="range" min="0.1" max="1" step="0.05" value="1"></label>
+        <div class="settings-section-label">Geometry</div>
         <div class="toggle-row"><label for="edges">Element edges</label><input id="edges" type="checkbox" checked></div>
         <div class="toggle-row"><label for="nodes">Mesh nodes</label><input id="nodes" type="checkbox"></div>
         <div class="toggle-row"><label for="extrude">Physical thickness</label><input id="extrude" type="checkbox" checked></div>
+        <div class="settings-section-label">Overlays</div>
         <div class="toggle-row"><label for="loads">Applied loads <span class="amber-dot">●</span></label><input id="loads" type="checkbox" checked></div>
         <div class="toggle-row"><label for="restraints">Restraints <span class="teal-dot">●</span></label><input id="restraints" type="checkbox" checked></div>
-        <div class="toggle-row"><label for="grid">Ground grid</label><input id="grid" type="checkbox" checked></div>
-        <label class="field range-field">Mesh opacity <output id="opacityValue">100%</output><input id="opacity" type="range" min="0.1" max="1" step="0.05" value="1"></label>
         <label class="field range-field">Symbol scale <output id="scaleValue">1×</output><input id="symbolScale" type="range" min="0.25" max="3" step="0.25" value="1"></label>
       </section>
       <div class="panel-title inspection-title">INSPECTOR <button id="clearSelection" title="Clear selection (Escape)">×</button></div>
