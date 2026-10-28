@@ -40,6 +40,7 @@ RESULT_CACHE = {}
 INTERFACE_CACHE = {}
 CONTOUR_CACHE = {}
 FIELD_CACHE = {}
+MODAL_CACHE = {}
 
 
 def _source_available(source_id, source):
@@ -86,6 +87,8 @@ def saved_results(source_id, mode="", analysis="", key="", step=None):
         raise ValueError("Per-step stress fields are not available for this source.")
     if mode == "fields" and step is None:
         raise ValueError("Choose a saved step.")
+    if mode == "modal" and not native_histra:
+        raise ValueError("Modal attachments are available only for .histra sources.")
     files = tuple(_source_path(source["folder"], source[k]) for k in ("model", "output"))
     with RESULT_LOCK:
         stamp = tuple((p.stat().st_mtime_ns, p.stat().st_size) if p.is_file() else None for p in (*files, BASE / "result_preview.py", BASE / "bridge_v2.py", BASE / "csharp_results.py", BASE / "histra_results.py", BASE / "result_fields.py"))
@@ -97,11 +100,16 @@ def saved_results(source_id, mode="", analysis="", key="", step=None):
                 pass
         cache = (INTERFACE_CACHE if mode == "interface" else
                  CONTOUR_CACHE if mode == "contours" else
-                 FIELD_CACHE if mode == "fields" else RESULT_CACHE)
+                 FIELD_CACHE if mode == "fields" else
+                 MODAL_CACHE if mode == "modal" else
+                 RESULT_CACHE)
         cache_key = source_id, stamp, analysis, key, step
         if cache_key not in cache:
             from result_preview import project_results, project_contours, project_interface
-            if mode == "interface":
+            if mode == "modal":
+                from histra_results import project_histra_modal
+                payload = project_histra_modal(str(files[1]), analysis)
+            elif mode == "interface":
                 if native_csharp:
                     from csharp_results import project_interface_csharp
                     payload = project_interface_csharp(str(files[0]), str(files[1]), analysis, int(key), step)
@@ -135,7 +143,9 @@ def saved_results(source_id, mode="", analysis="", key="", step=None):
             elif native_histra:
                 from histra_results import project_histra
                 payload = project_histra(
-                    str(files[1]), analysis, include_stress_fields=False
+                    str(files[1]), analysis,
+                    include_stress_fields=False,
+                    include_modal_shapes=False,
                 )
             else:
                 payload = project_results(str(files[0]), str(files[1]), analysis)
@@ -177,7 +187,7 @@ class Handler(BaseHTTPRequestHandler):
         if len(parts) in (3, 4) and parts[:2] == ["api", "results"]:
             source_id = parts[2]
             mode = parts[3] if len(parts) == 4 else ""
-            if source_id not in RESULT_SOURCES or mode not in ("", "contours", "interface", "fields"):
+            if source_id not in RESULT_SOURCES or mode not in ("", "contours", "interface", "fields", "modal"):
                 return self.reply(404, {"error": "Unknown saved result source or endpoint."})
             try:
                 query = parse_qs(urlsplit(self.path).query)
@@ -270,7 +280,11 @@ class Handler(BaseHTTPRequestHandler):
         from result_preview import project_results
         if suffix == ".histra":
             from histra_results import project_histra
-            payload = project_histra(str(result_path), include_stress_fields=False)
+            payload = project_histra(
+                str(result_path),
+                include_stress_fields=False,
+                include_modal_shapes=False,
+            )
         elif suffix == ".results":
             if model_path is None or not Path(model_path).is_file():
                 raise ValueError("A native C# .Results import also needs its HRX model file.")

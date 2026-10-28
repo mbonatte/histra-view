@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from histra_results import project_contours_histra, project_histra, project_interface_histra
+from histra_results import project_contours_histra, project_histra, project_histra_modal, project_interface_histra
 
 ARCHIVE = Path(__file__).resolve().parents[2] / "results" / "native_soil_15e3" / "native_soil_15e3.histra"
 
@@ -113,6 +113,22 @@ class AttachmentModalHistraTests(unittest.TestCase):
         self.assertEqual(len(mode["displacements"]), 6150)
         norms = [sum(value * value for value in point) ** 0.5 for point in mode["displacements"]]
         self.assertAlmostEqual(max(norms), 1.0, places=5)
+
+    def test_modal_shapes_can_be_loaded_lazily(self):
+        lazy = project_histra(
+            ATTACHMENT_MODAL_ARCHIVE,
+            include_stress_fields=False,
+            include_modal_shapes=False,
+        )
+        entry = lazy["modal"][0]
+        self.assertTrue(entry["lazy"])
+        self.assertEqual(entry["name"], "Modal_1")
+        self.assertEqual(len(entry["modes"]), 12)
+        self.assertNotIn("displacements", entry["modes"][0])
+        loaded = project_histra_modal(ATTACHMENT_MODAL_ARCHIVE, "Modal_1")
+        self.assertEqual(loaded["name"], "Modal_1")
+        self.assertEqual(len(loaded["modes"]), 12)
+        self.assertEqual(len(loaded["modes"][0]["displacements"]), 6150)
 
 
 MODAL_ARCHIVE = Path(__file__).resolve().parents[2] / "results" / "modal_scour_y_mode_baseline_abutments.histra"

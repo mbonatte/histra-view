@@ -138,8 +138,9 @@ python3 model-view/server.py --model /absolute/path/to/model.hrx --port 8766
   the per-slice C#-parity segments.
 - **Modal shapes**: native modal analyses, modal-only `.histra` archives, and
   modal attachments (`*_values.json` + `*_shapes.npz`) stored beside a static
-  `.histra` case. Each modal shape is projected from the solver's 7-DOF Quad
-  vectors to nodal displacements and normalized for display. Frequency, period,
+  `.histra` case. Attachment metadata is listed immediately; the selected
+  modal case's shapes are projected from the solver's 7-DOF Quad vectors to
+  nodal displacements on demand and normalized for display. Frequency, period,
   effective mass percentages and normalized shape animation are available.
   Mode order can be sorted by frequency or effective mass X/Y/Z; the default is
   effective mass Y descending. The modal case selector includes every available

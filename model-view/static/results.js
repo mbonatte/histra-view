@@ -77,6 +77,8 @@ export class ResultsPage {
     this.pendingStepField = null;
     this.prefetchAttempted = new Set();
     this.prefetchTimer = null;
+    this.modalShapeCache = new Map();
+    this.pendingModalShape = null;
     this.thrustSliderInitialized = false;
     this.thrustMaxForce = 0;
     this.importedData = null;
@@ -511,6 +513,43 @@ export class ResultsPage {
     if (this.data) { this.draw(); this.viewer.resize(); }
   }
 
+  async loadModalShapes() {
+    if (!this.modal?.lazy || !this.data?.sourceId) return;
+    const modal = this.modal;
+    const cached = this.modalShapeCache.get(modal.name);
+    if (cached) {
+      modal.modes = cached;
+      modal.lazy = false;
+      this.selectModal();
+      return;
+    }
+    if (this.pendingModalShape) return;
+    this.pendingModalShape = modal.name;
+    const message = this.$('resultMessage');
+    message.textContent = 'Reading modal shapes…';
+    message.classList.remove('hidden', 'error');
+    try {
+      const response = await fetch(
+        `/api/results/${encodeURIComponent(this.data.sourceId)}/modal?analysis=${encodeURIComponent(modal.name)}`
+      );
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || 'Unable to read modal shapes.');
+      if (!payload.modes?.length) throw new Error('The modal attachment contains no mode shapes.');
+      this.modalShapeCache.set(modal.name, payload.modes);
+      if (this.modal?.name === modal.name) {
+        modal.modes = payload.modes;
+        modal.lazy = false;
+        message.classList.add('hidden');
+        this.selectModal();
+      }
+    } catch (error) {
+      message.textContent = error.message;
+      message.classList.add('error');
+    } finally {
+      this.pendingModalShape = null;
+    }
+  }
+
   selectModal() {
     if (!this.modal) return;
     const previous = this.$('modalMode').value;
@@ -529,7 +568,10 @@ export class ResultsPage {
     const options = [...this.$('modalMode').options];
     this.$('modalMode').value = options.some(option => option.value === previous) ? previous : options[0]?.value || '0';
     this.modePhase = 1;
-    if (this.section === 'modes') { this.pause(); this.draw(); }
+    if (this.section === 'modes') {
+      if (this.modal.lazy) this.loadModalShapes();
+      else { this.pause(); this.draw(); }
+    }
   }
 
   async loadAnalysis() {
@@ -799,6 +841,10 @@ export class ResultsPage {
     if (!Number.isFinite(scale) || scale < 0 || scale > 1000000) { input.setCustomValidity('Use a scale between 0 and 1,000,000.'); return; }
     input.setCustomValidity('');
     const modal = this.section === 'modes';
+    if (modal && this.modal?.lazy) {
+      this.loadModalShapes();
+      return;
+    }
     const requestedColor = this.$('resultColorBy')?.value || 'magnitude';
     const nativeCsharp = Boolean(this.data?.nativeCsharp);
     const lazyFields = Boolean(this.data?.lazyFields);

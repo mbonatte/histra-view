@@ -304,7 +304,38 @@ def _attachment_modal_pairs(manifest):
     return pairs
 
 
-def _attachment_modal_entries(archive, manifest, model, selected_arrays, selected_case):
+def _attachment_modal_descriptors(archive, manifest):
+    """Return lightweight mode metadata without loading any mode shapes."""
+    pairs = _attachment_modal_pairs(manifest)
+    if not pairs:
+        return []
+    modal = []
+    with zipfile.ZipFile(archive) as zf:
+        for case_id, values_name, _shapes_name in pairs:
+            try:
+                values = json.loads(zf.read(manifest["attachments"][values_name]["member"]).decode("utf-8"))
+            except (KeyError, ValueError, OSError, json.JSONDecodeError):
+                continue
+            modes = []
+            for index, meta in enumerate(values.get("modes") or []):
+                frequency = float(meta.get("frequency_hz", 0.0))
+                modes.append({
+                    "number": int(meta.get("mode", index + 1)),
+                    "frequency": frequency,
+                    "period": float(meta.get("period_s", 1.0 / frequency if frequency else 0.0)),
+                    "massPercent": [
+                        float(meta.get("mass_percent_x", 0.0)),
+                        float(meta.get("mass_percent_y", 0.0)),
+                        float(meta.get("mass_percent_z", 0.0)),
+                    ],
+                })
+            if modes:
+                modal.append({"name": case_id, "modes": modes, "lazy": True})
+    return modal
+
+
+def _attachment_modal_entries(archive, manifest, model, selected_arrays, selected_case,
+                              case_filter=None):
     """Project modal attachment JSON/NPZ pairs into the viewer mode catalog.
 
     Newer ``.histra`` writers keep modes beside a static case as
@@ -319,6 +350,8 @@ def _attachment_modal_entries(archive, manifest, model, selected_arrays, selecte
     modal = []
     with zipfile.ZipFile(archive) as zf:
         for case_id, values_name, shapes_name in pairs:
+            if case_filter is not None and case_id != case_filter:
+                continue
             try:
                 values_entry = manifest["attachments"][values_name]
                 shapes_entry = manifest["attachments"][shapes_name]
@@ -457,7 +490,8 @@ def _attachment_modal_entries(archive, manifest, model, selected_arrays, selecte
 
 def project_histra(archive_path: str | Path, analysis_name: str | None = None,
                    include_face_grids: bool | None = None,
-                   include_stress_fields: bool = True):
+                   include_stress_fields: bool = True,
+                   include_modal_shapes: bool = True):
     archive, manifest, model, arrays, _case, summary, entry, case_id = _case_context(archive_path, analysis_name)
     meta = summary.get("metadata", {})
     preferred = manifest.get("default_case") or DEFAULT_CASE
@@ -502,7 +536,9 @@ def project_histra(archive_path: str | Path, analysis_name: str | None = None,
         include_stress_fields=include_stress_fields,
     )
     analysis["name"] = case_id
-    modal = _attachment_modal_entries(archive, manifest, model, arrays, case_id)
+    modal = (_attachment_modal_entries(archive, manifest, model, arrays, case_id)
+             if include_modal_shapes
+             else _attachment_modal_descriptors(archive, manifest))
     return {
         "schemaVersion": 3,
         "sourceSchema": "histra-results-1.0.0",
@@ -521,6 +557,19 @@ def project_histra(archive_path: str | Path, analysis_name: str | None = None,
         "lazyFields": not include_stress_fields,
         "modal": modal,
     }
+
+
+def project_histra_modal(archive_path: str | Path, analysis_name: str):
+    """Return one attachment-backed modal case with projected mode shapes."""
+    archive, manifest, model, arrays, _case, _summary, _entry, case_id = _case_context(
+        archive_path, analysis_name
+    )
+    entries = _attachment_modal_entries(
+        archive, manifest, model, arrays, case_id, case_filter=case_id
+    )
+    if not entries:
+        return {"name": case_id, "modes": []}
+    return entries[0]
 
 
 def project_histra_fields(archive_path: str | Path, analysis_name: str | None = None,

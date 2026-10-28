@@ -62,7 +62,9 @@ out of scope for this project unless the bridge model requires them.
   in the background after the first render. The first `.histra` stress-field
   request carries the twelve six-face corner maps; later requests are cached.
   Modal attachments stored as `<case>_values.json` + `<case>_shapes.npz` are
-  projected from the solver's 7-DOF Quad order to nodal mode shapes. For
+  listed from their lightweight metadata at import and their selected shape is
+  projected from the solver's 7-DOF Quad order to nodal mode shapes on demand.
+  For
   archives with more than 1,000 Quads the lazy field payload omits the adaptive
   `quadFaceGrids`; generating the 395k grid samples for the Scozzese model took
   over three minutes and exceeded the browser import timeout. Smaller archives
