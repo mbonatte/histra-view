@@ -16,12 +16,18 @@ htmlcov/
 node_modules/
 
 # Generated analysis results (large, reproducible)
+*.histra
 3D_bridge/*.json
 3D_bridge/*.pkl
 3D_bridge/*.npz
+2d_bridge/results/native/
+2d_bridge/results/simulation_results.json
 wall_model/*.json
 wall_model/*.pkl
 wall_model/*.npz
+benchmark/*.Results
+benchmark/*.pkl
+benchmark/*.npz
 histra-python/histra/model-output/model.zip
 
 # Local build output
@@ -37,3 +43,8 @@ histra-python/docs/references/
 Thumbs.db
 *.swp
 *~
+
+# Local bridge scour C# dataset and archive
+results/*.rar
+results/Bridge_scour_3d_Distributed_PDelta/*
+!results/Bridge_scour_3d_Distributed_PDelta/README.md
