@@ -64,7 +64,8 @@ out of scope for this project unless the bridge model requires them.
   Modal attachments stored as `<case>_values.json` + `<case>_shapes.npz` are
   listed from their lightweight metadata at import and their selected shape is
   projected from the solver's 7-DOF Quad order to nodal mode shapes on demand.
-  For
+  Inline `modal_mode_shapes` archives are projected directly from their stored
+  eigenvectors. For
   archives with more than 1,000 Quads the lazy field payload omits the adaptive
   `quadFaceGrids`; generating the 395k grid samples for the Scozzese model took
   over three minutes and exceeded the browser import timeout. Smaller archives

@@ -179,6 +179,10 @@ def _is_modal_arrays(arrays):
     return "modal/node_displacements" in arrays and "mesh/node_coordinates" in arrays
 
 
+def _is_inline_modal_arrays(arrays):
+    return "modal_mode_shapes" in arrays and "mesh/node_keys" in arrays
+
+
 def _modal_mesh(archive: Path, model, arrays):
     keys = np.asarray(arrays["mesh/node_keys"]).astype(int)
     coordinates = np.asarray(arrays["mesh/node_coordinates"], dtype=float)
@@ -302,6 +306,148 @@ def _attachment_modal_pairs(manifest):
             continue
         pairs.append((case_id, name, shapes_name))
     return pairs
+
+
+def _project_full_dof_modes(shapes, node_keys, node_xyz, quad_keys, quad_conn, model, mode_meta):
+    """Project full 7-DOF Quad eigenvectors onto the rendered node mesh."""
+    expected = len(quad_keys) * 7
+    shapes = np.asarray(shapes, dtype=float)
+    if shapes.ndim != 2:
+        return []
+    if shapes.shape[1] != expected and shapes.shape[0] == expected:
+        shapes = shapes.T
+    if shapes.shape[1] != expected:
+        return []
+    node_index = {int(key): index for index, key in enumerate(node_keys)}
+    block_keys = sorted(int(key) for key in quad_keys)
+    block_position = {key: index for index, key in enumerate(block_keys)}
+    conn_by_key = {int(key): quad_conn[index] for index, key in enumerate(quad_keys)}
+    hrx_quads = {int(quad["key"]): quad for quad in model.get("quads", [])}
+    geometries = []
+    for quad_key in block_keys:
+        corners = conn_by_key[quad_key]
+        vertices = np.asarray(
+            [node_xyz[node_index[int(key)]] for key in corners], dtype=float
+        )
+        hrx = hrx_quads.get(quad_key, {})
+        attributes = hrx.get("attributes", {})
+        center = _attachment_vector(attributes.get("G"))
+        if center is None:
+            center = vertices.mean(axis=0)
+        reference = hrx.get("referenceSystem") or {}
+        e1 = _attachment_vector(reference.get("E1"))
+        if e1 is None:
+            e1 = vertices[1] - vertices[0]
+        e1 = np.asarray(e1, dtype=float)
+        e1_norm = np.linalg.norm(e1)
+        e1 = e1 / e1_norm if e1_norm > 1e-12 else np.asarray([1.0, 0.0, 0.0])
+        e2 = _attachment_vector(reference.get("E2"))
+        if e2 is None:
+            normal = np.cross(vertices[1] - vertices[0], vertices[2] - vertices[0])
+            normal_norm = np.linalg.norm(normal)
+            e2 = np.cross(normal / normal_norm, e1) if normal_norm > 1e-12 else np.asarray([0.0, 1.0, 0.0])
+        else:
+            e2 = np.asarray(e2, dtype=float)
+        lengths = []
+        sins = []
+        cosines = []
+        for index in range(4):
+            edge = vertices[(index + 1) % 4] - vertices[index]
+            lengths.append(float(attributes.get(f"Length{index + 1}", np.linalg.norm(edge))))
+            sins.append(float(attributes.get(f"Sin{index + 1}", 0.0)))
+            cosines.append(float(attributes.get(f"Cos{index + 1}", 0.0)))
+        geometries.append({
+            "position": block_position[quad_key],
+            "center": center,
+            "e1": e1,
+            "e2": e2,
+            "lengths": lengths,
+            "sins": sins,
+            "cosines": cosines,
+            "nodes": [node_index[int(key)] for key in corners],
+        })
+
+    modes = []
+    for mode_index in range(min(len(mode_meta), shapes.shape[0])):
+        blocks = shapes[mode_index].reshape(len(block_keys), 7)
+        totals = np.zeros((len(node_keys), 3), dtype=float)
+        counts = np.zeros(len(node_keys), dtype=int)
+        for geometry in geometries:
+            local = blocks[geometry["position"]]
+            translation = np.asarray(local[:3], dtype=float)
+            rotation = np.asarray(local[3:6], dtype=float)
+            shear = float(local[6])
+            for vertex_index, node_index_value in enumerate(geometry["nodes"]):
+                base = np.asarray(node_xyz[node_index_value], dtype=float)
+                displacement = translation + np.cross(rotation, base - geometry["center"])
+                if vertex_index == 2 and abs(geometry["sins"][2]) > 1e-30:
+                    coefficient = (
+                        -geometry["lengths"][3] * geometry["sins"][3]
+                        / geometry["sins"][2]
+                    )
+                    displacement = displacement + shear * coefficient * (
+                        geometry["sins"][1] * geometry["e1"]
+                        + geometry["cosines"][1] * geometry["e2"]
+                    )
+                elif vertex_index == 3:
+                    displacement = displacement + shear * geometry["lengths"][3] * (
+                        -geometry["sins"][0] * geometry["e1"]
+                        + geometry["cosines"][0] * geometry["e2"]
+                    )
+                totals[node_index_value] += displacement
+                counts[node_index_value] += 1
+        valid = counts > 0
+        if valid.any():
+            totals[valid] /= counts[valid, None]
+        maximum = float(np.max(np.linalg.norm(totals, axis=1))) if len(totals) else 0.0
+        if maximum > 0:
+            totals /= maximum
+        meta = mode_meta[mode_index]
+        modes.append({
+            "number": int(meta.get("number", mode_index + 1)),
+            "frequency": float(meta.get("frequency", 0.0)),
+            "period": float(meta.get("period", 0.0)),
+            "massPercent": [float(value) for value in meta.get("massPercent", [0.0, 0.0, 0.0])],
+            "displacements": np.round(totals, 6).tolist(),
+        })
+    return modes
+
+
+def _inline_modal_entries(case_id, arrays, model, summary):
+    modal = summary.get("modal") or {}
+    values = modal.get("modal_values") or []
+    frequencies = np.asarray(arrays.get("modal_frequencies", []), dtype=float)
+    periods = np.asarray(arrays.get("modal_periods", []), dtype=float)
+    metadata = []
+    for index, row in enumerate(values):
+        frequency = float(row.get("Fn", frequencies[index] if index < len(frequencies) else 0.0))
+        metadata.append({
+            "number": int(row.get("Step", index + 1)),
+            "frequency": frequency,
+            "period": float(row.get("Tn", periods[index] if index < len(periods) else 0.0)),
+            "massPercent": [
+                float(row.get("Mx_pcent", 0.0)),
+                float(row.get("My_pcent", 0.0)),
+                float(row.get("Mz_pcent", 0.0)),
+            ],
+        })
+    if not metadata:
+        metadata = [
+            {"number": index + 1, "frequency": float(frequencies[index]) if index < len(frequencies) else 0.0,
+             "period": float(periods[index]) if index < len(periods) else 0.0,
+             "massPercent": [0.0, 0.0, 0.0]}
+            for index in range(len(frequencies))
+        ]
+    modes = _project_full_dof_modes(
+        arrays.get("modal_mode_shapes", []),
+        np.asarray(arrays["mesh/node_keys"]).astype(int),
+        np.asarray(arrays["mesh/nodes_xyz"], dtype=float),
+        np.asarray(arrays["mesh/quad_keys"]).astype(int),
+        np.asarray(arrays["mesh/quad_conn"]).astype(int),
+        model,
+        metadata,
+    )
+    return [{"name": case_id, "modes": modes}] if modes else []
 
 
 def _attachment_modal_descriptors(archive, manifest):
@@ -497,6 +643,34 @@ def project_histra(archive_path: str | Path, analysis_name: str | None = None,
     preferred = manifest.get("default_case") or DEFAULT_CASE
     catalog = _catalog(manifest)
     default = preferred if preferred in (manifest.get("cases") or {}) else catalog[0]["name"]
+    if _is_inline_modal_arrays(arrays):
+        mesh = _mesh(str(archive), arrays, hrx_model=model)
+        mesh["name"] = archive.name
+        analysis = _analysis(
+            entry, summary, mesh, arrays,
+            include_face_grids=False,
+            include_stress_fields=False,
+        )
+        analysis["name"] = case_id
+        modal = _inline_modal_entries(case_id, arrays, model, summary)
+        return {
+            "schemaVersion": 3,
+            "sourceSchema": "histra-results-1.0.0",
+            "modelSha256": meta.get("model_sha256"),
+            "title": archive.stem,
+            "name": archive.name,
+            "sourceUnits": meta.get("units", {
+                "length": "cm", "displacement": "cm", "force": "kN",
+                "moment": "kN*cm", "stress": "MPa", "rotation": "rad",
+            }),
+            "units": VIEWER_UNITS,
+            "mesh": mesh,
+            "analyses": [analysis],
+            "analysisCatalog": catalog,
+            "defaultAnalysis": default,
+            "lazyFields": True,
+            "modal": modal,
+        }
     if _is_modal_arrays(arrays):
         mesh = _modal_mesh(archive, model, arrays)
         analysis, _selected_modal = _modal_analysis(case_id, mesh, arrays, summary)
