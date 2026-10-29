@@ -65,6 +65,9 @@ python3 model-view/server.py --model /absolute/path/to/model.hrx --port 8766
   dedicated **Elements** and **Nodes** tabs. Element results highlight and focus
   the Quad; node results place a marker at the node, focus the camera, and show
   connected-element counts.
+- **Measure**: click two points (surface points or nearby nodes) to draw the
+  ruler and read signed ΔX, ΔY, ΔZ and total length in HRX model units. Press
+  `M` or use the toolbar button to start another measurement; `Esc` clears it.
 - **Material properties** workspace page, linked from the header and material
   inspector. Lists only masonry material templates (including unassigned definitions) with
   search and an assigned-only filter. Masonry uses the C# editor's Rocking, Shear,

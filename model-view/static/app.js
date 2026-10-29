@@ -7,6 +7,7 @@ const $ = id => document.getElementById(id);
 const state = {
   model: null, tab: 'materials', hiddenMaterials: new Set(), selected: null, busy: false,
   quadIndex: new Map(), nodeMap: new Map(), materialMap: new Map(),
+  measureMode: false, measurePoints: [],
 };
 const TAB_META = {
   materials: { title: 'ASSIGNED MATERIALS', help: 'Toggle visibility or inspect a material.', search: 'Find material…' },
@@ -55,6 +56,63 @@ function rawAttributes(attributes) {
   const details = element('details');
   details.append(element('summary', '', 'All HRX attributes'), properties(attributes));
   return details;
+}
+
+function setMeasureMode(enabled) {
+  state.measureMode = Boolean(enabled);
+  viewer.setMeasureMode(state.measureMode);
+  $('measure').classList.toggle('active', state.measureMode);
+  $('measure').setAttribute('aria-pressed', String(state.measureMode));
+  if (state.measureMode) {
+    $('measurePanel').classList.remove('hidden');
+    $('measureHint').textContent = state.measurePoints.length
+      ? 'Click the second point on the model.'
+      : 'Click the first point on the model.';
+  } else if (state.measurePoints.length < 2) {
+    $('measurePanel').classList.add('hidden');
+  }
+}
+
+function clearMeasurement() {
+  state.measurePoints = [];
+  viewer.clearMeasurement();
+  viewer.setMeasureMode(false);
+  state.measureMode = false;
+  $('measure').classList.remove('active');
+  $('measure').setAttribute('aria-pressed', 'false');
+  $('measurePanel').classList.add('hidden');
+  for (const id of ['measureDX', 'measureDY', 'measureDZ', 'measureLength']) $(id).textContent = '—';
+}
+
+function updateMeasurement() {
+  const points = state.measurePoints;
+  if (points.length < 2) return;
+  const [a, b] = points;
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const dz = b.z - a.z;
+  $('measureDX').textContent = format(dx);
+  $('measureDY').textContent = format(dy);
+  $('measureDZ').textContent = format(dz);
+  $('measureLength').textContent = format(Math.hypot(dx, dy, dz));
+  $('measureHint').textContent = 'Measurement complete. Click Measure to start another.';
+}
+
+function registerMeasurement(point) {
+  if (!state.measureMode) return;
+  if (state.measurePoints.length >= 2) {
+    state.measurePoints = [];
+    viewer.clearMeasurement();
+  }
+  state.measurePoints.push(point);
+  viewer.setMeasurement(state.measurePoints);
+  if (state.measurePoints.length === 1) {
+    $('measurePanel').classList.remove('hidden');
+    $('measureHint').textContent = 'Click the second point on the model.';
+  } else {
+    updateMeasurement();
+    setMeasureMode(false);
+  }
 }
 
 function inspect(kind, record) {
@@ -316,6 +374,8 @@ function loadModel(model) {
   populateSelect($('layer'), layers, 'All layers');
   populateSelect($('condition'), model.loadConditions, 'All assigned conditions');
   $('dimensions').textContent = `Z up · ${model.units}`;
+  $('measureUnits').textContent = model.units === 'HRX native units' ? 'HRX units' : model.units;
+  clearMeasurement();
   $('warnings').replaceChildren(...model.warnings.map(w => element('p', 'warning', w)));
   $('warningCount').textContent = model.warnings.length;
   updateOverlays();
@@ -456,6 +516,20 @@ try {
   overlays = new ModelOverlays(viewer, inspect);
   showPage();
   viewer.on('selection', selected => inspect(selected ? 'quad' : null, selected?.quad));
+  viewer.on('measure', result => registerMeasurement(result.point));
+  $('measure').onclick = () => {
+    if (state.measureMode) {
+      clearMeasurement();
+    } else {
+      clearMeasurement();
+      setMeasureMode(true);
+    }
+  };
+  $('measureReset').onclick = () => {
+    clearMeasurement();
+    setMeasureMode(true);
+  };
+  $('measureClose').onclick = () => clearMeasurement();
   for (const button of document.querySelectorAll('[data-tab]')) button.onclick = () => setTab(button.dataset.tab);
   for (const button of document.querySelectorAll('[data-view]')) button.onclick = () => {
     viewer.setView(button.dataset.view);
@@ -495,10 +569,17 @@ try {
   document.addEventListener('keydown', event => {
     if (['INPUT', 'SELECT', 'TEXTAREA'].includes(event.target.tagName)) return;
     if (event.key.toLowerCase() === 'f') (location.hash === '#results' ? resultsPage.viewer : viewer)?.fit();
+    if (event.key.toLowerCase() === 'm' && (!location.hash || location.hash === '#model')) {
+      if (state.measureMode) clearMeasurement();
+      else { clearMeasurement(); setMeasureMode(true); }
+    }
     if (event.key === '\\' && (!location.hash || location.hash === '#model')) {
       setFocusView(!document.body.classList.contains('focus-view'));
     }
-    if (event.key === 'Escape') { viewer.clearSelection(); inspect(null, null); }
+    if (event.key === 'Escape') {
+      if (state.measureMode || state.measurePoints.length) clearMeasurement();
+      else { viewer.clearSelection(); inspect(null, null); }
+    }
   });
   document.addEventListener('dragover', event => { event.preventDefault(); $('dropHint').classList.remove('hidden'); });
   document.addEventListener('dragleave', event => { if (!event.relatedTarget) $('dropHint').classList.add('hidden'); });

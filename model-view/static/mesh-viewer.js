@@ -161,7 +161,7 @@ export class QuadViewer {
     if (!container) throw new Error('QuadViewer requires a container element.');
     this.container = container;
     this.options = { ...DEFAULT_OPTIONS, ...options };
-    this.callbacks = { selection: null, stats: null, legend: null, message: null };
+    this.callbacks = { selection: null, stats: null, legend: null, message: null, measure: null };
     this.visibleQuad = () => true;
     this.materialDefinitions = new Map();
     this.layerDefinitions = new Map();
@@ -219,6 +219,8 @@ export class QuadViewer {
     this.modelGroup = new THREE.Group();
     this.scene.add(this.modelGroup);
     this.nodeMarker = null;
+    this.measureMode = false;
+    this.measureGroup = null;
     this.raycaster = new THREE.Raycaster();
     this.pointer = new THREE.Vector2();
     this._pointerStart = null;
@@ -261,6 +263,7 @@ export class QuadViewer {
 
   clear() {
     this.clearNodeSelection();
+    this.clearMeasurement();
     this._disposeObject(this.state.mesh);
     this._disposeObject(this.state.edgeLines);
     this._disposeObject(this.state.nodePoints);
@@ -439,6 +442,84 @@ export class QuadViewer {
     this.needsRender = true;
   }
 
+  setMeasureMode(enabled) {
+    this.measureMode = Boolean(enabled);
+    this.renderer.domElement.style.cursor = this.measureMode ? 'crosshair' : '';
+    this.needsRender = true;
+  }
+
+  pickMeasurePoint(event) {
+    if (!this.state.mesh) return null;
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+    // Prefer a visible mesh node when the click lands on it. This gives exact
+    // node-to-node dimensions while still allowing arbitrary surface points.
+    let nearest = null;
+    const threshold = 12;
+    for (const [key, point] of this.state.nodes) {
+      const projected = point.clone().project(this.camera);
+      if (projected.z < -1 || projected.z > 1) continue;
+      const x = (projected.x + 1) * 0.5 * rect.width;
+      const y = (-projected.y + 1) * 0.5 * rect.height;
+      const distance = Math.hypot(x - (event.clientX - rect.left), y - (event.clientY - rect.top));
+      if (distance <= threshold && (!nearest || distance < nearest.distance)) {
+        nearest = { point: point.clone(), nodeKey: Number(key), distance };
+      }
+    }
+    if (nearest) return { point: nearest.point, nodeKey: nearest.nodeKey };
+
+    this.raycaster.setFromCamera(this.pointer, this.camera);
+    const hit = this.raycaster.intersectObject(this.state.mesh, false)[0];
+    return hit?.point ? { point: hit.point.clone() } : null;
+  }
+
+  setMeasurement(points) {
+    this.clearMeasurement();
+    if (!points?.length) return;
+    const size = this.state.bounds.getSize(new THREE.Vector3());
+    const radius = Math.max(size.length() * 0.003, 0.05);
+    const group = new THREE.Group();
+    const markerGeometry = new THREE.SphereGeometry(radius, 12, 8);
+    const markerMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffff66,
+      depthTest: false,
+      depthWrite: false,
+    });
+    for (const point of points) {
+      const marker = new THREE.Mesh(markerGeometry.clone(), markerMaterial.clone());
+      marker.position.copy(point);
+      marker.renderOrder = 20;
+      group.add(marker);
+    }
+    if (points.length >= 2) {
+      const lineGeometry = new THREE.BufferGeometry().setFromPoints(points.slice(0, 2));
+      const line = new THREE.Line(lineGeometry, new THREE.LineBasicMaterial({
+        color: 0xffff66,
+        depthTest: false,
+        transparent: true,
+        opacity: 0.95,
+      }));
+      line.renderOrder = 20;
+      group.add(line);
+    }
+    this.measureGroup = group;
+    this.scene.add(group);
+    this.needsRender = true;
+  }
+
+  clearMeasurement() {
+    if (!this.measureGroup) return;
+    this.scene.remove(this.measureGroup);
+    this.measureGroup.traverse(object => {
+      object.geometry?.dispose();
+      object.material?.dispose();
+    });
+    this.measureGroup = null;
+    this.needsRender = true;
+  }
+
   resize() {
     this.needsRender = true;
     const width = Math.max(1, this.container.clientWidth);
@@ -569,6 +650,7 @@ export class QuadViewer {
   destroy() {
     this.destroyed = true;
     this.clearNodeSelection();
+    this.clearMeasurement();
     this.controls.dispose();
     this._resizeObserver.disconnect();
     this.renderer.dispose();
@@ -577,6 +659,7 @@ export class QuadViewer {
 
   _loadNormalized(model, modelPoints) {
     this.clearNodeSelection();
+    this.clearMeasurement();
     this.state.bounds.makeEmpty();
     this.state.name = model.name;
     this.state.nodes = model.nodes;
@@ -778,6 +861,11 @@ export class QuadViewer {
     const moved = Math.hypot(event.clientX - this._pointerStart.x, event.clientY - this._pointerStart.y);
     this._pointerStart = null;
     if (moved > 5) return;
+    if (this.measureMode) {
+      const picked = this.pickMeasurePoint(event);
+      if (picked) this.emit('measure', picked);
+      return;
+    }
     const rect = this.renderer.domElement.getBoundingClientRect();
     this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;

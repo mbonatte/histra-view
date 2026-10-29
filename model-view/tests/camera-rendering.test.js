@@ -51,6 +51,23 @@ for (const [name, deltaY] of [['zoom in', -120], ['zoom out', 120]]) {
   });
 }
 
+test('setMeasurement draws point markers and a connecting segment', () => {
+  const viewer = Object.create(QuadViewer.prototype);
+  viewer.state = { bounds: new Box3(new Vector3(0, 0, 0), new Vector3(100, 100, 100)) };
+  viewer.scene = { add: object => { viewer.measureAdded = object; }, remove: object => { viewer.measureRemoved = object; } };
+  viewer.needsRender = false;
+
+  viewer.setMeasurement([new Vector3(1, 2, 3), new Vector3(4, 6, 3)]);
+  assert.ok(viewer.measureGroup);
+  assert.equal(viewer.measureGroup.children.length, 3);
+  assert.equal(viewer.measureAdded, viewer.measureGroup);
+  assert.equal(viewer.needsRender, true);
+
+  viewer.clearMeasurement();
+  assert.equal(viewer.measureGroup, null);
+  assert.ok(viewer.measureRemoved);
+});
+
 test('selectNode adds and clears a focused node marker', () => {
   const viewer = Object.create(QuadViewer.prototype);
   viewer.state = {

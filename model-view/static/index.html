@@ -45,7 +45,18 @@
     </aside>
     <main id="viewport" aria-label="Interactive 3D model" tabindex="0">
       <div class="viewport-top"><span class="viewport-label"><span class="status-dot"></span> MODEL SPACE</span><span id="dimensions">Z up · HRX native units</span></div>
-      <div class="view-toolbar" aria-label="Camera controls"><button data-view="iso" class="active">3D</button><button data-view="front">Front</button><button data-view="top">Top</button><button data-view="side">Side</button><span></span><button data-projection="perspective" class="active" title="Perspective camera">Persp</button><button data-projection="ortho" title="Orthographic camera">Ortho</button><span></span><button id="fitView" title="Fit model (F)">Fit ↗</button><span></span><button id="togglePanels" class="focus-toggle" aria-pressed="false" title="Toggle side panels (\)">Focus</button></div>
+      <div class="view-toolbar" aria-label="Camera controls"><button data-view="iso" class="active">3D</button><button data-view="front">Front</button><button data-view="top">Top</button><button data-view="side">Side</button><span></span><button data-projection="perspective" class="active" title="Perspective camera">Persp</button><button data-projection="ortho" title="Orthographic camera">Ortho</button><span></span><button id="fitView" title="Fit model (F)">Fit ↗</button><button id="measure" aria-pressed="false" title="Measure between two points (M)">Measure</button><span></span><button id="togglePanels" class="focus-toggle" aria-pressed="false" title="Toggle side panels (\)">Focus</button></div>
+      <div id="measurePanel" class="measure-panel hidden" role="status" aria-live="polite">
+        <div class="eyebrow">MEASUREMENT <span id="measureUnits">HRX units</span></div>
+        <div class="measure-values">
+          <span>ΔX</span><strong id="measureDX">—</strong>
+          <span>ΔY</span><strong id="measureDY">—</strong>
+          <span>ΔZ</span><strong id="measureDZ">—</strong>
+        </div>
+        <div class="measure-length">Length <strong id="measureLength">—</strong></div>
+        <p id="measureHint" class="measure-hint">Click the first point on the model.</p>
+        <div class="measure-actions"><button id="measureReset" type="button">Reset</button><button id="measureClose" type="button">Close</button></div>
+      </div>
       <div id="message" class="message" role="status">Open an HRX model or import a result file to begin.</div>
       <div class="viewport-bottom"><div class="symbol-legend"><span><i class="legend-line material-line"></i>Mesh</span><span><i class="legend-line load-line"></i>Applied load</span><span><i class="legend-line restraint-line"></i>Restraint</span></div><div class="axis-key"><b class="x">X</b><b class="y">Y</b><b class="z">Z</b></div></div>
       <div class="navigation-hint">Drag to orbit <span>·</span> Scroll to zoom <span>·</span> Right-drag to pan <span>·</span> Click to inspect</div>
