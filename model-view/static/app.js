@@ -65,9 +65,10 @@ function setMeasureMode(enabled) {
   $('measure').setAttribute('aria-pressed', String(state.measureMode));
   if (state.measureMode) {
     $('measurePanel').classList.remove('hidden');
+    const snapNote = $('measureSnap').checked ? ' Snapping to nodes and extruded corners.' : '';
     $('measureHint').textContent = state.measurePoints.length
-      ? 'Click the second point on the model.'
-      : 'Click the first point on the model.';
+      ? `Click the second point on the model.${snapNote}`
+      : `Click the first point on the model.${snapNote}`;
   } else if (state.measurePoints.length < 2) {
     $('measurePanel').classList.add('hidden');
   }
@@ -517,6 +518,11 @@ try {
   showPage();
   viewer.on('selection', selected => inspect(selected ? 'quad' : null, selected?.quad));
   viewer.on('measure', result => registerMeasurement(result.point));
+  viewer.setMeasureSnap($('measureSnap').checked);
+  $('measureSnap').onchange = () => {
+    viewer.setMeasureSnap($('measureSnap').checked);
+    if (state.measureMode) setMeasureMode(true);
+  };
   $('measure').onclick = () => {
     if (state.measureMode) {
       clearMeasurement();

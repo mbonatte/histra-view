@@ -220,6 +220,7 @@ export class QuadViewer {
     this.scene.add(this.modelGroup);
     this.nodeMarker = null;
     this.measureMode = false;
+    this.measureSnap = true;
     this.measureGroup = null;
     this.raycaster = new THREE.Raycaster();
     this.pointer = new THREE.Vector2();
@@ -448,27 +449,61 @@ export class QuadViewer {
     this.needsRender = true;
   }
 
+  setMeasureSnap(enabled) {
+    this.measureSnap = Boolean(enabled);
+    this.needsRender = true;
+  }
+
   pickMeasurePoint(event) {
     if (!this.state.mesh) return null;
     const rect = this.renderer.domElement.getBoundingClientRect();
     this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
-    // Prefer a visible mesh node when the click lands on it. This gives exact
-    // node-to-node dimensions while still allowing arbitrary surface points.
-    let nearest = null;
-    const threshold = 12;
-    for (const [key, point] of this.state.nodes) {
-      const projected = point.clone().project(this.camera);
-      if (projected.z < -1 || projected.z > 1) continue;
-      const x = (projected.x + 1) * 0.5 * rect.width;
-      const y = (-projected.y + 1) * 0.5 * rect.height;
-      const distance = Math.hypot(x - (event.clientX - rect.left), y - (event.clientY - rect.top));
-      if (distance <= threshold && (!nearest || distance < nearest.distance)) {
-        nearest = { point: point.clone(), nodeKey: Number(key), distance };
+    if (this.measureSnap) {
+      let nearest = null;
+      const threshold = 16;
+      const consider = (point, meta, priority) => {
+        const projected = point.clone().project(this.camera);
+        if (projected.z < -1 || projected.z > 1) return;
+        const x = (projected.x + 1) * 0.5 * rect.width;
+        const y = (-projected.y + 1) * 0.5 * rect.height;
+        const distance = Math.hypot(x - (event.clientX - rect.left), y - (event.clientY - rect.top));
+        if (distance > threshold) return;
+        if (!nearest || distance < nearest.distance - 0.05
+          || (Math.abs(distance - nearest.distance) <= 0.05 && priority < nearest.priority)) {
+          nearest = { ...meta, point: point.clone(), distance, priority };
+        }
+      };
+
+      for (const [key, point] of this.state.nodes) {
+        consider(point, { nodeKey: Number(key), snapKind: 'node' }, 1);
       }
+      if (this.options.extrude && Number(this.options.thicknessScale) > 0) {
+        for (const quad of this.state.quads) {
+          for (let index = 0; index < quad.nodeKeys.length; index += 1) {
+            const base = this.state.nodes.get(Number(quad.nodeKeys[index]));
+            if (!base) continue;
+            const normal = quad.normals?.[index] ?? quad.normal;
+            if (!normal) continue;
+            const half = Number(quad.thicknesses?.[index] || 0)
+              * Number(this.options.thicknessScale) * 0.5;
+            if (!half) continue;
+            consider(
+              base.clone().addScaledVector(normal, half),
+              { nodeKey: Number(quad.nodeKeys[index]), snapKind: 'extruded-top', quadKey: Number(quad.key) },
+              0,
+            );
+            consider(
+              base.clone().addScaledVector(normal, -half),
+              { nodeKey: Number(quad.nodeKeys[index]), snapKind: 'extruded-bottom', quadKey: Number(quad.key) },
+              0,
+            );
+          }
+        }
+      }
+      if (nearest) return nearest;
     }
-    if (nearest) return { point: nearest.point, nodeKey: nearest.nodeKey };
 
     this.raycaster.setFromCamera(this.pointer, this.camera);
     const hit = this.raycaster.intersectObject(this.state.mesh, false)[0];
