@@ -413,24 +413,37 @@ def _project_full_dof_modes(shapes, node_keys, node_xyz, quad_keys, quad_conn, m
     return modes
 
 
-def _inline_modal_entries(case_id, arrays, model, summary):
-    modal = summary.get("modal") or {}
-    values = modal.get("modal_values") or []
-    frequencies = np.asarray(arrays.get("modal_frequencies", []), dtype=float)
-    periods = np.asarray(arrays.get("modal_periods", []), dtype=float)
+def _inline_mode_metadata(summary):
+    values = (summary.get("modal") or {}).get("modal_values") or []
     metadata = []
     for index, row in enumerate(values):
-        frequency = float(row.get("Fn", frequencies[index] if index < len(frequencies) else 0.0))
         metadata.append({
             "number": int(row.get("Step", index + 1)),
-            "frequency": frequency,
-            "period": float(row.get("Tn", periods[index] if index < len(periods) else 0.0)),
+            "frequency": float(row.get("Fn", 0.0)),
+            "period": float(row.get("Tn", 0.0)),
             "massPercent": [
                 float(row.get("Mx_pcent", 0.0)),
                 float(row.get("My_pcent", 0.0)),
                 float(row.get("Mz_pcent", 0.0)),
             ],
         })
+    return metadata
+
+
+def _inline_modal_descriptors(manifest):
+    descriptors = []
+    for case_id, case in (manifest.get("cases") or {}).items():
+        summary = case.get("summary") or {}
+        metadata = _inline_mode_metadata(summary)
+        if metadata:
+            descriptors.append({"name": case_id, "modes": metadata, "lazy": True})
+    return descriptors
+
+
+def _inline_modal_entries(case_id, arrays, model, summary):
+    frequencies = np.asarray(arrays.get("modal_frequencies", []), dtype=float)
+    periods = np.asarray(arrays.get("modal_periods", []), dtype=float)
+    metadata = _inline_mode_metadata(summary)
     if not metadata:
         metadata = [
             {"number": index + 1, "frequency": float(frequencies[index]) if index < len(frequencies) else 0.0,
@@ -652,7 +665,15 @@ def project_histra(archive_path: str | Path, analysis_name: str | None = None,
             include_stress_fields=False,
         )
         analysis["name"] = case_id
-        modal = _inline_modal_entries(case_id, arrays, model, summary)
+        analysis["stressFields"] = []
+        analysis["finalStress"] = None
+        selected_modal = _inline_modal_entries(case_id, arrays, model, summary)
+        modal = _inline_modal_descriptors(manifest)
+        if selected_modal:
+            modal = [item for item in modal if item["name"] != case_id]
+            modal.append(selected_modal[0])
+        order = {item["name"]: index for index, item in enumerate(catalog)}
+        modal.sort(key=lambda item: order.get(item["name"], len(order)))
         return {
             "schemaVersion": 3,
             "sourceSchema": "histra-results-1.0.0",
@@ -668,7 +689,7 @@ def project_histra(archive_path: str | Path, analysis_name: str | None = None,
             "analyses": [analysis],
             "analysisCatalog": catalog,
             "defaultAnalysis": default,
-            "lazyFields": True,
+            "lazyFields": False,
             "modal": modal,
         }
     if _is_modal_arrays(arrays):
@@ -713,6 +734,10 @@ def project_histra(archive_path: str | Path, analysis_name: str | None = None,
     modal = (_attachment_modal_entries(archive, manifest, model, arrays, case_id)
              if include_modal_shapes
              else _attachment_modal_descriptors(archive, manifest))
+    known_modal = {item["name"] for item in modal}
+    for item in _inline_modal_descriptors(manifest):
+        if item["name"] not in known_modal:
+            modal.append(item)
     return {
         "schemaVersion": 3,
         "sourceSchema": "histra-results-1.0.0",
@@ -734,13 +759,16 @@ def project_histra(archive_path: str | Path, analysis_name: str | None = None,
 
 
 def project_histra_modal(archive_path: str | Path, analysis_name: str):
-    """Return one attachment-backed modal case with projected mode shapes."""
-    archive, manifest, model, arrays, _case, _summary, _entry, case_id = _case_context(
+    """Return one modal case with projected mode shapes."""
+    archive, manifest, model, arrays, _case, summary, _entry, case_id = _case_context(
         archive_path, analysis_name
     )
-    entries = _attachment_modal_entries(
-        archive, manifest, model, arrays, case_id, case_filter=case_id
-    )
+    if _is_inline_modal_arrays(arrays):
+        entries = _inline_modal_entries(case_id, arrays, model, summary)
+    else:
+        entries = _attachment_modal_entries(
+            archive, manifest, model, arrays, case_id, case_filter=case_id
+        )
     if not entries:
         return {"name": case_id, "modes": []}
     return entries[0]
