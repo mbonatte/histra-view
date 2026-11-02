@@ -59,6 +59,240 @@ def geometry_points(element):
     return points
 
 
+ANALYSIS_TYPES = {
+    "1": "Static linear",
+    "2": "Static nonlinear",
+    "3": "Dynamic linear",
+    "4": "Dynamic nonlinear",
+    "5": "Modal",
+}
+
+GAMMA_COEFFICIENTS = {
+    "GammaFavEQU",
+    "GammaUnfavEQU",
+    "GammaFavSTR",
+    "GammaUnfavSTR",
+    "GammaFavGEO",
+    "GammaUnfavGEO",
+}
+
+
+def _model_point_record(element):
+    el_type = element.get("ElementType", "")
+    el_key = element.get("ElementKey", element.get("IdElement", ""))
+    id_vertex = element.get("IdVertex", "0")
+    if el_type == "Node":
+        pos_label = "Node"
+    elif id_vertex in ("", "0"):
+        pos_label = "Baricentric"
+    else:
+        pos_label = f"Node{id_vertex}"
+    name = element.get("Name", "")
+    description = element.get("Description", "")
+    return {
+        **record(element),
+        "name": name or description,
+        "description": description or name,
+        "elementType": el_type,
+        "elementKey": el_key,
+        "idVertex": id_vertex,
+        "elementLabel": f"{el_type} ({el_key})" if el_type or el_key else "",
+        "positionLabel": pos_label if el_type else "",
+        "point": vector(element.get("Point")),
+        "pointRaw": element.get("Point", ""),
+    }
+
+
+def _resolve_combination_value(condition, type_data, secondary_type, val):
+    """Replicate C# LoadTemplateManager.GetCoefficient(LoadCondition, CombinationCoefficientData)."""
+    if type_data == "Number":
+        return val
+    if type_data in ("Psi0", "Psi1", "Psi2"):
+        return val if secondary_type == "Number" else f"{secondary_type} * {val}"
+    if type_data in GAMMA_COEFFICIENTS:
+        base = condition.get(type_data, val) if condition is not None else val
+        return base if secondary_type in ("", "Number") else f"{base} * {secondary_type}"
+    return val
+
+
+def _load_combinations(root):
+    conditions = list(root.findall("LoadCondition"))
+    cond_by_id = {c.get("Id", c.get("Key", "")): c for c in conditions}
+    result = []
+    for element in root.findall("LoadCombination"):
+        rows = {}
+        for item in element.findall("Item"):
+            row_key = item.get("RowKey", "1")
+            row = rows.setdefault(row_key, {
+                "rowKey": row_key,
+                "name": item.get("Name", row_key),
+                "schema": item.get("Schema", ""),
+                "position": item.get("Position", ""),
+                "combination": item.get("Combination", ""),
+                "items": [],
+            })
+            col_key = item.get("ColumnKey", "")
+            cond = None
+            try:
+                idx = int(col_key) - 1
+                if 0 <= idx < len(conditions):
+                    cond = conditions[idx]
+            except (TypeError, ValueError):
+                pass
+            if cond is None:
+                cond = cond_by_id.get(col_key)
+            type_data = item.get("TypeData", "")
+            secondary = item.get("SecondaryTypeData", "")
+            val = item.get("Val", "")
+            row["items"].append({
+                "columnKey": col_key,
+                "conditionKey": cond.get("Id", cond.get("Key", col_key)) if cond is not None else col_key,
+                "conditionName": cond.get("Name", f"Condition {col_key}") if cond is not None else f"Condition {col_key}",
+                "coefficient": type_data,
+                "secondaryTypeData": secondary,
+                "val": val,
+                "value": _resolve_combination_value(cond, type_data, secondary, val),
+                "attributes": dict(item.attrib),
+            })
+        result.append({
+            **record(element),
+            "description": element.get("Description", ""),
+            "limitState": element.get("LimitState", ""),
+            "subCombinations": list(rows.values()),
+        })
+    return result
+
+
+def _load_functions(root):
+    items_by_fn = {}
+    for item in root.findall("LoadFunctionItem"):
+        fn_key = item.get("loadFunctionKey", item.get("LoadFunctionKey", ""))
+        items_by_fn.setdefault(fn_key, []).append({
+            "key": item.get("key", item.get("Key", "")),
+            "loadFunctionKey": fn_key,
+            "pseudoTime": item.get("pseudoTime", item.get("PseudoTime", "")),
+            "multiplier": item.get("multiplier", item.get("Multiplier", "")),
+            "attributes": dict(item.attrib),
+        })
+    result = []
+    for element in root.findall("LoadFunction"):
+        key = element.get("key", element.get("Key", ""))
+        nested = [{
+            "key": item.get("key", item.get("Key", "")),
+            "loadFunctionKey": key,
+            "pseudoTime": item.get("pseudoTime", item.get("PseudoTime", "")),
+            "multiplier": item.get("multiplier", item.get("Multiplier", "")),
+            "attributes": dict(item.attrib),
+        } for item in element.findall("LoadFunctionItem")]
+        result.append({
+            "key": key,
+            "typeDiscr": element.get("typeDiscr", element.get("TypeDiscr", "")),
+            "discrVal": element.get("DiscrVal", element.get("discrVal", "")),
+            "attributes": dict(element.attrib),
+            "items": items_by_fn.get(key, nested),
+        })
+    return result
+
+
+def _analyses(root, templates=None, load_combinations=None, load_functions=None, model_points=None):
+    """Project analysis definitions and their saved execution state."""
+    templates = templates or {e.get("Key"): e for e in root.findall("Template")}
+    combo_list = load_combinations if load_combinations is not None else _load_combinations(root)
+    combinations = {c["key"]: c for c in combo_list}
+    fn_list = load_functions if load_functions is not None else _load_functions(root)
+    functions = {f["key"]: f for f in fn_list}
+    mp_list = model_points if model_points is not None else [_model_point_record(e) for e in root.findall("ModelPoint")]
+    points = {p["key"]: p for p in mp_list}
+    analyses = list(root.findall("Analysis"))
+    names = {e.get("Key"): e.get("Name", "") for e in analyses}
+    result = []
+    for element in analyses:
+        states = [dict(s.attrib) for s in element.findall("States/State")]
+        state = states[-1] if states else {}
+        is_executed = any(
+            s.get("State") in ("ExecutedCompleted", "ExecutedNotCompleted", "ExecutedNotStarted")
+            for s in states
+        )
+        combination = combinations.get(element.get("LoadCombinationKey"))
+        function = functions.get(element.get("LoadFunctionKey"))
+        master_key = element.get("MasterPoint", "")
+        master = points.get(master_key)
+        if master is not None:
+            master_name = master.get("name") or master.get("description", "")
+        elif master_key == "-10":
+            master_name = "MaxDisplacement"
+        else:
+            master_name = ""
+        active_list = [dict(item.attrib) for item in element.findall("ActiveModelPoints/ActiveModelPoint")]
+        displ_list = [dict(item.attrib) for item in element.findall("DisplModelPoints/DisplModelPoint")]
+        active_map = {item.get("Key", ""): item.get("Value", "") for item in active_list}
+        displ_map = {item.get("Key", ""): item.get("Value", "") for item in displ_list}
+        seen_mp_keys = list(dict.fromkeys(
+            [p["key"] for p in mp_list] + list(active_map.keys()) + list(displ_map.keys())
+        ))
+        analysis_points = []
+        for mp_key in seen_mp_keys:
+            if not mp_key:
+                continue
+            base_mp = points.get(mp_key, {
+                "key": mp_key, "name": "", "description": "", "elementType": "",
+                "elementKey": "", "idVertex": "", "elementLabel": "", "positionLabel": "",
+                "point": None, "pointRaw": "", "attributes": {},
+            })
+            analysis_points.append({
+                **base_mp,
+                "active": active_map.get(mp_key, "false"),
+                "displacement": displ_map.get(mp_key, "0"),
+                "isMaster": mp_key == master_key,
+            })
+        stage_defs = []
+        for sd in element.findall("StageDefinitions/StageDefinition"):
+            g1 = templates.get(sd.get("GroupKey1", ""))
+            g2 = templates.get(sd.get("GroupKey2", ""))
+            mat = templates.get(sd.get("MaterialKey", ""))
+            stage_defs.append({
+                **dict(sd.attrib),
+                "groupName1": g1.get("Name", "-") if g1 is not None else "-",
+                "groupName2": g2.get("Name", "-") if g2 is not None else "-",
+                "materialName": mat.get("Name", "-") if mat is not None else "-",
+            })
+        main_group_key = element.get("MainGroupKey", "")
+        main_group = templates.get(main_group_key)
+        result.append({
+            **record(element),
+            "analysisType": element.get("AnalysisType", ""),
+            "type": ANALYSIS_TYPES.get(element.get("AnalysisType", ""),
+                                       f"Type {element.get('AnalysisType', '')}"),
+            "description": element.get("Description", ""),
+            "loadCombinationKey": element.get("LoadCombinationKey", ""),
+            "loadCombinationName": combination.get("name", "") if combination is not None else "",
+            "loadCombination": combination,
+            "loadFunctionKey": element.get("LoadFunctionKey", ""),
+            "loadFunctionDiscr": function.get("discrVal", "") if function is not None else "",
+            "loadFunction": function,
+            "initialAnalysisKey": element.get("InitialAnalysisKey", ""),
+            "initialAnalysisName": names.get(element.get("InitialAnalysisKey"), ""),
+            "pushModalAnalysisKey": element.get("PushModal_ModalAnalysisKey", ""),
+            "pushModalAnalysisName": names.get(element.get("PushModal_ModalAnalysisKey"), ""),
+            "mainGroupName": main_group.get("Name", "") if main_group is not None else "",
+            "masterPoint": master_key,
+            "masterPointName": master_name,
+            "state": state,
+            "states": states,
+            "stateCount": len(states),
+            "isExecuted": is_executed,
+            "activeModelPoints": active_list,
+            "displacementModelPoints": displ_list,
+            "modelPoints": analysis_points,
+            "dynamicLoads": [dict(item.attrib) for item in element.findall("DynamicLoads/DynamicLoad")],
+            "stageDefinitions": stage_defs,
+            "stageItems": [dict(item.attrib) for item in element.findall("StageItems/StageItem")],
+            "adapticPhases": [dict(item.attrib) for item in element.findall("AdapticPhases/AdapticPhase")],
+            "pushModalSettings": [dict(item.attrib) for item in element.findall("PushModalSettings/PushModalSet")],
+        })
+    return result
+
+
 def parse_hrx(data: bytes, name="Model.hrx"):
     # Decode before rejecting declarations, including UTF-16 HRX exports.
     encoding = "utf-16" if data.startswith((b"\xff\xfe", b"\xfe\xff")) else "utf-8-sig"
@@ -118,13 +352,20 @@ def parse_hrx(data: bytes, name="Model.hrx"):
     if unsupported:
         warnings.append(f"This version renders Quad meshes; other element families are not drawn: {unsupported}.")
     points = [n["point"] for n in nodes.values()]
+    load_combinations = _load_combinations(root)
+    load_functions = _load_functions(root)
+    model_points = [_model_point_record(e) for e in root.findall("ModelPoint")]
     return {"schemaVersion": 1, "name": name, "metadata": dict(root.attrib),
             "units": "HRX native units", "nodes": list(nodes.values()), "quads": quads,
             "materials": materials, "materialLibrary": material_library,
             "layers": [record(e) for e in root.findall("Layer")],
             "restraints": restraints, "loads": loads,
             "loadConditions": [record(e) for e in root.findall("LoadCondition")],
+            "loadCombinations": load_combinations,
+            "loadFunctions": load_functions,
             "loadTemplates": [{**record(e), "items": [dict(i.attrib) for i in e.iter("LoadTemplateItem")]} for e in templates.values() if "LoadTemplate" in e.get("TypeOf", "")],
+            "analyses": _analyses(root, templates, load_combinations, load_functions, model_points),
+            "modelPoints": model_points,
             "bounds": {"min": [min(p[i] for p in points) for i in range(3)],
                        "max": [max(p[i] for p in points) for i in range(3)]},
             "sourceCounts": dict(counts), "warnings": warnings}

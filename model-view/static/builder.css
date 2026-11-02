@@ -1,0 +1,14 @@
+.builder-sidebar { overflow-y: auto; }
+.builder-sidebar #builderContent { padding: 16px; }
+.builder-sidebar h2 { font-size: 18px; margin: 2px 0 8px; }
+.builder-sidebar h3 { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; margin: 20px 0 10px; }
+.builder-sidebar p { color: #9aa9b7; font-size: 12px; line-height: 1.5; }
+.builder-sidebar label { display: flex; flex-direction: column; gap: 5px; font-size: 11px; color: #a9b8c6; margin: 8px 0; }
+.builder-sidebar input, .builder-sidebar select { width: 100%; min-width: 0; background: #111a23; color: #e7edf3; border: 1px solid #354656; border-radius: 4px; padding: 7px; }
+.builder-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
+.builder-actions { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0; }
+.builder-actions button { padding: 8px 10px; }
+.builder-actions select { flex: 1 1 120px; width: auto; }
+.builder-group { border-top: 1px solid #33404c; margin-top: 12px; }
+.builder-status { white-space: pre-wrap; overflow-wrap: anywhere; }
+.builder-status.error { color: #ff9999; }

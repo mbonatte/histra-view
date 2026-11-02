@@ -9,13 +9,14 @@
   <link rel="stylesheet" href="/static/materials.css">
   <link rel="stylesheet" href="/static/results.css">
   <link rel="stylesheet" href="/static/workbench.css">
+  <link rel="stylesheet" href="/static/builder.css">
   <script type="importmap">{"imports":{"three":"/vendor/three.module.js"}}</script>
 </head>
 <body>
   <header>
     <a class="brand" href="/" aria-label="HiStrA home"><span class="brand-icon">H</span>HiStrA<span class="brand-divider"></span><span class="brand-subtitle">Model view</span></a>
-    <div class="file-heading"><span class="status-dot"></span><span id="fileName">No model loaded</span><span class="read-only">READ ONLY</span></div>
-    <nav class="page-nav" aria-label="Workspace pages"><a href="#model" id="modelNav" aria-current="page">3D model</a><a href="#materials" id="materialsNav">Material properties</a><a href="#results" id="resultsNav">Results</a></nav>
+    <div class="file-heading"><span class="status-dot"></span><span id="fileName">No model loaded</span><span class="read-only" id="viewMode">VIEW</span></div>
+    <nav class="page-nav" aria-label="Workspace pages"><a href="#build" id="buildNav">Build model</a><a href="#model" id="modelNav" aria-current="page">3D model</a><a href="#materials" id="materialsNav">Material properties</a><a href="#analyses" id="analysesNav">Analyses</a><a href="#results" id="resultsNav">Results</a></nav>
     <div class="header-actions">
       <button id="openFile" class="primary" title="Import an HRX model (.hrx, .xml)" onclick="document.getElementById('fileInput').click()">＋ Open HRX</button>
       <input id="fileInput" type="file" accept=".hrx,.xml" hidden>
@@ -24,7 +25,7 @@
     </div>
   </header>
   <div class="workspace" id="modelWorkspace">
-    <aside class="sidebar">
+    <aside class="sidebar" id="modelSidebar">
       <div class="panel-title">MODEL EXPLORER <span id="entityCount" class="count">—</span></div>
       <div class="model-summary"><div class="eyebrow">STRUCTURAL MODEL</div><h1 id="modelTitle">Your model, in 3D.</h1><p id="modelSubtitle">Mesh, materials & boundary conditions</p></div>
       <div class="tabs" role="tablist" aria-label="Model entities">
@@ -33,6 +34,7 @@
         <button role="tab" aria-selected="false" data-tab="nodes">Nodes</button>
         <button role="tab" aria-selected="false" data-tab="loads">Loads</button>
         <button role="tab" aria-selected="false" data-tab="restraints">Restraints</button>
+        <button role="tab" aria-selected="false" data-tab="analyses">Analyses</button>
       </div>
       <div class="entity-panel">
         <div class="entity-heading"><span id="listTitle">ASSIGNED MATERIALS</span><span id="listCount">0</span></div>
@@ -43,8 +45,12 @@
       </div>
       <div class="sidebar-bottom"><button id="resetVisibility">↺ Show all materials</button><button id="loadExample" class="hidden">Load example</button></div>
     </aside>
+    <aside class="sidebar builder-sidebar hidden" id="builderSidebar" aria-label="Model builder">
+      <div class="panel-title">MODEL BUILDER</div>
+      <div id="builderContent"></div>
+    </aside>
     <main id="viewport" aria-label="Interactive 3D model" tabindex="0">
-      <div class="viewport-top"><span class="viewport-label"><span class="status-dot"></span> MODEL SPACE</span><span id="dimensions">Z up · HRX native units</span></div>
+      <div class="viewport-top"><span class="viewport-label"><span class="status-dot"></span> MODEL SPACE</span><label class="analysis-view">Analysis <select id="analysisView" aria-label="Analysis view"><option value="">Select analysis…</option></select><span id="analysisState" class="analysis-state"></span></label><span id="dimensions">Z up · HRX native units</span></div>
       <div class="view-toolbar" aria-label="Camera controls"><button data-view="iso" class="active">3D</button><button data-view="front">Front</button><button data-view="top">Top</button><button data-view="side">Side</button><span></span><button data-projection="perspective" class="active" title="Perspective camera">Persp</button><button data-projection="ortho" title="Orthographic camera">Ortho</button><span></span><button id="fitView" title="Fit model (F)">Fit ↗</button><button id="measure" aria-pressed="false" title="Measure between two points (M)">Measure</button><span></span><button id="togglePanels" class="focus-toggle" aria-pressed="false" title="Toggle side panels (\)">Focus</button></div>
       <div id="measurePanel" class="measure-panel hidden" role="status" aria-live="polite">
         <div class="eyebrow">MEASUREMENT <span id="measureUnits">HRX units</span></div>
@@ -96,6 +102,19 @@
       <div id="materialDocumentHeader"></div>
       <div id="materialMechanismTabs" class="mechanism-tabs" role="tablist" aria-label="Material property groups"></div>
       <div id="materialContent" class="material-content" role="tabpanel"></div>
+    </section>
+  </main>
+  <main id="analysesPage" class="materials-page hidden" aria-label="Analyses">
+    <aside class="material-library">
+      <div class="panel-title">ANALYSES <span id="analysisLibraryCount" class="count">0</span></div>
+      <div class="library-controls"><label for="analysisSearch">Find an analysis</label><input type="search" id="analysisSearch" placeholder="Name, type, state, or key…"><label class="assigned-filter"><input type="checkbox" id="executedAnalysesOnly"> Executed only</label></div>
+      <div id="analysisLibraryList" class="material-library-list"></div>
+    </aside>
+    <section class="material-document">
+      <label class="mobile-material-picker">Analysis<select id="mobileAnalysisSelect" aria-label="Select analysis"></select></label>
+      <div id="analysisDocumentHeader"></div>
+      <div id="analysisMechanismTabs" class="mechanism-tabs" role="tablist" aria-label="Analysis property groups"></div>
+      <div id="analysisContent" class="material-content" role="tabpanel"></div>
     </section>
   </main>
   <main id="resultsPage" class="results-page hidden" aria-label="Analysis results"></main>

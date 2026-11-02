@@ -1,12 +1,12 @@
 # HiStrA View
 
-Read-only local browser viewer for HiStrA HRX structural models and saved
+Local browser viewer and bridge builder for HiStrA HRX structural models and saved
 analysis results, together with the Python DMEM solver used to generate those
 results and the first legacy mesh viewer.
 
 The viewer visualises the serialized Quad mesh, materials, loads, restraints,
-deformed shapes, modal shapes, response curves, interface forces and thrust
-lines. It never prepares a model or runs a numerical analysis.
+analysis definitions and saved states, deformed shapes, modal shapes, response
+curves, interface forces and thrust lines. The Build model workspace generates bridge HRX files and edits existing material and analysis attributes; the application does not run a numerical analysis.
 
 ## Repository layout
 
@@ -23,6 +23,28 @@ lines. It never prepares a model or runs a numerical analysis.
 | `results/benchmark/` | Legacy native C# benchmark HRX plus `.Results` database. |
 | `results/Bridge_scour_3d_Distributed_PDelta/` | New standard native C# 3D bridge scour/P-Delta HRX and `.Results` pair. |
 | `MODEL_RESULTS_LAYOUT.md` | Naming and folder convention for future models and result bundles. |
+
+## Building and editing models
+
+Choose **Build model** to create a parametric masonry bridge, preview its generated
+mesh in the 3D viewer, and download an `.hrx` file. Generated models contain the
+native C# load schema (11 conditions, 12 combinations, 32 functions) and the full
+13-analysis tree (`Vert`, `Modal_0`, `LiveLoad_1`, the four scour stages and the
+remaining modal/live-load analyses). Choose **Edit existing HRX** to upload an HRX
+and change existing material, analysis, stage and load-function attributes. The
+material and analysis editors expose every serialized attribute, and materials and
+analyses can be added from native templates, duplicated or deleted when nothing
+references them. An unchanged export is byte-identical; an edited export preserves
+the remaining XML content and mesh, though its XML serialization may change. The
+original file is not overwritten. Values are not engineering-validated; recompute
+results after changes. Editing geometry is not yet supported. Creation uses the
+bridge generator’s supported options.
+
+The builder is maintained separately at
+[HiStrA Job Builder](https://github.com/mbonatte/histra-job-builder), pinned
+in `model-view/requirements-preview.txt`. Installing that requirements file
+requires Git and access to the repository. The viewer remains usable without
+it, but the Build model workspace requires it.
 
 ## Importing results
 
@@ -42,7 +64,7 @@ From the repository root:
 npm ci --prefix model-view
 python3.12 -m venv model-view/.venv
 model-view/.venv/bin/python -m pip install -r model-view/requirements-preview.txt
-python3 model-view/server.py
+model-view/.venv/bin/python model-view/server.py
 ```
 
 Open <http://127.0.0.1:8765>. The page starts blank. Use **Open HRX** to load a

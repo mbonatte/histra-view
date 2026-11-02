@@ -1,13 +1,22 @@
 import { QuadViewer } from './mesh-viewer.js';
 import { ModelOverlays } from './model-overlays.js';
 import { MaterialsPage } from './materials.js';
+import { AnalysesPage } from './analyses.js';
 import { ResultsPage } from './results.js';
+import { Builder } from './builder.js';
 
 const $ = id => document.getElementById(id);
 const state = {
   model: null, tab: 'materials', hiddenMaterials: new Set(), selected: null, busy: false,
   quadIndex: new Map(), nodeMap: new Map(), materialMap: new Map(),
-  measureMode: false, measurePoints: [],
+  analysisKey: '', measureMode: false, measurePoints: [],
+};
+const ANALYSIS_STATES = {
+  ExecutedCompleted: 'Completed',
+  ExecutedNotCompleted: 'Not completed',
+  NotExecuted: 'Not executed',
+  NotExecutedToBeExecute: 'Not executed',
+  NotExecutedNotToBeExecuted: 'Not executed',
 };
 const TAB_META = {
   materials: { title: 'ASSIGNED MATERIALS', help: 'Toggle visibility or inspect a material.', search: 'Find material…' },
@@ -15,8 +24,10 @@ const TAB_META = {
   nodes: { title: 'MESH NODES', help: 'Search by key, name, or coordinate, then click to focus.', search: 'Find node…' },
   loads: { title: 'ASSIGNED LOADS', help: 'Inspect applied values and directions.', search: 'Find load…' },
   restraints: { title: 'SUPPORT DEFINITIONS', help: 'Inspect support locations and local DOFs.', search: 'Find restraint…' },
+  analyses: { title: 'ANALYSIS DEFINITIONS', help: 'Inspect saved analysis definitions and execution states.', search: 'Find analysis…' },
 };
 const materialsPage = new MaterialsPage();
+const analysesPage = new AnalysesPage();
 const resultsPage = new ResultsPage($('resultsPage'), (data, analysis, step) => {
   $('fileName').textContent = data.name;
   const analysisName = analysis?.name || data.name;
@@ -28,6 +39,8 @@ let viewer;
 let overlays;
 const format = value => typeof value === 'number' ? value.toLocaleString(undefined, { maximumSignificantDigits: 6 }) : String(value ?? '—');
 const vectorText = values => values?.map(format).join(', ') ?? '—';
+const analysisState = record => ANALYSIS_STATES[record?.state?.State] || record?.state?.State || 'Unknown';
+const analysisReference = (name, key) => name ? `${name} [${key}]` : String(key ?? '—');
 
 function element(tag, className, text) {
   const node = document.createElement(tag);
@@ -181,6 +194,29 @@ function inspect(kind, record) {
       grid.append(cell);
     }
     panel.append(grid, element('p', '', 'U1–U3 are translations; R1–R3 are rotations, in the restraint’s local reference system.'), properties(record.referenceSystem));
+  } else if (kind === 'analysis') {
+    panel.append(element('p', '', record.description || 'Analysis definition'));
+    panel.append(properties({
+      Key: record.key,
+      Type: record.type,
+      State: analysisState(record),
+      Exit: record.state.Exit || '—',
+      Step: record.state.Step ?? '—',
+      'Load factor Fo': record.state.Fo ?? '—',
+      'Load combination': analysisReference(record.loadCombinationName, record.loadCombinationKey),
+      'Load function': record.loadFunctionKey === '' ? '—'
+        : `${record.loadFunctionKey}${record.loadFunctionDiscr ? ` · DiscrVal ${record.loadFunctionDiscr}` : ''}`,
+      'Initial analysis': record.initialAnalysisKey === '-100' ? 'None (-100)' : analysisReference(record.initialAnalysisName, record.initialAnalysisKey),
+      'Master point': analysisReference(record.masterPointName, record.masterPoint),
+      'Active model points': record.activeModelPoints.length,
+      'Displacement points': record.displacementModelPoints.length,
+      Mult: record.attributes.Mult ?? '—',
+    }));
+    if (record.state.ExitDescription) panel.append(element('p', '', record.state.ExitDescription));
+    const fullAnalyses = element('button', 'full-material-button', 'Open analysis properties →');
+    fullAnalyses.onclick = () => analysesPage.open(record.key);
+    panel.append(fullAnalyses);
+    panel.append(element('p', '', 'State values are read from the saved HRX. The viewer does not run or resume analyses.'));
   }
   panel.append(rawAttributes(record.attributes || {}));
   renderList();
@@ -234,14 +270,14 @@ function renderList() {
   $('listCount').textContent = visible.length === records.length
     ? String(visible.length)
     : `${visible.length}/${records.length}`;
-  const kind = { materials: 'material', elements: 'quad', nodes: 'node', loads: 'load', restraints: 'restraint' }[tab];
+  const kind = { materials: 'material', elements: 'quad', nodes: 'node', loads: 'load', restraints: 'restraint', analyses: 'analysis' }[tab];
   for (const record of visible) {
     const row = element('div', 'entity');
     row.classList.toggle('selected', state.selected?.kind === kind && String(state.selected.id) === String(record.id ?? record.key));
     const button = element('button', 'inspect-button');
     const swatch = element('span', 'swatch');
     const material = kind === 'quad' ? state.materialMap.get(String(record.materialKey)) : null;
-    swatch.style.background = record.color || material?.color || (kind === 'load' ? '#ffbc66' : '#60d9c5');
+    swatch.style.background = record.color || material?.color || (kind === 'load' ? '#ffbc66' : kind === 'analysis' ? (record.isExecuted ? '#60d9c5' : '#586d7d') : '#60d9c5');
     const info = element('span', 'entity-info');
     const title = kind === 'restraint' ? `Restraint ${record.key}`
       : kind === 'node' ? `Node ${record.key}`
@@ -251,6 +287,7 @@ function renderList() {
       : kind === 'quad' ? `${material?.name || `Material ${record.materialKey}`} · ${record.nodeKeys.length} nodes · #${record.key}`
       : kind === 'node' ? `X ${format(record.point[0])} · Y ${format(record.point[1])} · Z ${format(record.point[2])}`
       : kind === 'load' ? `${record.kind} · ${format(record.value)} · #${record.key}`
+      : kind === 'analysis' ? `${record.type} · ${analysisState(record)} · #${record.key}`
       : `${record.attributes.Type || record.type.replace('Geometry', '')} · ${Object.values(record.dofs).filter(d => d === 'Fixed').length}/6 fixed`;
     info.append(element('span', 'entity-name', title), element('span', 'entity-meta', subtitle));
     button.append(swatch, info);
@@ -350,13 +387,37 @@ function populateSelect(select, records, label) {
   for (const record of records) select.add(new Option(`${record.name || record.key} [${record.key}]`, record.key));
 }
 
+function populateAnalysis(model) {
+  const analyses = model.analyses || [];
+  const select = $('analysisView');
+  select.replaceChildren(new Option(analyses.length ? 'Select analysis…' : 'No analyses', ''));
+  for (const analysis of analyses) {
+    const state = analysisState(analysis);
+    select.add(new Option(`${analysis.name || analysis.key} · ${analysis.type} · ${state}`, analysis.key));
+  }
+  select.disabled = !analyses.length;
+  state.analysisKey = '';
+  select.value = '';
+  $('analysisState').textContent = analyses.length ? `${analyses.length} analyses` : '';
+}
+
+function selectAnalysis(key) {
+  const analysis = state.model?.analyses?.find(item => String(item.key) === String(key));
+  state.analysisKey = analysis ? String(analysis.key) : '';
+  $('analysisState').textContent = analysis ? analysisState(analysis) : `${state.model?.analyses?.length ?? 0} analyses`;
+  if (analysis) inspect('analysis', analysis);
+  else inspect(null, null);
+  viewer.needsRender = true;
+}
+
 function loadModel(model) {
   // Finish projection and validation before replacing the visible model.
   state.model = model;
-  state.modelViewed = location.hash !== '#materials';
+  state.modelViewed = location.hash !== '#materials' && location.hash !== '#analyses';
   state.hiddenMaterials.clear();
   state.selected = null;
   materialsPage.setModel(model);
+  analysesPage.setModel(model);
   viewer.visibleQuad = () => true;
   viewer.materialDefinitions = new Map(model.materials.map(m => [String(m.key), m]));
   viewer.layerDefinitions = new Map(model.layers.map(l => [String(l.key), l]));
@@ -367,13 +428,14 @@ function loadModel(model) {
   viewer.setView('iso');
   $('fileName').textContent = model.name;
   $('modelTitle').textContent = model.name.replace(/\.hrx$/i, '').replaceAll('_', ' ');
-  $('modelSubtitle').textContent = `${model.materials.length} materials · ${model.restraints.length} restraints · ${model.loads.length} loads`;
+  $('modelSubtitle').textContent = `${model.materials.length} materials · ${model.restraints.length} restraints · ${model.loads.length} loads · ${(model.analyses || []).length} analyses`;
   $('entityCount').textContent = model.quads.length.toLocaleString();
   const usedLayers = new Set(model.quads.map(q => q.layerKey));
   const layers = model.layers.filter(l => usedLayers.has(l.key));
   for (const key of usedLayers) if (!layers.some(l => l.key === key)) layers.push({ key, name: 'Layer' });
   populateSelect($('layer'), layers, 'All layers');
   populateSelect($('condition'), model.loadConditions, 'All assigned conditions');
+  populateAnalysis(model);
   $('dimensions').textContent = `Z up · ${model.units}`;
   $('measureUnits').textContent = model.units === 'HRX native units' ? 'HRX units' : model.units;
   clearMeasurement();
@@ -386,13 +448,22 @@ function loadModel(model) {
   showPage();
 }
 
+const builder = new Builder($('builderContent'), model => loadModel(model));
+
 function showPage() {
+  const building = location.hash === '#build';
+  $('builderSidebar').classList.toggle('hidden', !building);
+  $('modelSidebar').classList.toggle('hidden', building);
+  $('viewMode').textContent = building ? 'BUILD' : 'VIEW';
+  if (building) builder.activate();
   const materials = location.hash === '#materials';
+  const analyses = location.hash === '#analyses';
   const results = location.hash === '#results';
-  $('modelWorkspace').classList.toggle('hidden', materials || results);
+  $('modelWorkspace').classList.toggle('hidden', materials || analyses || results);
   $('materialsPage').classList.toggle('hidden', !materials);
+  $('analysesPage').classList.toggle('hidden', !analyses);
   $('resultsPage').classList.toggle('hidden', !results);
-  for (const [id, active] of [['materialsNav', materials], ['resultsNav', results], ['modelNav', !materials && !results]]) {
+  for (const [id, active] of [['buildNav', building], ['materialsNav', materials], ['analysesNav', analyses], ['resultsNav', results], ['modelNav', !materials && !analyses && !results && !building]]) {
     if (active) $(id).setAttribute('aria-current', 'page');
     else $(id).removeAttribute('aria-current');
   }
@@ -401,7 +472,7 @@ function showPage() {
     resultsPage.deactivate();
     if (state.model) { $('fileName').textContent = state.model.name; updateStats(); }
   }
-  if (!materials && !results && viewer) {
+  if (!materials && !analyses && !results && viewer) {
     viewer.resize();
     if (state.model && !state.modelViewed) { viewer.fit(); state.modelViewed = true; }
     viewer.needsRender = true;
@@ -508,6 +579,7 @@ function showBlankStart() {
   $('modelTitle').textContent = 'Open a model to begin';
   $('modelSubtitle').textContent = 'Use Open HRX or Import Results';
   $('entityCount').textContent = '0';
+  populateAnalysis({ analyses: [] });
   $('message').textContent = 'Open an HRX model or import a result file to begin. You can also drop files here.';
   $('message').classList.remove('hidden', 'error');
 }
@@ -516,6 +588,7 @@ try {
   viewer = new QuadViewer($('viewport'), { extrude: true, thicknessScale: 1, opacity: 1 });
   overlays = new ModelOverlays(viewer, inspect);
   showPage();
+  $('analysisView').addEventListener('change', event => selectAnalysis(event.target.value));
   viewer.on('selection', selected => inspect(selected ? 'quad' : null, selected?.quad));
   viewer.on('measure', result => registerMeasurement(result.point));
   viewer.setMeasureSnap($('measureSnap').checked);

@@ -1,9 +1,11 @@
 # HiStrA model view
 
-Read-only local browser service for the serialized HRX Quad model. Mesh inspection
-is independent of the Python numerical runtime; material previews use its spring
-laws in an isolated worker. Opening a model never prepares it or runs an analysis.
-The original C# export, solver, and legacy viewer remain untouched.
+Local browser service for the serialized HRX Quad model plus a bridge builder.
+Mesh inspection is independent of the Python numerical runtime; material previews
+use its spring laws in an isolated worker. Opening a model never prepares it or
+runs an analysis. The `#build` workspace creates bridge HRX files and edits
+existing material, analysis and load settings through the separately maintained
+`histra-job-builder`; it never overwrites the uploaded file.
 
 ### Importing results
 
@@ -61,6 +63,18 @@ python3 model-view/server.py --model /absolute/path/to/model.hrx --port 8766
 - Restraint geometry, selectable location markers, six local mechanical DOFs,
   stiffness attributes, and reference axes. Generated restraints replace their
   parent geometry definitions to avoid duplicate markers.
+- **Analysis** selector in the 3D model workspace and dedicated **Analyses**
+  workspace page (`#analyses`), linked from the header and the 3D analysis
+  inspector. Lists every serialized HRX analysis with search and an
+  executed-only filter, replicating the C# `WindowAnalysesDefinition` and
+  `MainGridAnalysisElementItem` views across **Control parameters** (Static,
+  Modal, and Dynamic), **Iterative strategy** (including Newton-Raphson + line
+  search decomposition and $\text{dr} = \sqrt{\text{Dr2}}$), **Convergence
+  criteria**, **Model points**, **Load function** (with Multiplier vs
+  Pseudo-time curve and point table), **Loads applied** (sub-combination
+  condition coefficients and Multi-Modal Pushover settings), **Damping &
+  stages**, and **All properties**. The viewer only reads saved state and never
+  runs or resumes an analysis.
 - Mesh, material, load, and restraint picking; searchable entity lists with
   dedicated **Elements** and **Nodes** tabs. Element results highlight and focus
   the Quad; node results place a marker at the node, focus the camera, and show
@@ -177,7 +191,11 @@ python3 model-view/server.py --model /absolute/path/to/model.hrx --port 8766
 - JSON API: `GET /api/model/example`, `POST /api/model` (raw HRX bytes, max 32 MiB),
   `GET /api/health`, `POST /api/material/preview` (JSON with saved material
   `attributes`, `mechanism`, `direction`, `cycles`, optional `amplitude`, and
-  `history`: `cyclic` or `monotonic`).
+  `history`: `cyclic` or `monotonic`). The `#build` workspace uses
+  `GET /api/builder/defaults`, `GET /api/builder/catalog`,
+  `POST /api/builder/inspect`, `POST /api/builder/apply`,
+  `POST /api/builder/preview` and `POST /api/builder/export`; uploads and
+  edited sources are base64 HRX strings capped at 32 MiB.
   `GET /api/results/wall` returns the compact wall displacement projection.
   `GET /api/results/wall/interface?analysis=LiveLoad_1&key=813` returns one
   stage-end interface's spring details. Recent detail responses are cached.

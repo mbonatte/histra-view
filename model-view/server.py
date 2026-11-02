@@ -201,6 +201,18 @@ class Handler(BaseHTTPRequestHandler):
                 return self.reply(400 if mode else 503, {"error": str(exc)})
         if route == "/api/model/example":
             return self.reply(200, parse_hrx(self.server.model_path.read_bytes(), self.server.model_path.name))
+        if route == "/api/builder/defaults":
+            try:
+                from builder_api import defaults
+                return self.reply(200, defaults())
+            except ImportError:
+                return self.reply(503, {"error": "Builder is not installed. Install model-view/requirements-preview.txt."})
+        if route == "/api/builder/catalog":
+            try:
+                from builder_api import catalog
+                return self.reply(200, catalog())
+            except ImportError:
+                return self.reply(503, {"error": "Builder is not installed. Install model-view/requirements-preview.txt."})
         if route == "/api/health":
             return self.reply(200, {"status": "ok"})
         assets = {"/": BASE / "static/index.html"}
@@ -214,6 +226,29 @@ class Handler(BaseHTTPRequestHandler):
         return self.reply(200, path.read_bytes(), mimetypes.guess_type(path.name)[0] or "application/octet-stream")
 
     def do_POST(self):
+        route = urlsplit(self.path).path
+        if route in ("/api/builder/inspect", "/api/builder/apply",
+                     "/api/builder/preview", "/api/builder/export"):
+            try:
+                from builder_api import apply_edits, build, inspect_source, MAX_SOURCE
+                length = int(self.headers.get("Content-Length", "0"))
+                if length <= 0 or length > MAX_SOURCE * 2:
+                    raise ValueError("Request is empty or too large.")
+                request = json.loads(self.rfile.read(length))
+                if not isinstance(request, dict):
+                    raise ValueError("Expected a JSON object.")
+                if route.endswith("inspect"):
+                    return self.reply(200, inspect_source(request.get("source")))
+                if route.endswith("apply"):
+                    return self.reply(200, apply_edits(request))
+                data = build(request)
+                if route.endswith("export"):
+                    return self.reply(200, data, "application/octet-stream")
+                return self.reply(200, parse_hrx(data, "Builder preview.hrx"))
+            except ImportError:
+                return self.reply(503, {"error": "Builder is not installed. Install model-view/requirements-preview.txt."})
+            except Exception as exc:
+                return self.reply(400, {"error": str(exc) or "Unable to build this model."})
         if urlsplit(self.path).path == "/api/material/preview":
             return self.material_preview()
         if urlsplit(self.path).path == "/api/results/import":

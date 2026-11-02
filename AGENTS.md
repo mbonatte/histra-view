@@ -4,9 +4,13 @@ Repository-level operating notes for coding agents working on HiStrA View.
 
 ## Project map
 
-- `model-view/` is the deliverable: a read-only local browser service for HRX
-  models and saved results. It has a Python projection server (`server.py`,
-  `result_preview.py`, `hrx_model.py`) and a Three.js frontend under `static/`.
+- `model-view/` is the deliverable: a local browser service for HRX models,
+  saved results and bridge authoring. It has a Python projection server
+  (`server.py`, `result_preview.py`, `hrx_model.py`, `builder_api.py`) and a
+  Three.js frontend under `static/`. The builder delegates generation and
+  patching to the separately maintained `histra-job-builder` package pinned in
+  `model-view/requirements-preview.txt`; keep that pin in step with the builder
+  commit that provides the APIs used here.
 - `histra-python/` is the Python DMEM solver. Its own rules and numerical
   invariants are in `histra-python/AGENTS.md`; read that file before changing
   solver code.
@@ -124,6 +128,16 @@ The viewer server requires `model-view/.venv`; setup is documented in
   archive, or a JSON projection. Keep the temporary import path out of Git.
 - The viewer is read-only: opening a model must not prepare it, run an analysis,
   or write to the source files.
+- `hrx_model.parse_hrx` projects `Analysis`, `ModelPoint`, load-combination and
+  load-function metadata for the model workspace's **Analysis** selector. It
+  reads saved `States/State` values verbatim; do not synthesize execution
+  results or start an analysis from that selector.
+- The `#build` workspace is an authoring surface, not part of model inspection.
+  `builder_api.py` must keep edits in memory and return bytes; never write to the
+  uploaded HRX. Generated models use the builder's native load/analysis schema.
+  The edit API accepts `changes` (attribute patches) and `operations`
+  (add/duplicate/delete material or analysis); deleting an object that still has
+  model references must fail rather than silently break the HRX.
 - Add focused regression tests for numerical projection, picking and rendering
   changes. `model-view/tests/test_bridge_v2.py` covers the bridge adapter and
   `model-view/tests/thrust-line.test.js` covers the thrust-line cases.
