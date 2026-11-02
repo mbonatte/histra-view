@@ -97,39 +97,78 @@ export class Builder {
     this.collections = {};
     this.changes = new Map();
     // Create-mode material/analysis state
+    this.createSection = 'geometry';
     this.createMaterials = [];
     this.createAnalyses = [];
     this.createCollections = {};
     this.createSteps = [];
     this.createChanges = new Map();
+    // Edit-mode active section
+    this.editSection = 'material';
+    this.selectedLoadKind = 'load_function';
     // Currently loaded viewer HRX bytes (base64) for one-click editing
     this.viewerSource = null;
     this.viewerSourceName = null;
+    this.loadingViewerSource = false;
     this.busy = false;
     this.initialized = false;
+    this.activatingPromise = null;
   }
 
   async activate() {
     if (this.initialized) return;
+    if (this.activatingPromise) return this.activatingPromise;
     this.initialized = true;
-    try {
-      const defaults = await this.json('/api/builder/defaults');
-      const { inspection, ...payload } = defaults;
-      this.payload = payload;
-      if (inspection) {
-        this.createMaterials = inspection.materials || [];
-        this.createAnalyses = inspection.analyses || [];
-        this.createCollections = inspection.collections || {};
-      }
+    this.activatingPromise = (async () => {
       try {
-        this.catalog = await this.json('/api/builder/catalog');
-      } catch {
-        this.catalog = null;
+        const defaults = await this.json('/api/builder/defaults');
+        const { inspection, ...payload } = defaults;
+        this.payload = payload;
+        if (inspection) {
+          this.createMaterials = inspection.materials || [];
+          this.createAnalyses = inspection.analyses || [];
+          this.createCollections = inspection.collections || {};
+        }
+        try {
+          this.catalog = await this.json('/api/builder/catalog');
+        } catch {
+          this.catalog = null;
+        }
+        this.render();
+      } catch (e) {
+        this.root.textContent = e.message;
+        this.initialized = false;
+      } finally {
+        this.activatingPromise = null;
       }
+    })();
+    return this.activatingPromise;
+  }
+
+  async openEditor(kind = 'material', key = null) {
+    location.hash = 'build';
+    await this.activate();
+    if (this.viewerSource) {
+      this.mode = 'edit';
+      if (!this.source || this.source !== this.viewerSource) {
+        await this.loadSource(this.viewerSource, this.viewerSourceName || 'Model.hrx');
+      }
+      this.editSection = kind === 'analysis' ? 'analysis' : 'material';
+      this.selectedKind = this.editSection;
+      const list = this.collections[this.selectedKind] || [];
+      const idx = key != null ? list.findIndex(item => String(item.key) === String(key)) : 0;
+      this.selectedObject = idx >= 0 ? idx : 0;
+      this.selectedNode = 0;
       this.render();
-    } catch (e) {
-      this.root.textContent = e.message;
-      this.initialized = false;
+    } else {
+      this.mode = 'create';
+      this.createSection = kind === 'analysis' ? 'analysis' : 'material';
+      this.selectedKind = this.createSection;
+      const list = this.createCollections[this.selectedKind] || [];
+      const idx = key != null ? list.findIndex(item => String(item.key) === String(key)) : 0;
+      this.selectedObject = idx >= 0 ? idx : 0;
+      this.selectedNode = 0;
+      this.render();
     }
   }
 
@@ -217,6 +256,22 @@ export class Builder {
     else this.renderEdit();
   }
 
+  renderTabs(tabs, current, onSelect) {
+    const bar = node('div');
+    bar.className = 'builder-tabs';
+    bar.setAttribute('role', 'tablist');
+    for (const [key, label] of tabs) {
+      const btn = node('button', label);
+      btn.type = 'button';
+      btn.setAttribute('role', 'tab');
+      btn.setAttribute('aria-selected', String(key === current));
+      if (key === current) btn.className = 'active';
+      btn.addEventListener('click', () => onSelect(key));
+      bar.append(btn);
+    }
+    this.root.append(bar);
+  }
+
   renderCreate() {
     this.root.append(
       node(
@@ -224,6 +279,39 @@ export class Builder {
         'Define a parametric masonry bridge and customize its materials, analyses, and load settings. Preview generates the same HRX that will be downloaded.'
       )
     );
+    this.renderTabs(
+      [
+        ['geometry', 'Geometry'],
+        ['material', `Materials (${this.createMaterials.length})`],
+        ['analysis', `Analyses (${this.createAnalyses.length})`],
+        ['loads', 'Loads'],
+      ],
+      this.createSection,
+      section => {
+        this.createSection = section;
+        if (section === 'material' || section === 'analysis') {
+          this.selectedKind = section;
+          this.selectedObject = 0;
+          this.selectedNode = 0;
+        } else if (section === 'loads') {
+          this.selectedKind = this.selectedLoadKind || 'load_function';
+          this.selectedObject = 0;
+          this.selectedNode = 0;
+        }
+        this.render();
+      }
+    );
+
+    if (this.createSection !== 'geometry') {
+      this.renderCollectionEditor({
+        collections: this.createCollections,
+        changes: this.createChanges,
+        isCreate: true,
+        fixedCategory: this.createSection === 'loads' ? null : this.createSection,
+      });
+      return;
+    }
+
     this.fields('General', this.payload, ['name', 'nl']);
     const collections = [
       ['strips', 'Deck strip', ['width', 'height', 'material_key'], { material_key: 0 }],
@@ -281,19 +369,6 @@ export class Builder {
     this.fields('Elevation', this.payload.elevation, ['H1', 'H2', 'H3', 'layer1_material_key', 'layer2_material_key', 'layer3_material_key'], this.root, {
       layer1_material_key: 19, layer2_material_key: 20, layer3_material_key: 21,
     });
-
-    if (this.createMaterials.length || this.createAnalyses.length) {
-      const divider = node('section');
-      divider.className = 'builder-group';
-      divider.append(node('h3', `Materials, Analyses & Loads (${this.createMaterials.length} materials · ${this.createAnalyses.length} analyses)`));
-      divider.append(node('p', 'Add, duplicate, delete, or edit materials and analyses for this bridge before previewing or exporting.'));
-      this.root.append(divider);
-      this.renderCollectionEditor({
-        collections: this.createCollections,
-        changes: this.createChanges,
-        isCreate: true,
-      });
-    }
   }
 
   async loadSource(encoded, name, index = 0) {
@@ -340,7 +415,12 @@ export class Builder {
     });
     this.root.append(file);
 
-    if (this.viewerSource) {
+    if (this.viewerSource && !this.source && !this.loadingViewerSource) {
+      this.loadingViewerSource = true;
+      this.loadSource(this.viewerSource, this.viewerSourceName || 'Model.hrx').finally(() => {
+        this.loadingViewerSource = false;
+      });
+    } else if (this.viewerSource && this.source !== this.viewerSource) {
       const viewerActions = node('div');
       viewerActions.className = 'builder-actions';
       this.button(
@@ -353,27 +433,60 @@ export class Builder {
 
     if (!this.source) return;
     this.root.append(node('p', `${this.sourceName} · ${this.materials.length} materials · ${this.analyses.length} analyses`));
+    this.renderTabs(
+      [
+        ['material', `Materials (${this.materials.length})`],
+        ['analysis', `Analyses (${this.analyses.length})`],
+        ['loads', 'Loads'],
+      ],
+      this.editSection,
+      section => {
+        this.editSection = section;
+        if (section === 'material' || section === 'analysis') {
+          this.selectedKind = section;
+          this.selectedObject = 0;
+          this.selectedNode = 0;
+        } else {
+          this.selectedKind = this.selectedLoadKind || 'load_function';
+          this.selectedObject = 0;
+          this.selectedNode = 0;
+        }
+        this.render();
+      }
+    );
     this.renderCollectionEditor({
       collections: this.collections,
       changes: this.changes,
       isCreate: false,
+      fixedCategory: this.editSection === 'loads' ? null : this.editSection,
     });
   }
 
-  renderCollectionEditor({ collections, changes, isCreate }) {
-    const kind = node('select');
-    kind.setAttribute('aria-label', 'Property category');
-    for (const [value, label] of COLLECTIONS) kind.add(new Option(label, value));
-    kind.value = this.selectedKind || 'material';
-    kind.addEventListener('change', () => {
-      this.selectedKind = kind.value;
-      this.selectedObject = 0;
-      this.selectedNode = 0;
-      this.render();
-    });
-    this.root.append(kind);
+  renderCollectionEditor({ collections, changes, isCreate, fixedCategory = null }) {
+    let activeKind = fixedCategory || this.selectedKind || 'material';
+    if (!fixedCategory) {
+      const kind = node('select');
+      kind.setAttribute('aria-label', 'Property category');
+      const loadCategories = COLLECTIONS.filter(([value]) => !['material', 'analysis'].includes(value));
+      for (const [value, label] of loadCategories) kind.add(new Option(label, value));
+      if (!loadCategories.some(([value]) => value === activeKind)) {
+        activeKind = 'load_function';
+        this.selectedKind = activeKind;
+      }
+      kind.value = activeKind;
+      kind.addEventListener('change', () => {
+        this.selectedKind = kind.value;
+        this.selectedLoadKind = kind.value;
+        this.selectedObject = 0;
+        this.selectedNode = 0;
+        this.render();
+      });
+      this.root.append(kind);
+    } else {
+      this.selectedKind = fixedCategory;
+    }
 
-    const items = collections[kind.value] || [];
+    const items = collections[activeKind] || [];
     if (!items.length) {
       this.root.append(node('p', 'No entries in this file.'));
       return;
@@ -392,7 +505,7 @@ export class Builder {
     this.root.append(select);
 
     const item = items[selectedIndex];
-    this.renderManage(kind.value, items, selectedIndex, isCreate);
+    this.renderManage(activeKind, items, selectedIndex, isCreate);
     if (!item.nodes.length) {
       this.root.append(node('p', 'No editable attributes.'));
       return;
@@ -415,10 +528,10 @@ export class Builder {
     const grid = node('div');
     grid.className = 'builder-grid';
     for (const [key, original] of Object.entries(entry.attributes)) {
-      const id = `${kind.value}:${selectedIndex}:${entry.path.join('.')}:${key}`;
+      const id = `${activeKind}:${selectedIndex}:${entry.path.join('.')}:${key}`;
       const label = node('label', key);
       let input;
-      if (kind.value === 'analysis' && !entry.path.length && key === 'AnalysisType' && ['1', '2', '3', '4', '5'].includes(original)) {
+      if (activeKind === 'analysis' && !entry.path.length && key === 'AnalysisType' && ['1', '2', '3', '4', '5'].includes(original)) {
         input = node('select');
         for (const [value, text] of [['1', 'Static linear'], ['2', 'Static nonlinear'], ['3', 'Dynamic linear'], ['4', 'Dynamic nonlinear'], ['5', 'Modal']]) {
           input.add(new Option(text, value));
@@ -436,7 +549,7 @@ export class Builder {
       input.value = changes.get(id)?.value ?? original;
       input.addEventListener('change', () => {
         if (input.value === original) changes.delete(id);
-        else changes.set(id, { collection: kind.value, index: selectedIndex, node: entry.path, attribute: key, value: input.value });
+        else changes.set(id, { collection: activeKind, index: selectedIndex, node: entry.path, attribute: key, value: input.value });
       });
       label.append(input);
       grid.append(label);

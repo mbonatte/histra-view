@@ -43,6 +43,8 @@
 .material-document{overflow:auto;background:#111820;min-width:0}
 #materialDocumentHeader,#analysisDocumentHeader{padding:28px 30px 22px;background:#18222c;border-bottom:1px solid var(--border)}
 .material-heading{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}
+.material-header-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.material-header-actions button{font-size:11px;padding:6px 10px;white-space:nowrap}
 .material-heading h1{font-size:25px;font-weight:550;letter-spacing:-.7px;margin:0 0 7px}
 .material-heading p{font-size:12px;color:#99aebb;max-width:620px;margin:0;line-height:1.7}
 .material-mode{font-size:10px;border:1px solid #3f5855;padding:5px 9px;border-radius:5px;color:#9edacd;white-space:nowrap}

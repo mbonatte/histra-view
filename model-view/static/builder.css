@@ -9,6 +9,10 @@
 .builder-actions { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0; }
 .builder-actions button { padding: 8px 10px; }
 .builder-actions select { flex: 1 1 120px; width: auto; }
+.builder-tabs { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 4px; margin: 12px 0; padding: 4px; background: #0d141c; border: 1px solid #2b3a48; border-radius: 6px; }
+.builder-tabs button { padding: 7px 6px; font-size: 11px; font-weight: 600; border-radius: 4px; border: 1px solid transparent; background: transparent; color: #9aa9b7; cursor: pointer; text-align: center; }
+.builder-tabs button:hover { color: #e7edf3; background: #16222f; }
+.builder-tabs button.active { background: #1f3347; color: #ffffff; border-color: #3d6082; }
 .builder-group { border-top: 1px solid #33404c; margin-top: 12px; }
 .builder-status { white-space: pre-wrap; overflow-wrap: anywhere; }
 .builder-status.error { color: #ff9999; }

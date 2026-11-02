@@ -26,8 +26,8 @@ const TAB_META = {
   restraints: { title: 'SUPPORT DEFINITIONS', help: 'Inspect support locations and local DOFs.', search: 'Find restraint…' },
   analyses: { title: 'ANALYSIS DEFINITIONS', help: 'Inspect saved analysis definitions and execution states.', search: 'Find analysis…' },
 };
-const materialsPage = new MaterialsPage();
-const analysesPage = new AnalysesPage();
+const materialsPage = new MaterialsPage(key => builder.openEditor('material', key));
+const analysesPage = new AnalysesPage(key => builder.openEditor('analysis', key));
 const resultsPage = new ResultsPage($('resultsPage'), (data, analysis, step) => {
   $('fileName').textContent = data.name;
   const analysisName = analysis?.name || data.name;
@@ -151,7 +151,9 @@ function inspect(kind, record) {
       FmHor: a.FmHor ?? '—', FmVer: a.FmVer ?? '—', 'Unit weight (w / Gamma)': a.w ?? a.Gamma ?? '—' }));
     const fullProperties = element('button', 'full-material-button', 'Open material properties →');
     fullProperties.onclick = () => materialsPage.open(record.key);
-    panel.append(fullProperties);
+    const editMaterial = element('button', 'full-material-button', '✎ Edit in Build model →');
+    editMaterial.onclick = () => builder.openEditor('material', record.key);
+    panel.append(fullProperties, editMaterial);
   } else if (kind === 'quad') {
     const materialKey = record.materialKey ?? record.material;
     const layerKey = record.layerKey ?? record.layer;
@@ -215,7 +217,9 @@ function inspect(kind, record) {
     if (record.state.ExitDescription) panel.append(element('p', '', record.state.ExitDescription));
     const fullAnalyses = element('button', 'full-material-button', 'Open analysis properties →');
     fullAnalyses.onclick = () => analysesPage.open(record.key);
-    panel.append(fullAnalyses);
+    const editAnalysis = element('button', 'full-material-button', '✎ Edit in Build model →');
+    editAnalysis.onclick = () => builder.openEditor('analysis', record.key);
+    panel.append(fullAnalyses, editAnalysis);
     panel.append(element('p', '', 'State values are read from the saved HRX. The viewer does not run or resume analyses.'));
   }
   panel.append(rawAttributes(record.attributes || {}));
@@ -585,6 +589,8 @@ function showBlankStart() {
   $('modelSubtitle').textContent = 'Use Open HRX or Import Results';
   $('entityCount').textContent = '0';
   populateAnalysis({ analyses: [] });
+  materialsPage.render();
+  analysesPage.render();
   $('message').textContent = 'Open an HRX model or import a result file to begin. You can also drop files here.';
   $('message').classList.remove('hidden', 'error');
 }

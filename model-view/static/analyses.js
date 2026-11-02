@@ -94,7 +94,8 @@ function renderLoadFunctionPreview(items = []) {
 }
 
 export class AnalysesPage {
-  constructor() {
+  constructor(onEdit = null) {
+    this.onEdit = onEdit;
     this.analyses = [];
     this.selected = null;
     this.tab = 'control';
@@ -193,7 +194,15 @@ export class AnalysesPage {
       header.replaceChildren();
       tablist.replaceChildren();
       if (mobileSelect) mobileSelect.replaceChildren();
-      content.replaceChildren(node('p', 'material-note', 'No analyses are defined in this model.'));
+      const emptyBox = node('div');
+      emptyBox.append(node('p', 'material-note', 'No analyses are defined in this model.'));
+      if (this.onEdit) {
+        const editBtn = node('button', 'primary', '✎ Edit / Add analyses in Build model →');
+        editBtn.type = 'button';
+        editBtn.onclick = () => this.onEdit(null);
+        emptyBox.append(editBtn);
+      }
+      content.replaceChildren(emptyBox);
       return;
     }
 
@@ -218,8 +227,16 @@ export class AnalysesPage {
       node('h1', '', analysis.name || `Analysis ${analysis.key}`),
       node('p', '', analysis.description || `${analysis.type} — ${stateText}`)
     );
+    const rightGroup = node('div', 'material-header-actions');
     const badge = node('span', 'material-mode', `${analysis.type} · ${STATE_SHORT_LABELS[stateRaw] || stateRaw || 'Unset'}`);
-    heading.append(title, badge);
+    rightGroup.append(badge);
+    if (this.onEdit) {
+      const editBtn = node('button', 'secondary', '✎ Edit / Add in Build model →');
+      editBtn.type = 'button';
+      editBtn.onclick = () => this.onEdit(analysis.key);
+      rightGroup.append(editBtn);
+    }
+    heading.append(title, rightGroup);
 
     const meta = node('div', 'material-meta');
     const chip = node('span', 'material-color-chip');

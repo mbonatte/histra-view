@@ -11,7 +11,8 @@ const node = (tag, className, text) => {
 };
 
 export class MaterialsPage {
-  constructor() {
+  constructor(onEdit = null) {
+    this.onEdit = onEdit;
     this.materials = [];
     this.tab = 'general';
     this.units = 'engineering';
@@ -72,7 +73,15 @@ export class MaterialsPage {
       $('materialDocumentHeader').replaceChildren();
       $('materialMechanismTabs').replaceChildren();
       $('mobileMaterialSelect').replaceChildren();
-      $('materialContent').replaceChildren(node('p', 'material-note', 'No masonry materials are defined in this model.'));
+      const emptyBox = node('div');
+      emptyBox.append(node('p', 'material-note', 'No masonry materials are defined in this model.'));
+      if (this.onEdit) {
+        const editBtn = node('button', 'primary', '✎ Edit / Add materials in Build model →');
+        editBtn.type = 'button';
+        editBtn.onclick = () => this.onEdit(null);
+        emptyBox.append(editBtn);
+      }
+      $('materialContent').replaceChildren(emptyBox);
       return;
     }
     const a = material.attributes;
@@ -83,8 +92,16 @@ export class MaterialsPage {
     const heading = node('div', 'material-heading');
     const title = node('div');
     title.append(node('div', 'eyebrow', 'MATERIAL PROPERTIES'), node('h1', '', material.name), node('p', '', a.Description || a.PurposeType || 'Material definition'));
+    const rightGroup = node('div', 'material-header-actions');
     const badge = node('span', 'material-mode', masonry ? `${a.SimpleMode === 'true' ? 'Simple' : a.SimpleMode === 'false' ? 'Advanced' : 'Unspecified'} mode · saved` : a.PurposeType || 'Material');
-    heading.append(title, badge);
+    rightGroup.append(badge);
+    if (this.onEdit) {
+      const editBtn = node('button', 'secondary', '✎ Edit / Add in Build model →');
+      editBtn.type = 'button';
+      editBtn.onclick = () => this.onEdit(material.key);
+      rightGroup.append(editBtn);
+    }
+    heading.append(title, rightGroup);
     const meta = node('div', 'material-meta');
     const chip = node('span', 'material-color-chip');
     chip.style.background = material.color;
