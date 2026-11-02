@@ -52,6 +52,41 @@ Alternate initial model / port:
 python3 model-view/server.py --model /absolute/path/to/model.hrx --port 8766
 ```
 
+### Agent CLI & MCP Server (`hrx_cli.py` / `mcp_server.py`)
+
+Agents and scripts can create, inspect, and configure `.hrx` bridge models
+(parametric geometry, **Advanced mode** masonry constitutive laws across
+Rocking/Shear/Sliding, and analyses/stages/load functions) without reading the
+internal codebase:
+
+```sh
+# List geometry defaults, templates, and Advanced mode masonry law options
+model-view/.venv/bin/python model-view/hrx_cli.py catalog
+
+# Create a bridge HRX from dot-path overrides
+model-view/.venv/bin/python model-view/hrx_cli.py create -o bridge.hrx \
+  --set nl=150 --set spans.0.L=800 --set piers.0.H=250
+
+# Inspect materials, analyses, and loads
+model-view/.venv/bin/python model-view/hrx_cli.py inspect bridge.hrx
+
+# Configure an Advanced-mode masonry material (including sliding law & orthotropy)
+model-view/.venv/bin/python model-view/hrx_cli.py edit-material bridge.hrx -o bridge.hrx \
+  --key 18 --orthotropic-rocking false \
+  --set TensileCurveType=Exponential --set CompressiveCurveType=Parabolic \
+  --sliding-law LinearSoftening --set Gs=0.01
+
+# Edit or add an analysis
+model-view/.venv/bin/python model-view/hrx_cli.py edit-analysis bridge.hrx -o bridge.hrx \
+  --name "Vert" --set MaxIterations=50 --set ConvergenceTolerance=0.0005
+```
+
+To expose the same capabilities over the Model Context Protocol (stdio JSON-RPC 2.0),
+launch `model-view/.venv/bin/python model-view/mcp_server.py` (tools:
+`hrx_catalog`, `hrx_create_bridge`, `hrx_inspect`, `hrx_edit_material`,
+`hrx_edit_analysis`). Full usage is documented in
+[`.agents/skills/histra-hrx-builder/SKILL.md`](../.agents/skills/histra-hrx-builder/SKILL.md).
+
 ## Included
 
 - Orbit, pan, zoom, camera presets, fit (`F`), and clear selection (`Escape`).

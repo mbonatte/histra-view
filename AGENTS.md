@@ -25,6 +25,13 @@ npm start
 # Viewer Python + JavaScript tests (from model-view/)
 npm test
 
+# CLI for creating, inspecting, and configuring .hrx models (from model-view/)
+.venv/bin/python hrx_cli.py --help
+.venv/bin/python hrx_cli.py catalog
+
+# MCP stdio server for agentic .hrx authoring (from model-view/)
+.venv/bin/python mcp_server.py
+
 # Python solver tests (from histra-python/)
 python -m pytest histra/tests -q
 ```
@@ -136,6 +143,12 @@ The viewer server requires `model-view/.venv`; setup is documented in
   The edit API accepts `changes` (attribute patches) and `operations`
   (add/duplicate/delete material or analysis); deleting an object that still has
   model references must fail rather than silently break the HRX.
+- For programmatic or agent-driven `.hrx` creation and configuration without
+  reading internal solver/builder code, use `model-view/hrx_cli.py` (CLI + Python
+  API) or `model-view/mcp_server.py` (JSON-RPC 2.0 stdio MCP server), documented
+  in `.agents/skills/histra-hrx-builder/SKILL.md`. Both focus on **Advanced mode**
+  masonry materials (`General`, `Rocking`, `Shear`, `Sliding` per Section 6.2.1.2
+  of the HiStrA manual) and full analysis/stage/load-function configuration.
 - Add focused regression tests for numerical projection, picking and rendering
   changes. `model-view/tests/test_bridge_v2.py` covers the bridge adapter and
   `model-view/tests/thrust-line.test.js` covers the thrust-line cases.
