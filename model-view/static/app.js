@@ -391,29 +391,6 @@ function populateSelect(select, records, label) {
   for (const record of records) select.add(new Option(`${record.name || record.key} [${record.key}]`, record.key));
 }
 
-function populateAnalysis(model) {
-  const analyses = model.analyses || [];
-  const select = $('analysisView');
-  select.replaceChildren(new Option(analyses.length ? 'Select analysis…' : 'No analyses', ''));
-  for (const analysis of analyses) {
-    const state = analysisState(analysis);
-    select.add(new Option(`${analysis.name || analysis.key} · ${analysis.type} · ${state}`, analysis.key));
-  }
-  select.disabled = !analyses.length;
-  state.analysisKey = '';
-  select.value = '';
-  $('analysisState').textContent = analyses.length ? `${analyses.length} analyses` : '';
-}
-
-function selectAnalysis(key) {
-  const analysis = state.model?.analyses?.find(item => String(item.key) === String(key));
-  state.analysisKey = analysis ? String(analysis.key) : '';
-  $('analysisState').textContent = analysis ? analysisState(analysis) : `${state.model?.analyses?.length ?? 0} analyses`;
-  if (analysis) inspect('analysis', analysis);
-  else inspect(null, null);
-  viewer.needsRender = true;
-}
-
 function loadModel(model) {
   // Finish projection and validation before replacing the visible model.
   state.model = model;
@@ -439,7 +416,6 @@ function loadModel(model) {
   for (const key of usedLayers) if (!layers.some(l => l.key === key)) layers.push({ key, name: 'Layer' });
   populateSelect($('layer'), layers, 'All layers');
   populateSelect($('condition'), model.loadConditions, 'All assigned conditions');
-  populateAnalysis(model);
   $('dimensions').textContent = `Z up · ${model.units}`;
   $('measureUnits').textContent = model.units === 'HRX native units' ? 'HRX units' : model.units;
   clearMeasurement();
@@ -588,7 +564,6 @@ function showBlankStart() {
   $('modelTitle').textContent = 'Open a model to begin';
   $('modelSubtitle').textContent = 'Use Open HRX or Import Results';
   $('entityCount').textContent = '0';
-  populateAnalysis({ analyses: [] });
   materialsPage.render();
   analysesPage.render();
   $('message').textContent = 'Open an HRX model or import a result file to begin. You can also drop files here.';
@@ -599,7 +574,6 @@ try {
   viewer = new QuadViewer($('viewport'), { extrude: true, thicknessScale: 1, opacity: 1 });
   overlays = new ModelOverlays(viewer, inspect);
   showPage();
-  $('analysisView').addEventListener('change', event => selectAnalysis(event.target.value));
   viewer.on('selection', selected => inspect(selected ? 'quad' : null, selected?.quad));
   viewer.on('measure', result => registerMeasurement(result.point));
   viewer.setMeasureSnap($('measureSnap').checked);
