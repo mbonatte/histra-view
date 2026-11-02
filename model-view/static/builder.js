@@ -1,5 +1,3 @@
-import { rockingGroups, shearGroups, slidingGroups } from './material-properties.js';
-
 const isMasonryItem = item => {
   const a = item?.attributes || item?.nodes?.[0]?.attributes || {};
   return a.PurposeType === 'MasonryMaterial' || a.Ehor !== undefined;
@@ -778,37 +776,170 @@ export class Builder {
         ],
         true
       );
-      addAttrField(behaviorGrid, 'Finite tensile ductility', 'IsDuctTraz');
-      addAttrField(behaviorGrid, 'Finite compressive ductility', 'IsDuctCompr');
       this.root.append(behaviorGrid);
 
-      rockingGroups.forEach(([groupTitle, rows], idx) => {
-        const body = this.collapsibleGroup(`mat:rocking:${idx}`, groupTitle, ort ? 'Dir. 1&3 / Dir. 2' : 'Isotropic');
-        const grid = node('div');
-        grid.className = 'builder-grid';
-        for (const [label, keyHor, keyVer] of rows) {
-          if (ort && keyVer) {
-            addAttrField(grid, `${label} (Dir. 1 & 3)`, keyHor);
-            addAttrField(grid, `${label} (Dir. 2)`, keyVer);
-          } else {
-            addAttrField(grid, label, keyHor);
+      const unloadOptions = [
+        ['Initial', 'Initial (β = 0)'],
+        ['Origin', 'Origin (β = 1)'],
+        ['Nothing', 'Mixed (0 < β < 1)'],
+      ];
+
+      // 1. Elastic properties
+      const elasticBody = this.collapsibleGroup('mat:rocking:0', 'Elastic properties', ort ? 'Dir. 1&3 / Dir. 2' : 'Isotropic');
+      const elasticGrid = node('div');
+      elasticGrid.className = 'builder-grid';
+      if (ort) {
+        addAttrField(elasticGrid, 'Young’s modulus, E (Dir. 1 & 3)', 'Ehor');
+        addAttrField(elasticGrid, 'Young’s modulus, E (Dir. 2)', 'Ever');
+      } else {
+        addAttrField(elasticGrid, 'Young’s modulus, E', 'Ehor');
+      }
+      elasticBody.append(elasticGrid);
+
+      // 2. Tensile constitutive law & law-dependent fields
+      const tensileLawHor = getVal('TensileCurveType') || 'LinearSoftening';
+      const tensileLawVer = getVal('TensileCurveTypeVertical') || 'LinearSoftening';
+      const tensileBody = this.collapsibleGroup('mat:rocking:1', 'Tensile', ort ? `${tensileLawHor} / ${tensileLawVer}` : tensileLawHor);
+      const renderTensileDirection = (container, suffix, curveKey, dirSuffixLabel) => {
+        const law = getVal(curveKey) || 'LinearSoftening';
+        addAttrField(container, `Constitutive law${dirSuffixLabel}`, curveKey, null, true);
+        if (law === 'Elastic') return;
+        addAttrField(container, `Tensile strength, ft${dirSuffixLabel}`, `Ftm${suffix}`);
+        if (law === 'LinearSoftening' || law === 'Exponential') {
+          addAttrField(container, `Fracture energy, Gt${dirSuffixLabel}`, suffix === 'Ver' ? 'GtVer' : 'Gt');
+        }
+        if (law === 'LinearHardening') {
+          addAttrField(container, `Traction stiffness ratio, κt${dirSuffixLabel}`, suffix === 'Ver' ? 'RatioEtTractionVer' : 'RatioEtTraction');
+          if (suffix === 'Hor') {
+            addAttrField(container, 'Limit tensile ductility', 'IsDuctTraz', null, true);
+          }
+          if (getVal('IsDuctTraz') === 'true') {
+            addAttrField(container, `Tensile ductility, μut${dirSuffixLabel}`, `DuctTrazRocking${suffix}`);
           }
         }
-        body.append(grid);
-      });
+        const unloadKey = `UnloadTractionRocking${suffix}`;
+        addAttrField(container, `Unload behavior${dirSuffixLabel}`, unloadKey, unloadOptions, true);
+        if (getVal(unloadKey) === 'Nothing') {
+          addAttrField(container, `Unload parameter, βt${dirSuffixLabel}`, `BetaUnloadTractionRocking${suffix}`);
+        }
+      };
+      const tensileGrid = node('div');
+      tensileGrid.className = 'builder-grid';
+      renderTensileDirection(tensileGrid, 'Hor', 'TensileCurveType', ort ? ' (Dir. 1 & 3)' : '');
+      if (ort) {
+        renderTensileDirection(tensileGrid, 'Ver', 'TensileCurveTypeVertical', ' (Dir. 2)');
+      }
+      tensileBody.append(tensileGrid);
+
+      // 3. Compression constitutive law & law-dependent fields
+      const compLawHor = getVal('CompressiveCurveType') || 'LinearSoftening';
+      const compLawVer = getVal('CompressiveCurveTypeVertical') || 'LinearSoftening';
+      const compBody = this.collapsibleGroup('mat:rocking:2', 'Compression', ort ? `${compLawHor} / ${compLawVer}` : compLawHor);
+      const renderCompressiveDirection = (container, suffix, curveKey, dirSuffixLabel) => {
+        const law = getVal(curveKey) || 'LinearSoftening';
+        addAttrField(container, `Constitutive law${dirSuffixLabel}`, curveKey, null, true);
+        if (law === 'Elastic') return;
+        addAttrField(container, `Compressive strength, fm${dirSuffixLabel}`, `Fm${suffix}`);
+        if (law === 'LinearSoftening' || law === 'Parabolic') {
+          addAttrField(container, `Fracture energy, Gc${dirSuffixLabel}`, suffix === 'Ver' ? 'GcVer' : 'Gc');
+        }
+        if (law === 'LinearHardening') {
+          addAttrField(container, `Compressive stiffness ratio, κc${dirSuffixLabel}`, suffix === 'Ver' ? 'RatioEtCompressionVer' : 'RatioEtCompression');
+          if (suffix === 'Hor') {
+            addAttrField(container, 'Limit compressive ductility', 'IsDuctCompr', null, true);
+          }
+          if (getVal('IsDuctCompr') === 'true') {
+            addAttrField(container, `Compressive ductility, μuc${dirSuffixLabel}`, `DuctComprRocking${suffix}`);
+          }
+        }
+        const unloadKey = `UnloadCompressionRocking${suffix}`;
+        addAttrField(container, `Unload behavior${dirSuffixLabel}`, unloadKey, unloadOptions, true);
+        if (getVal(unloadKey) === 'Nothing') {
+          addAttrField(container, `Unload parameter, βc${dirSuffixLabel}`, `BetaUnloadCompressionRocking${suffix}`);
+        }
+        addAttrField(container, `Rocking rotation limit${dirSuffixLabel}`, `RotationLimitRocking${suffix}`);
+      };
+      const compGrid = node('div');
+      compGrid.className = 'builder-grid';
+      renderCompressiveDirection(compGrid, 'Hor', 'CompressiveCurveType', ort ? ' (Dir. 1 & 3)' : '');
+      if (ort) {
+        renderCompressiveDirection(compGrid, 'Ver', 'CompressiveCurveTypeVertical', ' (Dir. 2)');
+      }
+      compBody.append(compGrid);
       return;
     }
 
     if (tab === 'shear') {
-      shearGroups.forEach(([groupTitle, rows], idx) => {
-        const body = this.collapsibleGroup(`mat:shear:${idx}`, groupTitle);
-        const grid = node('div');
-        grid.className = 'builder-grid';
-        for (const [label, key] of rows) {
-          addAttrField(grid, label, key);
+      const shearLaw = getVal('ConstitutiveLawMasonryShear') || 'Elastic';
+      const domain = getVal('CriterioSnervamento') || 'Coulomb';
+      const modelBody = this.collapsibleGroup('mat:shear:0', 'Constitutive model', shearLaw);
+      const modelGrid = node('div');
+      modelGrid.className = 'builder-grid';
+      addAttrField(modelGrid, 'Constitutive law', 'ConstitutiveLawMasonryShear', null, true);
+      addAttrField(modelGrid, 'Shear modulus, G', 'Gd');
+      addAttrField(modelGrid, 'Stiffness shear/sliding ratio, α', 'AlfaShearUser');
+      if (shearLaw !== 'Elastic') {
+        addAttrField(modelGrid, 'Yielding domain', 'CriterioSnervamento', null, true);
+        addAttrField(modelGrid, 'Shear strength, τ₀', 'fvk0d');
+        if (domain === 'Coulomb') {
+          addAttrField(modelGrid, 'Friction ratio, μ', 'FrictionRatioShear');
+        } else if (domain === 'Cacovic') {
+          addAttrField(modelGrid, 'Cacovic coefficient, b', 'Bcacovic');
         }
-        body.append(grid);
-      });
+      }
+      modelBody.append(modelGrid);
+
+      if (shearLaw !== 'Elastic') {
+        const nlBody = this.collapsibleGroup('mat:shear:1', 'Nonlinear parameters', domain);
+        const nlGrid = node('div');
+        nlGrid.className = 'builder-grid';
+        addAttrField(nlGrid, 'Plastic stiffness ratio', 'ShearPlasticStiffnessRatio');
+        if (domain === 'Coulomb') {
+          addAttrField(nlGrid, 'Reload stiffness ratio, κrs', 'ShearReloadStiffnessRatio');
+          addAttrField(nlGrid, 'Maximum tensile ratio', 'ShearMaxTensileRatio');
+        }
+        if (shearLaw === 'ElastoPlasticDuctilityFixed') {
+          addAttrField(nlGrid, 'Ductility', 'DuctilityShear');
+          addAttrField(nlGrid, 'Ultimate shear strain, γp', 'ShearUltimateStrain');
+        } else if (shearLaw === 'ElastoPlasticAndSoftening') {
+          addAttrField(nlGrid, 'Ductility', 'DuctilityShear');
+          addAttrField(nlGrid, 'Second plastic stiffness ratio', 'ShearPlasticStiffnessRatio2');
+          addAttrField(nlGrid, 'Plastic shear strain', 'ShearPlasticStrain');
+          addAttrField(nlGrid, 'Ultimate shear strain, γp', 'ShearUltimateStrain');
+        } else if (shearLaw === 'ElastoPlasticFractureEnergyFixed' || shearLaw === 'ElastoPlasticEnergySigmaInterpolation') {
+          addAttrField(nlGrid, 'Strain / fracture energy', 'FractureEnergyShear');
+          addAttrField(nlGrid, 'Ductility', 'DuctilityShear');
+        }
+        nlBody.append(nlGrid);
+
+        const cycBody = this.collapsibleGroup('mat:shear:2', 'Cyclic behavior');
+        const cycGrid = node('div');
+        cycGrid.className = 'builder-grid';
+        addAttrField(cycGrid, 'Kinematic cycles enabled', 'HasKinCiclShear', null, true);
+        if (getVal('HasKinCiclShear') === 'true') {
+          addAttrField(cycGrid, 'Kinematic parameter', 'AkinCiclShear');
+        }
+        addAttrField(cycGrid, 'Cyclic degradation enabled', 'CiclShear', null, true);
+        if (getVal('CiclShear') === 'true') {
+          addAttrField(cycGrid, 'Cyclic parameter, α', 'AlfaCiclShear');
+          addAttrField(cycGrid, 'Cyclic parameter, γ', 'GammaCiclShear');
+        }
+        addAttrField(
+          cycGrid,
+          'Unload behavior',
+          'UnloadShear',
+          [
+            ['Initial', 'Initial (β = 0)'],
+            ['Origin', 'Origin (β = 1)'],
+            ['Nothing', 'Mixed (0 < β < 1)'],
+          ],
+          true
+        );
+        if (getVal('UnloadShear') === 'Nothing') {
+          addAttrField(cycGrid, 'Unload parameter, β', 'BetaUnloadShear');
+        }
+        cycBody.append(cycGrid);
+      }
       return;
     }
 
@@ -829,20 +960,87 @@ export class Builder {
       addAttrField(behaviorGrid, 'Check contact area', 'CheckContactArea');
       this.root.append(behaviorGrid);
 
-      const rows = slidingGroups[0][1];
-      const dirs = ort
-        ? [
-            [0, 'Faces 1–3 · Dir. 1'],
-            [1, 'Faces 2–4 · Dir. 2'],
-            [2, 'Faces 5–6 · Dir. 3'],
-          ]
-        : [[0, 'Directional properties (Isotropic)']];
-      for (const [dirIdx, dirTitle] of dirs) {
-        const body = this.collapsibleGroup(`mat:sliding:${dirIdx}`, dirTitle);
+      const dirConfigs = [
+        {
+          idx: 0,
+          title: ort ? 'Faces 1–3 · Dir. 1' : 'Directional properties (Isotropic)',
+          scorr: 'scorrhor',
+          fracture: 'SlidingFractureEnergy',
+          domain: 'SlidingYieldingDomainHor',
+          cohesion: 'CohesionSlidingHor',
+          friction: 'FrictionRatioSlidingHor',
+          plasticRatio: 'SlidingPlasticStiffnessRatioHor',
+          maxTensile: 'SlidingMaxTensileRatioHor',
+          gs: 'Gs',
+        },
+        {
+          idx: 1,
+          title: 'Faces 2–4 · Dir. 2',
+          scorr: 'scorrvert',
+          fracture: 'SlidingFractureEnergyVer',
+          domain: 'SlidingYieldingDomainVert',
+          cohesion: 'CohesionSlidingVert',
+          friction: 'FrictionRatioSlidingVert',
+          plasticRatio: 'SlidingPlasticStiffnessRatioVer',
+          maxTensile: 'SlidingMaxTensileRatioVer',
+          gs: 'GsVer',
+        },
+        {
+          idx: 2,
+          title: 'Faces 5–6 · Dir. 3',
+          scorr: 'scorrDir3',
+          fracture: 'SlidingFractureEnergyDir3',
+          domain: 'SlidingYieldingDomainDir3',
+          cohesion: 'CohesionSlidingDir3',
+          friction: 'FrictionRatioSlidingDir3',
+          plasticRatio: 'SlidingPlasticStiffnessRatioDir3',
+          maxTensile: 'SlidingMaxTensileRatioDir3',
+          gs: 'GsDir3',
+        },
+      ];
+      const activeDirs = ort ? dirConfigs : [dirConfigs[0]];
+      for (const cfg of activeDirs) {
+        const isNonlinear = getVal(cfg.scorr) === 'true';
+        const isSoftening = isNonlinear && getVal(cfg.fracture) === 'true';
+        const currentLaw = !isNonlinear ? 'Elastic' : isSoftening ? 'LinearSoftening' : 'ElastoPlastic';
+        const body = this.collapsibleGroup(`mat:sliding:${cfg.idx}`, cfg.title, currentLaw);
         const grid = node('div');
         grid.className = 'builder-grid';
-        for (const [label, ...keys] of rows) {
-          addAttrField(grid, label, keys[dirIdx]);
+
+        const lawLabel = node('label', 'Constitutive law');
+        const lawSelect = node('select');
+        lawSelect.add(new Option('Elastic', 'Elastic'));
+        lawSelect.add(new Option('Elasto-Plastic', 'ElastoPlastic'));
+        lawSelect.add(new Option('Linear softening', 'LinearSoftening'));
+        lawSelect.value = currentLaw;
+        lawSelect.addEventListener('change', () => {
+          if (lawSelect.value === 'Elastic') {
+            setVal(cfg.scorr, 'false');
+            setVal(cfg.fracture, 'false');
+          } else if (lawSelect.value === 'ElastoPlastic') {
+            setVal(cfg.scorr, 'true');
+            setVal(cfg.fracture, 'false');
+          } else {
+            setVal(cfg.scorr, 'true');
+            setVal(cfg.fracture, 'true');
+          }
+          this.render();
+        });
+        lawLabel.append(lawSelect);
+        grid.append(lawLabel);
+
+        if (currentLaw !== 'Elastic') {
+          const dom = getVal(cfg.domain) || 'Coulomb';
+          addAttrField(grid, 'Yielding domain', cfg.domain, null, true);
+          addAttrField(grid, 'Cohesion, c', cfg.cohesion);
+          if (dom === 'Coulomb') {
+            addAttrField(grid, 'Friction ratio, μ', cfg.friction);
+            addAttrField(grid, 'Maximum tensile ratio', cfg.maxTensile);
+          }
+          addAttrField(grid, 'Plastic stiffness ratio, κ', cfg.plasticRatio);
+          if (currentLaw === 'LinearSoftening') {
+            addAttrField(grid, 'Fracture energy, Gs', cfg.gs);
+          }
         }
         body.append(grid);
       }
