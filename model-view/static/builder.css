@@ -14,5 +14,21 @@
 .builder-tabs button:hover { color: #e7edf3; background: #16222f; }
 .builder-tabs button.active { background: #1f3347; color: #ffffff; border-color: #3d6082; }
 .builder-group { border-top: 1px solid #33404c; margin-top: 12px; }
+.builder-collapse { border: 1px solid #2b3a48; border-radius: 6px; background: #131d27; margin: 8px 0; overflow: hidden; }
+.builder-collapse > summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: #dbe6f0; cursor: pointer; user-select: none; list-style: none; background: #172330; }
+.builder-collapse > summary::-webkit-details-marker { display: none; }
+.builder-collapse > summary::before { content: "▸"; font-size: 11px; color: #7fa0bc; margin-right: 6px; transition: transform .15s ease; }
+.builder-collapse[open] > summary::before { transform: rotate(90deg); }
+.builder-collapse > summary > span:first-child { flex: 1; }
+.builder-collapse-badge { font-size: 10px; font-weight: 500; text-transform: none; letter-spacing: 0; color: #8fb4cc; background: #0e1720; border: 1px solid #2b3e50; border-radius: 999px; padding: 2px 8px; }
+.builder-collapse-body { padding: 8px 10px 10px; border-top: 1px solid #253442; }
+.builder-item-collapse { border: 1px solid #263645; border-radius: 5px; background: #0f1720; margin: 6px 0; overflow: hidden; }
+.builder-item-collapse > summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; font-size: 11px; font-weight: 600; color: #c9d8e6; cursor: pointer; user-select: none; list-style: none; background: #141f2b; }
+.builder-item-collapse > summary::-webkit-details-marker { display: none; }
+.builder-item-collapse > summary::before { content: "▸"; font-size: 10px; color: #6d8ea8; margin-right: 6px; transition: transform .15s ease; }
+.builder-item-collapse[open] > summary::before { transform: rotate(90deg); }
+.builder-item-collapse > summary > span:first-child { flex: 1; }
+.builder-item-meta { font-size: 10px; font-weight: 400; color: #879eb2; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+.builder-item-body { padding: 6px 10px 10px; border-top: 1px solid #1f2d3a; }
 .builder-status { white-space: pre-wrap; overflow-wrap: anywhere; }
 .builder-status.error { color: #ff9999; }

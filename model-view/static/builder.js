@@ -98,6 +98,8 @@ export class Builder {
     this.changes = new Map();
     // Create-mode material/analysis state
     this.createSection = 'geometry';
+    this.openGroups = new Set(['general']);
+    this.openItems = new Set(['strips:0', 'spans:0', 'piers:0', 'abutments:left_abutment']);
     this.createMaterials = [];
     this.createAnalyses = [];
     this.createCollections = {};
@@ -192,7 +194,7 @@ export class Builder {
     return body;
   }
 
-  field(parent, object, key, fallbackValue) {
+  field(parent, object, key, fallbackValue, onChange = null) {
     if (object[key] === undefined && fallbackValue !== undefined) {
       object[key] = fallbackValue;
     }
@@ -203,20 +205,64 @@ export class Builder {
     input.value = object[key] ?? '';
     input.addEventListener('change', () => {
       object[key] = input.type === 'number' ? (input.value === '' ? null : Number(input.value)) : input.value;
+      if (onChange) onChange();
     });
     label.append(input);
     parent.append(label);
   }
 
-  fields(title, object, keys, parent = this.root, defaultsMap = {}) {
-    const section = node('section');
-    section.className = 'builder-group';
-    section.append(node('h3', title));
+  fieldsGrid(object, keys, parent, defaultsMap = {}, onChange = null) {
     const grid = node('div');
     grid.className = 'builder-grid';
-    for (const key of keys) this.field(grid, object, key, defaultsMap[key]);
-    section.append(grid);
-    parent.append(section);
+    for (const key of keys) this.field(grid, object, key, defaultsMap[key], onChange);
+    parent.append(grid);
+  }
+
+  collapsibleGroup(id, title, badgeText, parent = this.root) {
+    const details = node('details');
+    details.className = 'builder-collapse';
+    details.open = this.openGroups.has(id);
+    details.addEventListener('toggle', () => {
+      if (details.open) this.openGroups.add(id);
+      else this.openGroups.delete(id);
+    });
+    const summary = node('summary');
+    summary.append(node('span', title));
+    if (badgeText !== undefined && badgeText !== '') {
+      const badge = node('span', String(badgeText));
+      badge.className = 'builder-collapse-badge';
+      summary.append(badge);
+    }
+    const body = node('div');
+    body.className = 'builder-collapse-body';
+    details.append(summary, body);
+    parent.append(details);
+    return body;
+  }
+
+  collapsibleItem(id, title, getMetaText, parent) {
+    const details = node('details');
+    details.className = 'builder-item-collapse';
+    details.open = this.openItems.has(id);
+    details.addEventListener('toggle', () => {
+      if (details.open) this.openItems.add(id);
+      else this.openItems.delete(id);
+    });
+    const summary = node('summary');
+    summary.append(node('span', title));
+    const meta = node('span', getMetaText ? getMetaText() : '');
+    meta.className = 'builder-item-meta';
+    summary.append(meta);
+    const body = node('div');
+    body.className = 'builder-item-body';
+    details.append(summary, body);
+    parent.append(details);
+    return {
+      body,
+      updateMeta: () => {
+        if (getMetaText) meta.textContent = getMetaText();
+      },
+    };
   }
 
   button(label, action, parent) {
@@ -312,20 +358,50 @@ export class Builder {
       return;
     }
 
-    this.fields('General', this.payload, ['name', 'nl']);
+    const generalBody = this.collapsibleGroup('general', 'General', `nl = ${this.payload.nl ?? ''}`);
+    this.fieldsGrid(this.payload, ['name', 'nl'], generalBody);
+
     const collections = [
-      ['strips', 'Deck strip', ['width', 'height', 'material_key'], { material_key: 0 }],
-      ['spans', 'Span', ['L', 'f', 'Tb', 'Tt', 'Asx', 'Adx', 'S1', 'S2', 'Dz', 'material_key', 'material_pulvino_key'], { material_key: 18, material_pulvino_key: 22 }],
-      ['piers', 'Pier', ['H', 'Hf', 'b2', 'B1f', 'B3f', 'W1f', 'W3f', 'material_key', 'material_foundation_key', 'Kz'], { material_key: 18, material_foundation_key: 141, Kz: 0.1 }],
+      [
+        'strips',
+        'Deck strips',
+        'Deck strip',
+        ['width', 'height', 'material_key'],
+        { material_key: 0 },
+        item => `W ${item.width ?? '—'} · H ${item.height ?? '—'}`,
+      ],
+      [
+        'spans',
+        'Spans',
+        'Span',
+        ['L', 'f', 'Tb', 'Tt', 'Asx', 'Adx', 'S1', 'S2', 'Dz', 'material_key', 'material_pulvino_key'],
+        { material_key: 18, material_pulvino_key: 22 },
+        item => `L ${item.L ?? '—'} · f ${item.f ?? '—'}`,
+      ],
+      [
+        'piers',
+        'Piers',
+        'Pier',
+        ['H', 'Hf', 'b2', 'B1f', 'B3f', 'W1f', 'W3f', 'material_key', 'material_foundation_key', 'Kz'],
+        { material_key: 18, material_foundation_key: 141, Kz: 0.1 },
+        item => `H ${item.H ?? '—'} · b2 ${item.b2 ?? '—'}`,
+      ],
     ];
-    for (const [key, title, fieldKeys, defaultsMap] of collections) {
-      this.payload[key].forEach((item, i) => {
-        this.fields(`${title} ${i + 1}`, item, fieldKeys, this.root, defaultsMap);
-        if (key !== 'piers') {
+    for (const [key, groupTitle, itemTitle, fieldKeys, defaultsMap, metaFn] of collections) {
+      const items = this.payload[key] || [];
+      const groupBody = this.collapsibleGroup(key, groupTitle, items.length);
+      if (!items.length) {
+        groupBody.append(node('p', 'No intermediate piers (single-span bridge).'));
+      }
+      items.forEach((item, i) => {
+        const itemId = `${key}:${i}`;
+        const { body: itemBody, updateMeta } = this.collapsibleItem(itemId, `${itemTitle} ${i + 1}`, () => metaFn(item), groupBody);
+        this.fieldsGrid(item, fieldKeys, itemBody, defaultsMap, updateMeta);
+        if (key !== 'piers' && items.length > 1) {
           const controls = node('div');
           controls.className = 'builder-actions';
           this.button(
-            `Remove ${title.toLowerCase()}`,
+            `Remove ${itemTitle.toLowerCase()} ${i + 1}`,
             () => {
               if (this.payload[key].length > 1) {
                 this.payload[key].splice(i, 1);
@@ -335,17 +411,21 @@ export class Builder {
             },
             controls
           );
-          this.root.append(controls);
+          itemBody.append(controls);
         }
       });
       if (key !== 'piers') {
         const controls = node('div');
         controls.className = 'builder-actions';
         this.button(
-          `+ Add ${title.toLowerCase()}`,
+          `+ Add ${itemTitle.toLowerCase()}`,
           () => {
+            const newIdx = this.payload[key].length;
             this.payload[key].push(structuredClone(this.payload[key].at(-1)));
+            this.openGroups.add(key);
+            this.openItems.add(`${key}:${newIdx}`);
             if (key === 'spans') {
+              const newPierIdx = this.payload.piers.length;
               this.payload.piers.push(
                 structuredClone(
                   this.payload.piers.at(-1) || {
@@ -353,22 +433,45 @@ export class Builder {
                   }
                 )
               );
+              this.openItems.add(`piers:${newPierIdx}`);
             }
             this.render();
           },
           controls
         );
-        this.root.append(controls);
+        groupBody.append(controls);
       }
     }
+
+    const abutmentsBody = this.collapsibleGroup('abutments', 'Abutments', '2');
     for (const [key, title] of [['left_abutment', 'Left abutment'], ['right_abutment', 'Right abutment']]) {
-      this.fields(title, this.payload[key], ['H', 'Hf', 'b2', 'B1f', 'B3f', 'W1f', 'W3f', 'material_key', 'material_foundation_key', 'Kz'], this.root, {
-        material_key: 18, material_foundation_key: 141, Kz: 0.1,
-      });
+      const item = this.payload[key];
+      const { body: itemBody, updateMeta } = this.collapsibleItem(
+        `abutments:${key}`,
+        title,
+        () => `H ${item.H ?? '—'} · b2 ${item.b2 ?? '—'}`,
+        abutmentsBody
+      );
+      this.fieldsGrid(
+        item,
+        ['H', 'Hf', 'b2', 'B1f', 'B3f', 'W1f', 'W3f', 'material_key', 'material_foundation_key', 'Kz'],
+        itemBody,
+        { material_key: 18, material_foundation_key: 141, Kz: 0.1 },
+        updateMeta
+      );
     }
-    this.fields('Elevation', this.payload.elevation, ['H1', 'H2', 'H3', 'layer1_material_key', 'layer2_material_key', 'layer3_material_key'], this.root, {
-      layer1_material_key: 19, layer2_material_key: 20, layer3_material_key: 21,
-    });
+
+    const elevationBody = this.collapsibleGroup(
+      'elevation',
+      'Elevation & layers',
+      `${this.payload.elevation.H1 ?? '—'} / ${this.payload.elevation.H2 ?? '—'} / ${this.payload.elevation.H3 ?? '—'}`
+    );
+    this.fieldsGrid(
+      this.payload.elevation,
+      ['H1', 'H2', 'H3', 'layer1_material_key', 'layer2_material_key', 'layer3_material_key'],
+      elevationBody,
+      { layer1_material_key: 19, layer2_material_key: 20, layer3_material_key: 21 }
+    );
   }
 
   async loadSource(encoded, name, index = 0) {
