@@ -6,11 +6,9 @@ Repository-level operating notes for coding agents working on HiStrA View.
 
 - `model-view/` is the deliverable: a local browser service for HRX models,
   saved results and bridge authoring. It has a Python projection server
-  (`server.py`, `result_preview.py`, `hrx_model.py`, `builder_api.py`) and a
-  Three.js frontend under `static/`. The builder delegates generation and
-  patching to the separately maintained `histra-job-builder` package pinned in
-  `model-view/requirements-preview.txt`; keep that pin in step with the builder
-  commit that provides the APIs used here.
+  (`server.py`, `result_preview.py`, `hrx_model.py`, `builder_api.py`), the
+  self-contained `histra_builder/` engine, and a Three.js frontend under
+  `static/`.
 - `histra-python/` is the Python DMEM solver. Its own rules and numerical
   invariants are in `histra-python/AGENTS.md`; read that file before changing
   solver code.

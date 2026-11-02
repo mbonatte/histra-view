@@ -2,6 +2,5 @@ numpy==2.3.5
 scipy==1.18.1
 numba==0.68.0
 libarchive-c==5.3
-
-# The builder is maintained in its own repository.
-histra-job-builder @ git+https://github.com/mbonatte/histra-job-builder.git@fdb1d028e75944a4cb9a839d3acc3f94e18f836e
+lxml>=5.2
+pydantic>=2.7

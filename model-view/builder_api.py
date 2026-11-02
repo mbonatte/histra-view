@@ -1,4 +1,4 @@
-"""Bridge authoring backed by the separately maintained HiStrA builder."""
+"""Bridge authoring and HRX material/analysis editor backed by local histra_builder."""
 import base64
 import binascii
 import tempfile
@@ -8,8 +8,14 @@ MAX_SOURCE = 32 * 1024 * 1024
 
 
 def defaults():
-    from histra_builder.ui import default_payload
-    return default_payload()
+    from histra_builder.ui import default_payload, export_hrx
+    payload = default_payload()
+    raw = export_hrx(payload)
+    encoded = base64.b64encode(raw).decode('ascii')
+    return {
+        **payload,
+        'inspection': inspect_source(encoded),
+    }
 
 
 def catalog():
@@ -280,34 +286,21 @@ def _edit_operations(root, request, collections):
             else:
                 xpath = element.getroottree().getpath(element)
             patches.append(PatchOperation(op='delete', xpath=xpath))
+            root.remove(element)
+            if collection == 'analysis':
+                collections['analysis'] = root.findall('Analysis')
+            else:
+                collections['material'] = [
+                    item for item in root.findall('Template')
+                    if item.get('TypeOf', '').endswith('Material')
+                ]
         else:
             raise ValueError('Unknown edit operation.')
     return patches
 
 
-def build(request):
-    from histra_builder.compiler import compile_job
-    from histra_builder.importer import job_from_hrx
+def _change_patches(collections, changes):
     from histra_builder.models import PatchOperation
-    from histra_builder.templates import TemplateRegistry
-    from histra_builder.ui import export_hrx
-    if request.get('mode') == 'create':
-        payload = request.get('payload')
-        if not isinstance(payload, dict):
-            raise ValueError('A bridge definition is required.')
-        spans, strips = payload.get('spans', []), payload.get('strips', [])
-        if not 1 <= len(spans) <= 12 or not 1 <= len(strips) <= 20:
-            raise ValueError('Use 1–12 spans and 1–20 strips.')
-        nl = float(payload.get('nl', 0))
-        if not 5 <= nl <= 100000 or sum(float(s.get('L', 0)) for s in spans) / nl > 500:
-            raise ValueError('Mesh size must be at least 5 and the total span length / mesh size at most 500.')
-        return export_hrx(payload)
-    if request.get('mode') != 'edit':
-        raise ValueError('Choose a build mode.')
-    data = _source(request.get('source'))
-    root = _document(data)
-    collections = _collections(root)
-    changes = request.get('changes', [])
     if not isinstance(changes, list) or len(changes) > 1000:
         raise ValueError('Too many changes.')
     patches = []
@@ -335,12 +328,56 @@ def build(request):
             raise ValueError('Invalid attribute or value.')
         if value != element.get(attribute):
             patches.append(PatchOperation(op='set_attribute', xpath=element.getroottree().getpath(element), attribute=attribute, value=value))
-    patches.extend(_edit_operations(root, request, collections))
+            element.set(attribute, value)
+    return patches
+
+
+def _apply_patches(data, request):
+    from histra_builder.compiler import compile_job
+    from histra_builder.importer import job_from_hrx
+    from histra_builder.templates import TemplateRegistry
+    steps = request.get('steps', [])
+    if not isinstance(steps, list) or len(steps) > 100:
+        raise ValueError('Too many edit steps.')
+    batches = [
+        *(step for step in steps if isinstance(step, dict)),
+        {'changes': request.get('changes', []), 'operations': request.get('operations', [])},
+    ]
+    if not any(batch.get('changes') or batch.get('operations') for batch in batches):
+        return data
+    root = _document(data)
+    collections = _collections(root)
+    patches = []
+    for batch in batches:
+        patches.extend(_change_patches(collections, batch.get('changes', [])))
+        patches.extend(_edit_operations(root, batch, collections))
+    if not patches:
+        return data
     with tempfile.TemporaryDirectory(prefix='histra-view-builder-') as directory:
         registry = TemplateRegistry(Path(directory))
         job = job_from_hrx(data, job_id='view', template_id='source', registry=registry, validate_xml=False)
         job.model.patches = patches
         return compile_job(job, registry).hrx_bytes
+
+
+def build(request):
+    from histra_builder.ui import export_hrx
+    if request.get('mode') == 'create':
+        payload = request.get('payload')
+        if not isinstance(payload, dict):
+            raise ValueError('A bridge definition is required.')
+        spans, strips = payload.get('spans', []), payload.get('strips', [])
+        if not 1 <= len(spans) <= 12 or not 1 <= len(strips) <= 20:
+            raise ValueError('Use 1–12 spans and 1–20 strips.')
+        nl = float(payload.get('nl', 0))
+        if not 5 <= nl <= 100000 or sum(float(s.get('L', 0)) for s in spans) / nl > 500:
+            raise ValueError('Mesh size must be at least 5 and the total span length / mesh size at most 500.')
+        data = export_hrx(payload)
+        return _apply_patches(data, request)
+    if request.get('mode') != 'edit':
+        raise ValueError('Choose a build mode.')
+    data = _source(request.get('source'))
+    return _apply_patches(data, request)
 
 
 def apply_edits(request):

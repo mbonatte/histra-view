@@ -491,7 +491,12 @@ async function readModel(file = null) {
     const response = await fetch(file ? '/api/model' : '/api/model/example', file ? { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: file } : {});
     const model = await response.json();
     if (!response.ok) throw new Error(model.error || `HTTP ${response.status}`);
-    if (file) model.name = file.name;
+    if (file) {
+      model.name = file.name;
+      const reader = new FileReader();
+      reader.onload = () => builder.setViewerSource(String(reader.result).split(',')[1], file.name);
+      reader.readAsDataURL(file);
+    }
     loadModel(model);
   } catch (error) {
     showMessage(error.message || String(error), true);

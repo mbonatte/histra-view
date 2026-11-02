@@ -40,11 +40,11 @@ original file is not overwritten. Values are not engineering-validated; recomput
 results after changes. Editing geometry is not yet supported. Creation uses the
 bridge generator’s supported options.
 
-The builder is maintained separately at
-[HiStrA Job Builder](https://github.com/mbonatte/histra-job-builder), pinned
-in `model-view/requirements-preview.txt`. Installing that requirements file
-requires Git and access to the repository. The viewer remains usable without
-it, but the Build model workspace requires it.
+The builder engine lives directly under `model-view/histra_builder/`, so bridge
+creation and HRX material/analysis editing are self-contained inside `model-view`
+with no external repository dependency. Both **Create a bridge** and **Edit
+existing HRX** modes support adding, duplicating, deleting, and editing
+materials and analyses.
 
 ## Importing results
 

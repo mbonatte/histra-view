@@ -1,11 +1,12 @@
 # HiStrA model view
 
-Local browser service for the serialized HRX Quad model plus a bridge builder.
-Mesh inspection is independent of the Python numerical runtime; material previews
-use its spring laws in an isolated worker. Opening a model never prepares it or
-runs an analysis. The `#build` workspace creates bridge HRX files and edits
-existing material, analysis and load settings through the separately maintained
-`histra-job-builder`; it never overwrites the uploaded file.
+Local browser service for the serialized HRX Quad model plus a self-contained
+bridge builder (`histra_builder/`). Mesh inspection is independent of the Python
+numerical runtime; material previews use its spring laws in an isolated worker.
+Opening a model never prepares it or runs an analysis. The `#build` workspace
+creates bridge HRX files and edits/adds materials, analyses and load settings in
+both **Create a bridge** and **Edit existing HRX** modes; it never overwrites
+the uploaded file.
 
 ### Importing results
 

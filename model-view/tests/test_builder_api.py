@@ -168,6 +168,51 @@ class BuilderIntegrationTests(unittest.TestCase):
                 'operations': [{'op': 'drop_database'}],
             })
 
+    def test_create_mode_can_add_and_edit_materials_and_analyses(self):
+        self.assertIn('inspection', self.payload)
+        self.assertGreaterEqual(len(self.payload['inspection']['materials']), 6)
+        self.assertEqual(len(self.payload['inspection']['analyses']), 13)
+
+        step1 = apply_edits({
+            'mode': 'create',
+            'payload': self.payload,
+            'steps': [],
+            'changes': [{'collection': 'material', 'index': 0, 'node': [], 'attribute': 'Ehor', 'value': '2100'}],
+            'operations': [
+                {'op': 'add_material', 'template': '18'},
+                {'op': 'add_analysis', 'template': 'Modal_0'},
+            ],
+        })
+        self.assertEqual(len(step1['inspection']['analyses']), 14)
+        self.assertEqual(step1['inspection']['analyses'][-1]['name'], 'Modal_0 (2)')
+        new_mat_index = len(step1['inspection']['materials']) - 1
+        self.assertEqual(step1['inspection']['materials'][new_mat_index]['name'], 'Masonry (2)')
+
+        final_hrx = build({
+            'mode': 'create',
+            'payload': self.payload,
+            'steps': [{
+                'changes': [{'collection': 'material', 'index': 0, 'node': [], 'attribute': 'Ehor', 'value': '2100'}],
+                'operations': [
+                    {'op': 'add_material', 'template': '18'},
+                    {'op': 'add_analysis', 'template': 'Modal_0'},
+                ],
+            }],
+            'changes': [
+                {'collection': 'material', 'index': new_mat_index, 'node': [], 'attribute': 'Ehor', 'value': '3333'},
+                {'collection': 'analysis', 'index': 13, 'node': [], 'attribute': 'MaxIterations', 'value': '42'},
+            ],
+        })
+        root = ET.fromstring(final_hrx)
+        materials = [e for e in root.findall('Template') if e.get('TypeOf', '').endswith('Material')]
+        analyses = root.findall('Analysis')
+        self.assertEqual(materials[0].get('Ehor'), '2100')
+        self.assertEqual(materials[-1].get('Name'), 'Masonry (2)')
+        self.assertEqual(materials[-1].get('Ehor'), '3333')
+        self.assertEqual(len(analyses), 14)
+        self.assertEqual(analyses[-1].get('Name'), 'Modal_0 (2)')
+        self.assertEqual(analyses[-1].get('MaxIterations'), '42')
+
 
 if __name__ == '__main__':
     unittest.main()
