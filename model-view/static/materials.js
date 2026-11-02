@@ -93,7 +93,7 @@ export class MaterialsPage {
     const title = node('div');
     title.append(node('div', 'eyebrow', 'MATERIAL PROPERTIES'), node('h1', '', material.name), node('p', '', a.Description || a.PurposeType || 'Material definition'));
     const rightGroup = node('div', 'material-header-actions');
-    const badge = node('span', 'material-mode', masonry ? `${a.SimpleMode === 'true' ? 'Simple' : a.SimpleMode === 'false' ? 'Advanced' : 'Unspecified'} mode · saved` : a.PurposeType || 'Material');
+    const badge = node('span', 'material-mode', masonry ? 'Advanced mode · Masonry' : a.PurposeType || 'Material');
     rightGroup.append(badge);
     if (this.onEdit) {
       const editBtn = node('button', 'secondary', '✎ Edit / Add in Build model →');
@@ -112,8 +112,8 @@ export class MaterialsPage {
     for (const [key, definition] of Object.entries(unitSets)) units.add(new Option(definition.label, key, false, key === this.units));
     units.onchange = () => { this.units = units.value; this.render(); };
     unitsLabel.append(units); header.append(unitsLabel);
-    const tabs = masonry ? [['general', 'General'], ['rocking', 'Rocking mechanism'], ['shear', 'Shear mechanism'], ['sliding', 'Sliding mechanism'], ['all', 'All properties']]
-      : [['general', 'General'], ['all', 'All properties']];
+    const tabs = masonry ? [['general', 'General'], ['rocking', 'Rocking mechanism'], ['shear', 'Shear mechanism'], ['sliding', 'Sliding mechanism']]
+      : [['general', 'General']];
     if (!tabs.some(([key]) => key === this.tab)) this.tab = 'general';
     const tablist = $('materialMechanismTabs');
     tablist.replaceChildren();
@@ -132,9 +132,8 @@ export class MaterialsPage {
     if (this.tab === 'rocking') this.rocking(a, content);
     else if (this.tab === 'shear') this.shear(a, content);
     else if (this.tab === 'sliding') this.sliding(a, content);
-    else if (this.tab === 'all') this.all(a, content);
     else this.general(a, content, masonry);
-    content.append(node('p', 'material-footnote', 'Display conversion only · HRX base units: kN and cm · 1 = dimensionless · — = not serialized. All properties preserves the original values. Reference diagrams are schematic; the hysteresis preview is calculated using Python spring laws.'));
+    content.append(node('p', 'material-footnote', 'Display conversion only · HRX base units: kN and cm · 1 = dimensionless · — = not serialized. Reference diagrams are schematic; the hysteresis preview is calculated using Python spring laws.'));
   }
 
   table(title, columns, groups, attributes, raw = false, showUnits = true) {
@@ -244,9 +243,6 @@ export class MaterialsPage {
 
   general(a, content, masonry) {
     if (masonry) {
-      // The General tab is deliberately limited to the quantities a structural
-      // engineer reads first. Reference ranges and NTC improvement options are
-      // not mixed into this summary; the serialized values remain in All properties.
       const basic = [
         ['Specific weight, W', a.w !== undefined ? 'w' : 'Gamma'],
         ['Young’s modulus, E', 'Ehor'],
@@ -262,38 +258,7 @@ export class MaterialsPage {
       content.append(this.table('Identification', ['Value'], [['', [
         ['Name', 'Name'], ['Description', 'Description'], ['Material type', 'PurposeType'],
       ]]], a, false, false));
-      content.append(this.table('Assessment basis', ['Value'], [['', [
-        ['Masonry typology', 'existentMasonryMaterial'],
-        ['Existing masonry', 'IsExistent'],
-        ['Knowledge level', 'LC_'],
-        ['Partial safety factor, γM', 'gammam'],
-      ]]], a, false, false));
-      if (a.SimpleMode === 'true') {
-        const corrections = [
-          ['Malta', 'Good mortar', 'MaltaValue'],
-          ['Giunti', 'Thin joints (< 10 mm)', 'GiuntiValue'],
-          ['Ricorsi', 'Brick rows or listature', 'RicorsiValue'],
-          ['Connessioni', 'Transverse connections', 'ConnessioniValue'],
-          ['Nucleo', 'Poor-quality or large core', 'NucleoValue'],
-          ['Iniezioni', 'Grout injection', 'IniezioniValue'],
-          ['Intonaco', 'Reinforced plaster', 'IntonacoValue'],
-          ['Diatoni', 'Artificial diatoni', 'DiatoniValue'],
-          ['Ristilatura', 'Reinforced stitching', 'RistilaturaValue'],
-        ].filter(([, , valueKey]) => Number(a[valueKey]) >= 0);
-        const details = node('details', 'material-advanced-details');
-        details.append(node('summary', '', 'NTC simple-mode improvement options'));
-        details.append(node('p', 'material-note', 'Flags serialized by HiStrA’s NTC simple-mode editor (Circ. 2019 n. 7). “Coefficient if applied” is the saved multiplier for that option; the viewer does not recalculate the combined coefficient.'));
-        if (corrections.length) {
-          details.append(this.table('Improvement options', ['Applied', 'Coefficient if applied'],
-            [['', corrections.map(([flag, label, valueKey]) => [label, flag, valueKey])]], a, false, false));
-        } else {
-          details.append(node('p', 'material-note', 'No improvement options are applicable to the saved typology.'));
-        }
-        content.append(details);
-      } else {
-        content.append(node('p', 'material-note', 'Advanced-mode material: NTC simple-mode improvement options are not applied to the saved design values. All serialized fields remain in All properties.'));
-      }
-      content.append(node('p', 'material-note', 'Values are the saved design values in HRX; changing units is display-only. Directional/orthotropic values remain in the Rocking, Shear, and Sliding tabs. This viewer does not recompute the material.'));
+      content.append(node('p', 'material-note', 'Advanced-mode masonry characterization: directional and nonlinear mechanism parameters are organized under Rocking, Shear, and Sliding.'));
     } else {
       const fields = [['Young’s modulus, E', 'E'], ['Shear modulus, G', 'G'], ['Poisson ratio, ν', 'Poisson'], ['Thermal expansion, α', 'Alfa'],
         ['Compressive strength', 'fykCompr'], ['Tensile strength', 'fykTraz'], ['Steel law', 'SteelType']].filter(([, key]) => a[key] !== undefined);
@@ -304,15 +269,5 @@ export class MaterialsPage {
         ['Name', 'Name'], ['Description', 'Description'], ['Material type', 'PurposeType'],
       ]]], a, false, false));
     }
-  }
-
-  all(attributes, content) {
-    content.append(node('p', 'material-note', 'Complete serialized definition. Hover a value in the mechanism tables to see its HRX attribute name.'));
-    const rows = Object.keys(attributes).sort().map(key => [key, key]);
-    // Raw view deliberately preserves the exact serialized strings.
-    const section = this.table('All HRX attributes', ['Serialized value'], [['', rows]], attributes, true);
-    const cells = section.querySelectorAll('td');
-    rows.forEach(([, key], i) => { cells[i].textContent = attributes[key]; });
-    content.append(section);
   }
 }

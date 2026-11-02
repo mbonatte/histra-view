@@ -1,3 +1,10 @@
+import { rockingGroups, shearGroups, slidingGroups } from './material-properties.js';
+
+const isMasonryItem = item => {
+  const a = item?.attributes || item?.nodes?.[0]?.attributes || {};
+  return a.PurposeType === 'MasonryMaterial' || a.Ehor !== undefined;
+};
+
 const labels = {
   name: 'Download filename',
   nl: 'Mesh size',
@@ -98,7 +105,8 @@ export class Builder {
     this.changes = new Map();
     // Create-mode material/analysis state
     this.createSection = 'geometry';
-    this.openGroups = new Set(['general']);
+    this.materialTab = 'general';
+    this.openGroups = new Set(['general', 'mat:general', 'mat:rocking:0', 'mat:rocking:1', 'mat:rocking:2', 'mat:shear:0', 'mat:shear:1', 'mat:shear:2', 'mat:sliding:0']);
     this.openItems = new Set(['strips:0', 'spans:0', 'piers:0', 'abutments:left_abutment']);
     this.createMaterials = [];
     this.createAnalyses = [];
@@ -325,10 +333,11 @@ export class Builder {
         'Define a parametric masonry bridge and customize its materials, analyses, and load settings. Preview generates the same HRX that will be downloaded.'
       )
     );
+    const masonryCount = this.createMaterials.filter(isMasonryItem).length;
     this.renderTabs(
       [
         ['geometry', 'Geometry'],
-        ['material', `Materials (${this.createMaterials.length})`],
+        ['material', `Materials (${masonryCount})`],
         ['analysis', `Analyses (${this.createAnalyses.length})`],
         ['loads', 'Loads'],
       ],
@@ -535,10 +544,11 @@ export class Builder {
     }
 
     if (!this.source) return;
-    this.root.append(node('p', `${this.sourceName} · ${this.materials.length} materials · ${this.analyses.length} analyses`));
+    const masonryCount = this.materials.filter(isMasonryItem).length;
+    this.root.append(node('p', `${this.sourceName} · ${masonryCount} masonry materials · ${this.analyses.length} analyses`));
     this.renderTabs(
       [
-        ['material', `Materials (${this.materials.length})`],
+        ['material', `Materials (${masonryCount})`],
         ['analysis', `Analyses (${this.analyses.length})`],
         ['loads', 'Loads'],
       ],
@@ -589,17 +599,23 @@ export class Builder {
       this.selectedKind = fixedCategory;
     }
 
-    const items = collections[activeKind] || [];
-    if (!items.length) {
+    const allItems = collections[activeKind] || [];
+    const indexedItems = activeKind === 'material'
+      ? allItems.map((item, idx) => ({ item, idx })).filter(({ item }) => isMasonryItem(item))
+      : allItems.map((item, idx) => ({ item, idx }));
+    if (!indexedItems.length) {
       this.root.append(node('p', 'No entries in this file.'));
       return;
     }
 
     const select = node('select');
     select.setAttribute('aria-label', 'Model entry');
-    items.forEach((item, i) => select.add(new Option(`${item.name} [${item.key}]`, i)));
-    const selectedIndex = Math.max(0, Math.min(this.selectedObject || 0, items.length - 1));
-    select.value = selectedIndex;
+    indexedItems.forEach(({ item, idx }) => select.add(new Option(`${item.name} [${item.key}]`, idx)));
+    const validSelected = indexedItems.some(({ idx }) => idx === this.selectedObject)
+      ? this.selectedObject
+      : indexedItems[0].idx;
+    this.selectedObject = validSelected;
+    select.value = validSelected;
     select.addEventListener('change', () => {
       this.selectedObject = Number(select.value);
       this.selectedNode = 0;
@@ -607,10 +623,15 @@ export class Builder {
     });
     this.root.append(select);
 
-    const item = items[selectedIndex];
-    this.renderManage(activeKind, items, selectedIndex, isCreate);
+    const item = allItems[validSelected];
+    this.renderManage(activeKind, allItems, validSelected, isCreate);
     if (!item.nodes.length) {
       this.root.append(node('p', 'No editable attributes.'));
+      return;
+    }
+
+    if (activeKind === 'material') {
+      this.renderMaterialEditor(item, validSelected, changes);
       return;
     }
 
@@ -631,7 +652,7 @@ export class Builder {
     const grid = node('div');
     grid.className = 'builder-grid';
     for (const [key, original] of Object.entries(entry.attributes)) {
-      const id = `${activeKind}:${selectedIndex}:${entry.path.join('.')}:${key}`;
+      const id = `${activeKind}:${validSelected}:${entry.path.join('.')}:${key}`;
       const label = node('label', key);
       let input;
       if (activeKind === 'analysis' && !entry.path.length && key === 'AnalysisType' && ['1', '2', '3', '4', '5'].includes(original)) {
@@ -652,12 +673,180 @@ export class Builder {
       input.value = changes.get(id)?.value ?? original;
       input.addEventListener('change', () => {
         if (input.value === original) changes.delete(id);
-        else changes.set(id, { collection: activeKind, index: selectedIndex, node: entry.path, attribute: key, value: input.value });
+        else changes.set(id, { collection: activeKind, index: validSelected, node: entry.path, attribute: key, value: input.value });
       });
       label.append(input);
       grid.append(label);
     }
     this.root.append(grid);
+  }
+
+  renderMaterialEditor(item, selectedIndex, changes) {
+    const entry = item.nodes[0];
+    const attrs = entry.attributes;
+    const getVal = key => changes.get(`material:${selectedIndex}::${key}`)?.value ?? attrs[key];
+    const setVal = (key, val) => {
+      const id = `material:${selectedIndex}::${key}`;
+      const original = attrs[key];
+      if (val === original) changes.delete(id);
+      else changes.set(id, { collection: 'material', index: selectedIndex, node: [], attribute: key, value: val });
+      if (attrs.SimpleMode === 'true') {
+        changes.set(`material:${selectedIndex}::SimpleMode`, {
+          collection: 'material',
+          index: selectedIndex,
+          node: [],
+          attribute: 'SimpleMode',
+          value: 'false',
+        });
+      }
+    };
+
+    const addAttrField = (parent, labelText, key, customOptions = null, rerenderOnChange = false) => {
+      if (!key || attrs[key] === undefined) return;
+      const original = attrs[key];
+      const label = node('label', labelText);
+      let input;
+      if (customOptions) {
+        input = node('select');
+        for (const [val, txt] of customOptions) input.add(new Option(txt, val));
+      } else if (ENUMS[key]) {
+        input = node('select');
+        for (const val of [...new Set([...ENUMS[key], original])]) {
+          input.add(new Option(val.replace(/([a-z])([A-Z])/g, '$1 $2'), val));
+        }
+      } else if (['true', 'false'].includes(original)) {
+        input = node('select');
+        input.add(new Option('Yes', 'true'));
+        input.add(new Option('No', 'false'));
+      } else {
+        input = node('input');
+      }
+      input.value = getVal(key) ?? '';
+      input.addEventListener('change', () => {
+        setVal(key, input.value);
+        if (rerenderOnChange) this.render();
+      });
+      label.append(input);
+      parent.append(label);
+    };
+
+    this.renderTabs(
+      [
+        ['general', 'General'],
+        ['rocking', 'Rocking'],
+        ['shear', 'Shear'],
+        ['sliding', 'Sliding'],
+      ],
+      this.materialTab || 'general',
+      tab => {
+        this.materialTab = tab;
+        this.render();
+      }
+    );
+
+    const tab = this.materialTab || 'general';
+    if (tab === 'general') {
+      const idBody = this.collapsibleGroup('mat:general', 'Identification & basic properties', 'Advanced');
+      const grid = node('div');
+      grid.className = 'builder-grid';
+      addAttrField(grid, 'Name', 'Name');
+      addAttrField(grid, 'Description', 'Description');
+      addAttrField(grid, 'Specific weight, W', attrs.w !== undefined ? 'w' : 'Gamma');
+      addAttrField(grid, 'Young’s modulus, E', 'Ehor');
+      addAttrField(grid, 'Shear modulus, G', 'Gd');
+      addAttrField(grid, 'Compressive strength, fm', 'FmHor');
+      addAttrField(grid, 'Tensile strength, ft', 'FtmHor');
+      addAttrField(grid, 'Shear strength, τ₀', 'fvk0d');
+      addAttrField(grid, 'Cohesion, c', 'CohesionSlidingHor');
+      addAttrField(grid, 'Friction ratio, μ (sliding)', 'FrictionRatioSlidingHor');
+      addAttrField(grid, 'Friction ratio, μ (shear)', 'FrictionRatioShear');
+      idBody.append(grid);
+      return;
+    }
+
+    if (tab === 'rocking') {
+      const ort = getVal('ortpf') === 'true';
+      const behaviorGrid = node('div');
+      behaviorGrid.className = 'builder-grid';
+      addAttrField(
+        behaviorGrid,
+        'Behavior',
+        'ortpf',
+        [
+          ['false', 'Isotropic'],
+          ['true', 'Orthotropic'],
+        ],
+        true
+      );
+      addAttrField(behaviorGrid, 'Finite tensile ductility', 'IsDuctTraz');
+      addAttrField(behaviorGrid, 'Finite compressive ductility', 'IsDuctCompr');
+      this.root.append(behaviorGrid);
+
+      rockingGroups.forEach(([groupTitle, rows], idx) => {
+        const body = this.collapsibleGroup(`mat:rocking:${idx}`, groupTitle, ort ? 'Dir. 1&3 / Dir. 2' : 'Isotropic');
+        const grid = node('div');
+        grid.className = 'builder-grid';
+        for (const [label, keyHor, keyVer] of rows) {
+          if (ort && keyVer) {
+            addAttrField(grid, `${label} (Dir. 1 & 3)`, keyHor);
+            addAttrField(grid, `${label} (Dir. 2)`, keyVer);
+          } else {
+            addAttrField(grid, label, keyHor);
+          }
+        }
+        body.append(grid);
+      });
+      return;
+    }
+
+    if (tab === 'shear') {
+      shearGroups.forEach(([groupTitle, rows], idx) => {
+        const body = this.collapsibleGroup(`mat:shear:${idx}`, groupTitle);
+        const grid = node('div');
+        grid.className = 'builder-grid';
+        for (const [label, key] of rows) {
+          addAttrField(grid, label, key);
+        }
+        body.append(grid);
+      });
+      return;
+    }
+
+    if (tab === 'sliding') {
+      const ort = getVal('ortsc') === 'true';
+      const behaviorGrid = node('div');
+      behaviorGrid.className = 'builder-grid';
+      addAttrField(
+        behaviorGrid,
+        'Behavior',
+        'ortsc',
+        [
+          ['false', 'Isotropic'],
+          ['true', 'Orthotropic'],
+        ],
+        true
+      );
+      addAttrField(behaviorGrid, 'Check contact area', 'CheckContactArea');
+      this.root.append(behaviorGrid);
+
+      const rows = slidingGroups[0][1];
+      const dirs = ort
+        ? [
+            [0, 'Faces 1–3 · Dir. 1'],
+            [1, 'Faces 2–4 · Dir. 2'],
+            [2, 'Faces 5–6 · Dir. 3'],
+          ]
+        : [[0, 'Directional properties (Isotropic)']];
+      for (const [dirIdx, dirTitle] of dirs) {
+        const body = this.collapsibleGroup(`mat:sliding:${dirIdx}`, dirTitle);
+        const grid = node('div');
+        grid.className = 'builder-grid';
+        for (const [label, ...keys] of rows) {
+          addAttrField(grid, label, keys[dirIdx]);
+        }
+        body.append(grid);
+      }
+    }
   }
 
   renderManage(kind, items, index, isCreate = false) {
@@ -673,7 +862,8 @@ export class Builder {
     } else {
       const add = node('select');
       add.setAttribute('aria-label', 'Material template');
-      for (const template of this.catalog.materials) add.add(new Option(`${template.name} [${template.key}]`, template.key));
+      const masonryTemplates = this.catalog.materials.filter(t => !t.type || t.type.endsWith('.MasonryMaterial'));
+      for (const template of masonryTemplates) add.add(new Option(`${template.name} [${template.key}]`, template.key));
       actions.append(add);
       this.button('Add material', () => this.apply({ op: 'add_material', template: add.value }, items.length, isCreate), actions);
     }
