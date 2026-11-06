@@ -2,6 +2,19 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { AnalysesPage } from '../static/analyses.js';
 
+test('stage pill displays the selected scour extent and requested value', () => {
+  const oldDocument = globalThis.document;
+  globalThis.document = { createElement: tag => ({ tagName: tag, textContent: '', title: '' }), getElementById: () => null };
+  try {
+    const page = new AnalysesPage();
+    const [pill] = page.buildStagePills([{ key: 28, name: 'scour_4', status: 'completed', scourExtent: {
+      ratio: 619 / 1100, requestedRatio: .55, widthCm: 619, foundationWidthCm: 1100, interfaceCount: 48,
+    }}]);
+    assert.match(pill.textContent, /selected extent 56\.27%/);
+    assert.match(pill.title, /Requested 55\.00%/);
+  } finally { globalThis.document = oldDocument; }
+});
+
 test('sends the λ target only for its selected analysis', async () => {
   const oldDocument = globalThis.document, oldFetch = globalThis.fetch;
   globalThis.document = { getElementById: () => null };

@@ -4,4 +4,4 @@ numba==0.67.0
 libarchive-c==5.3
 lxml>=5.2
 pydantic>=2.7
-histra-python @ git+https://github.com/mbonatte/histra-python.git@f8ef71dfab564ecc1a0d0c6716dd57618a2a7e25
+histra-python @ git+https://github.com/mbonatte/histra-python.git@fb4a6623f26620458e4849976ceb68ab1c17a589

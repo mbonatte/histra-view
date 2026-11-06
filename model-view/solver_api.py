@@ -495,7 +495,7 @@ def _run_job_worker(
             changed_scour_interfaces = set()
             if workflow:
                 from lxml import etree
-                from scour_workflow import pier_foundation_groups, select_ratio, apply_scour_stage
+                from scour_workflow import pier_foundation_groups, select_ratio, selected_scour_extent, apply_scour_stage
                 root = etree.fromstring(effective_hrx, parser=etree.XMLParser(resolve_entities=False, no_network=True))
                 wizard = root.find('WizardData')
                 if wizard is None:
@@ -513,6 +513,12 @@ def _run_job_worker(
                 group = groups[workflow['pier']-1]
                 stage_selections = {item['analysisKey']: select_ratio(group, item['ratio'], workflow['direction']) for item in workflow['stages']}
                 _append_log(job, f"Scour pier {workflow['pier']} from {workflow['direction']}; foundation width {group['ymax']-group['ymin']:.4g} cm.")
+                for item in workflow['stages']:
+                    extent = selected_scour_extent(group, stage_selections[item['analysisKey']], workflow['direction'])
+                    stage = next((s for s in job['stages'] if s['key'] == str(item['analysisKey'])), None)
+                    if stage is not None:
+                        stage['scourExtent'] = {**extent, 'requestedRatio': item['ratio']}
+                    _append_log(job, f"Scour analysis #{item['analysisKey']}: requested {item['ratio'] * 100:.2f}%; selected patch extent {extent['widthCm']:.4g} cm of {extent['foundationWidthCm']:.4g} cm ({extent['ratio'] * 100:.2f}%), {extent['interfaceCount']} interfaces.")
             executed_any = False
             stopped_run = False
             cancelled_run = False
@@ -711,6 +717,7 @@ def _run_job_worker(
                     }} if job['_arcLambdaTarget'] is not None else {}), **({
                         "scour_workflow": workflow,
                         "scour_interface_keys": {str(k): v for k, v in stage_selections.items()},
+                        "scour_selected_extents": {str(k): selected_scour_extent(group, v, workflow['direction']) for k, v in stage_selections.items()},
                         "intact_foundation_interface_keys": bottom_keys,
                     } if workflow else {})},
                 )

@@ -1,5 +1,5 @@
 import unittest
-from scour_workflow import select_ratio, normalize_workflow, configure_sequence
+from scour_workflow import select_ratio, selected_scour_extent, normalize_workflow, configure_sequence
 from types import SimpleNamespace
 
 class ScourSelectionTests(unittest.TestCase):
@@ -15,6 +15,16 @@ class ScourSelectionTests(unittest.TestCase):
         for value in (-.1,1.1,float('nan')):
             with self.assertRaises(ValueError):select_ratio(group,value)
         with self.assertRaises(ValueError):select_ratio(group,.2,'-X')
+
+    def test_selected_extent_uses_patch_edges_in_both_directions(self):
+        group={'ymin':0,'ymax':100,'entries':[(0,1,y,y-5,y+5,k) for k,y in enumerate((5,15,25,35,45,55,65,75,85,95),1)]}
+        for direction in ('-Y', '+Y'):
+            selected = select_ratio(group, .26, direction)
+            result = selected_scour_extent(group, selected, direction)
+            self.assertAlmostEqual(result['ratio'], .3)
+            self.assertEqual(result['widthCm'], 30)
+            self.assertEqual(result['interfaceCount'], 3)
+            self.assertEqual(selected_scour_extent(group, [], direction)['ratio'], 0)
 
     def test_sequence_includes_every_configured_scour_stage(self):
         def a(k,name,kind,previous):return SimpleNamespace(key=k,name=name,analysis_type=kind,initial_analysis_key=previous)

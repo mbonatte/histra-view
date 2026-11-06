@@ -62,6 +62,21 @@ def select_ratio(group, ratio, direction='-Y'):
     return sorted(e[5] for e in group['entries'] if e[2] >= group['ymax'] - value * width - 1e-4)
 
 
+def selected_scour_extent(group, selected, direction='-Y'):
+    """Report the selected patches' farthest edge from the requested start edge."""
+    if direction not in ('-Y', '+Y'):
+        raise ValueError('Choose the -Y or +Y scour edge.')
+    keys = set(selected)
+    entries = [entry for entry in group['entries'] if entry[5] in keys]
+    width = float(group['ymax'] - group['ymin'])
+    if width <= 0:
+        raise ValueError('Foundation has zero width.')
+    extent = (max(e[4] for e in entries) - group['ymin'] if direction == '-Y'
+              else group['ymax'] - min(e[3] for e in entries)) if entries else 0.0
+    return {'widthCm': float(extent), 'foundationWidthCm': width,
+            'ratio': float(extent / width), 'interfaceCount': len(entries)}
+
+
 def normalize_workflow(raw):
     if not isinstance(raw, dict):
         raise ValueError('Scour settings must be an object.')

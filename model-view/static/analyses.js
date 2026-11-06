@@ -439,6 +439,11 @@ export class AnalysesPage {
       const stepSuffix = st.steps ? ` · ${st.steps} ${st.analysisType === 5 ? 'modes' : 'steps'}` : '';
       const timeSuffix = st.runtimeSeconds ? ` (${Number(st.runtimeSeconds).toFixed(1)}s)` : '';
       pill.textContent = `${icon}${st.name} (#${st.key})${stepSuffix}${timeSuffix}`;
+      if (st.scourExtent) {
+        const e = st.scourExtent;
+        pill.textContent += ` · selected extent ${(100 * e.ratio).toFixed(2)}%`;
+        pill.title = `Requested ${(100 * e.requestedRatio).toFixed(2)}%; selected patch extent ${e.widthCm.toFixed(2)} cm of ${e.foundationWidthCm.toFixed(2)} cm (${e.interfaceCount} interfaces).`;
+      }
       pills.push(pill);
     });
     return pills;
@@ -564,7 +569,7 @@ export class AnalysesPage {
     const scour = node('details', 'solver-lateral-soil');
     scour.open = this.scourWorkflow.enabled;
     scour.append(node('summary', '', 'Staged foundation scour'));
-    scour.append(node('p', 'material-note', 'Assign intact masonry soil to all pier-foundation bottom interfaces before Vert. Each ratio is the total scoured width at that stage; stages run in order and retain the previous equilibrium state. Settings apply to this run.'));
+    scour.append(node('p', 'material-note', 'Assign intact masonry soil to all pier-foundation bottom interfaces before Vert. Each ratio selects whole patches by their centre, so the selected patch extent can differ from the requested width. Once the model is prepared, the run shows the actual extent from the chosen edge. Stages retain the previous equilibrium state.'));
     const toggleLabel = node('label', '', ' Enable staged scour');
     const toggle = node('input'); toggle.type = 'checkbox'; toggle.checked = this.scourWorkflow.enabled; toggle.disabled = isRunning;
     toggle.onchange = () => { this.scourWorkflow.enabled = toggle.checked; this.render(); };
