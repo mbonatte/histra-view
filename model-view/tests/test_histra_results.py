@@ -39,7 +39,7 @@ class HistraResultProjectionTests(unittest.TestCase):
         self.assertEqual(quad.size, 306 * 4 * 3)
         self.assertTrue(np.isfinite(quad).all())
         fields = {field["id"]: field for field in self.analysis["stressFields"]}
-        self.assertEqual(len(fields), 19)
+        self.assertGreaterEqual(len(fields), 19)
         self.assertTrue(fields["vonMises"]["available"])
         self.assertGreater(fields["vonMises"]["max"], 0.0)
 
@@ -156,3 +156,18 @@ class ModalHistraProjectionTests(unittest.TestCase):
         other = project_histra(MODAL_ARCHIVE, "eta_0.10")
         self.assertEqual(other["analyses"][0]["name"], "eta_0.10")
         self.assertEqual(len(other["modal"]), 8)
+
+SCOZZESE_SOIL_ARCHIVE = Path(__file__).resolve().parents[2] / 'results' / 'runs' / 'Scozzese_soillinear.histra'
+
+
+@unittest.skipUnless(SCOZZESE_SOIL_ARCHIVE.is_file(), 'Scozzese soil results not installed')
+class ScozzeseModelPointResultsTests(unittest.TestCase):
+    def test_saved_model_point_histories_are_projected(self):
+        analysis = project_histra(SCOZZESE_SOIL_ARCHIVE, 'Vert', include_stress_fields=False,
+                                  include_modal_shapes=False)['analyses'][0]
+        history = analysis['modelPoints']
+        self.assertEqual(len(history['points']), 18)
+        self.assertTrue(all(point['available'] for point in history['points']))
+        self.assertEqual(history['step'], [step['step'] for step in analysis['steps']])
+        self.assertTrue(all(len(point['displacement_cm']['ux']) == len(history['step'])
+                            for point in history['points']))

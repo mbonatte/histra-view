@@ -48,6 +48,16 @@ FIELD_DEFS = {
     "localStressOutOfPlane": {
         "label": "Local out-of-plane shear τ23", "unit": "MPa", "kind": "stress", "order": 120,
     },
+    "globalStrainX": {"label": "Global strain εX", "unit": "–", "kind": "strain", "order": 130},
+    "globalStrainY": {"label": "Global strain εY", "unit": "–", "kind": "strain", "order": 140},
+    "globalStrainZ": {"label": "Global strain εZ", "unit": "–", "kind": "strain", "order": 150},
+    "globalStrainXY": {"label": "Global strain εXY", "unit": "–", "kind": "strain", "order": 160},
+    "globalStrainXZ": {"label": "Global strain εXZ", "unit": "–", "kind": "strain", "order": 170},
+    "globalStrainYZ": {"label": "Global strain εYZ", "unit": "–", "kind": "strain", "order": 180},
+    "principalStrainTensile": {"label": "Principal tensile strain", "unit": "–", "kind": "strain", "order": 190},
+    "principalStrainCompressive": {"label": "Principal compressive strain", "unit": "–", "kind": "strain", "order": 195},
+    "plasticStrainInPlane": {"label": "Plastic strain (in-plane)", "unit": "–", "kind": "plastic", "order": 320},
+    "plasticStrainOutOfPlane": {"label": "Plastic strain (out-of-plane)", "unit": "–", "kind": "plastic", "order": 330},
     "localStrainNormal": {
         "label": "Local Y-dir strain εn (interface normal)", "unit": "–", "kind": "strain", "order": 200,
     },
@@ -92,7 +102,7 @@ def _field(field_id: str, step: int, source: str, *, available: bool,
         raise ValueError(f"Field {field_id} requires four corner values per Quad.")
     if not np.isfinite(corners).all():
         raise ValueError(f"Field {field_id} contains nonfinite values.")
-    record["quadCornerValues"] = np.round(corners, 6).tolist()
+    record["quadCornerValues"] = np.round(corners, 10).tolist()
     record["min"] = float(np.min(corners))
     record["max"] = float(np.max(corners))
     return record

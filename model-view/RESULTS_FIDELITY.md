@@ -336,7 +336,12 @@ Useful bridge items that are currently unused:
 - **Bridge v2 bundles**: only final spring stresses are exported. Per-step
   displacements and interface resultants are present, but per-step stresses,
   strains and plastic strains require a new field export. This applies to
-  `3D_bridge`, `2d_bridge` and the `.histra` archive.
+  `3D_bridge` and `2d_bridge`. Newer Python `.histra` archives may contain final
+  spring strain and plastic strain arrays. Valid complete components are projected
+  to Quad corners; the final snapshot is not a per-step history. Global and principal
+  strain maps use the interface-tensor construction as a viewer extension; C#
+  exposes local strain maps. Missing or invalid spring values disable dependent maps.
+  Corner projection is not the C# adaptive six-face texture.
 - **C# benchmark HRX**: 4,860 Hysteretic normal springs have serialized length
   `0`. Normal strain and plastic maps for those fibres are partial; the viewer
   must not silently fill them with guessed values.

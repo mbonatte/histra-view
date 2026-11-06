@@ -12,7 +12,6 @@ import numpy as np
 from saved_result_geometry import interface_geometry
 
 BASE = Path(__file__).resolve().parent
-sys.path.insert(0, str(BASE.parent / "histra-python"))
 from histra.postprocessing import _average_node_displacements, compute_node_displacements, quad_node_displacement
 
 NATIVE_UNITS = {"length": "cm", "force": "kN", "moment": "kN*cm", "stress": "kN/cm^2",
@@ -227,6 +226,7 @@ def project_curve_cases(hrx_path, raw, name="Pushover Results"):
             "materials": [{"key": str(m["key"]), "name": str(m.get("name", m["key"])), "color": m.get("color", "#6fb7ff")} for m in model["materials"]],
             "thrustPairs": [],
             "interfaces": {},
+            "modelPoints": model.get("modelPoints", []),
         }
     else:
         mesh = {"name": name, "nodes": [], "quads": [], "materials": [], "thrustPairs": [], "interfaces": {}}

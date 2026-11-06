@@ -18,6 +18,40 @@ FOLDER = Path(__file__).resolve().parents[2] / "results" / "benchmark"
 HRX = FOLDER / "benchmark.hrx"
 RESULTS = FOLDER / "benchmark.Results"
 
+CHAIN_FOLDER = Path(__file__).resolve().parents[2] / "histra-python" / "histra" / "model-chain"
+CHAIN_HRX = CHAIN_FOLDER / "model.hrx"
+CHAIN_RESULTS = CHAIN_FOLDER / "model.Results"
+
+
+@unittest.skipUnless(CHAIN_HRX.is_file() and CHAIN_RESULTS.is_file(), "C# model-chain fixture not present")
+class CSharpChainProjectionTests(unittest.TestCase):
+    def test_chain_catalog_and_predecessors(self):
+        result = project_csharp(CHAIN_HRX, CHAIN_RESULTS, "Vert")
+        catalog = {item["name"]: item for item in result["analysisCatalog"]}
+        self.assertIn("Vert", catalog)
+        self.assertIn("scour_1", catalog)
+        self.assertIn("LiveLoad_1", catalog)
+
+        self.assertEqual(catalog["Vert"]["initialAnalysisKey"], -100)
+        self.assertEqual(catalog["scour_1"]["initialAnalysisKey"], catalog["Vert"]["key"])
+        self.assertEqual(catalog["scour_1"]["initialAnalysisName"], "Vert")
+        self.assertEqual(catalog["LiveLoad_1"]["initialAnalysisKey"], catalog["scour_1"]["key"])
+        self.assertEqual(catalog["LiveLoad_1"]["initialAnalysisName"], "scour_1")
+
+    def test_model_points_projection(self):
+        result = project_csharp(CHAIN_HRX, CHAIN_RESULTS, "Vert")
+        analysis = result["analyses"][0]
+        self.assertIsNotNone(analysis.get("modelPoints"))
+        mps = analysis["modelPoints"]
+        self.assertEqual(len(mps["step"]), len(analysis["steps"]))
+        self.assertGreater(len(mps["points"]), 0)
+        pt = mps["points"][0]
+        self.assertIn("key", pt)
+        self.assertIn("displacement_cm", pt)
+        self.assertEqual(len(pt["displacement_cm"]["ux"]), len(analysis["steps"]))
+        self.assertEqual(len(pt["displacement_cm"]["uy"]), len(analysis["steps"]))
+        self.assertEqual(len(pt["displacement_cm"]["uz"]), len(analysis["steps"]))
+
 
 @unittest.skipUnless(HRX.is_file() and RESULTS.is_file(), "C# benchmark Results database not installed")
 class CSharpResultsProjectionTests(unittest.TestCase):

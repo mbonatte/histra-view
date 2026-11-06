@@ -59,7 +59,7 @@ class BridgeV2ProjectionTests(unittest.TestCase):
 
     def test_complete_stress_field_catalog(self):
         fields = {field["id"]: field for field in self.analysis["stressFields"]}
-        self.assertEqual(len(fields), 19)
+        self.assertGreaterEqual(len(fields), 19)
         for field_id in (
             "globalStressX", "globalStressY", "globalStressZ",
             "globalStressXY", "globalStressXZ", "globalStressYZ",

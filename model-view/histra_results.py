@@ -71,6 +71,19 @@ def _read_manifest(archive: Path, stamp):
     return raw, model
 
 
+def extract_histra_model(archive_path: str | Path) -> tuple[bytes, str, dict]:
+    """Extract the embedded HRX model bytes, filename, and parsed model dict from a .histra archive."""
+    archive = Path(archive_path)
+    stamp = _stamp(archive)
+    manifest, model = _read_manifest(archive, stamp)
+    model_info = next(iter((manifest.get("models") or {}).values()))
+    member = model_info["member"]
+    filename = str(model_info.get("filename") or Path(member).name)
+    with zipfile.ZipFile(archive) as zf:
+        model_bytes = zf.read(member)
+    return model_bytes, filename, model
+
+
 def _decode_object(zf: zipfile.ZipFile, manifest: dict, object_hash: str):
     metadata = manifest.get("objects", {}).get(object_hash)
     if metadata is None:
@@ -123,20 +136,45 @@ def _read_case(archive: Path, stamp, manifest: dict, case_id: str):
     return arrays
 
 
-def _catalog(manifest: dict):
+def _catalog(manifest: dict, model=None):
     catalog = []
+    analyses_by_name = {}
+    if model:
+        raw_list = model.get("analyses", []) if isinstance(model, dict) else (
+            list(model.collections.analyses.values()) if hasattr(getattr(model, "collections", None), "analyses") else []
+        )
+        for a in raw_list:
+            aname = a.get("name") if isinstance(a, dict) else getattr(a, "name", None)
+            if aname:
+                analyses_by_name[str(aname)] = a
+                analyses_by_name[str(aname).lower()] = a
     for case_id, case in (manifest.get("cases") or {}).items():
         summary = case.get("summary") or {}
         curve = summary.get("curve") or {}
         steps = len(curve.get("step", []))
         if not steps:
             steps = int((summary.get("metrics") or {}).get("total_steps", 0) or 0)
-        catalog.append({
+        item = {
             "name": case_id,
             "label": case_id,
             "steps": steps,
             "curveOnly": bool(case.get("curve_only", False)),
-        })
+        }
+        match = analyses_by_name.get(case_id) or analyses_by_name.get(case_id.lower())
+        if match:
+            k = match.get("key") if isinstance(match, dict) else getattr(match, "key", None)
+            init_k = match.get("initialAnalysisKey") if isinstance(match, dict) else getattr(match, "initial_analysis_key", None)
+            if k is not None:
+                try:
+                    item["key"] = int(k)
+                except (ValueError, TypeError):
+                    pass
+            if init_k is not None:
+                try:
+                    item["initialAnalysisKey"] = int(init_k)
+                except (ValueError, TypeError):
+                    pass
+        catalog.append(item)
     return catalog
 
 
@@ -151,7 +189,7 @@ def _resolve_case(manifest: dict, analysis_name: str | None):
         for case_id in cases:
             if case_id.lower() == lowered:
                 return case_id
-    preferred = manifest.get("default_case") or DEFAULT_CASE
+    preferred = manifest.get("default_case") or (manifest.get("metadata") or {}).get("default_case") or DEFAULT_CASE
     if preferred in cases:
         return preferred
     return next(iter(cases))
@@ -314,10 +352,13 @@ def _project_full_dof_modes(shapes, node_keys, node_xyz, quad_keys, quad_conn, m
     shapes = np.asarray(shapes, dtype=float)
     if shapes.ndim != 2:
         return []
-    if shapes.shape[1] != expected and shapes.shape[0] == expected:
+    # Massless elastic-restraint DOFs follow the seven structural DOFs per
+    # Quad. They affect the eigenproblem but do not map to Quad vertices.
+    if shapes.shape[0] != len(mode_meta) and shapes.shape[1] == len(mode_meta):
         shapes = shapes.T
-    if shapes.shape[1] != expected:
+    if shapes.shape[0] != len(mode_meta) or shapes.shape[1] < expected:
         return []
+    shapes = shapes[:, :expected]
     node_index = {int(key): index for index, key in enumerate(node_keys)}
     block_keys = sorted(int(key) for key in quad_keys)
     block_position = {key: index for index, key in enumerate(block_keys)}
@@ -653,8 +694,8 @@ def project_histra(archive_path: str | Path, analysis_name: str | None = None,
                    include_modal_shapes: bool = True):
     archive, manifest, model, arrays, _case, summary, entry, case_id = _case_context(archive_path, analysis_name)
     meta = summary.get("metadata", {})
-    preferred = manifest.get("default_case") or DEFAULT_CASE
-    catalog = _catalog(manifest)
+    preferred = manifest.get("default_case") or (manifest.get("metadata") or {}).get("default_case") or DEFAULT_CASE
+    catalog = _catalog(manifest, model)
     default = preferred if preferred in (manifest.get("cases") or {}) else catalog[0]["name"]
     if _is_inline_modal_arrays(arrays):
         mesh = _mesh(str(archive), arrays, hrx_model=model)
@@ -731,6 +772,9 @@ def project_histra(archive_path: str | Path, analysis_name: str | None = None,
         include_stress_fields=include_stress_fields,
     )
     analysis["name"] = case_id
+    target_stop = (manifest.get("metadata") or {}).get("arc_lambda_target")
+    if target_stop and target_stop.get("analysisName") == case_id:
+        analysis["lambdaTarget"] = target_stop
     modal = (_attachment_modal_entries(archive, manifest, model, arrays, case_id)
              if include_modal_shapes
              else _attachment_modal_descriptors(archive, manifest))

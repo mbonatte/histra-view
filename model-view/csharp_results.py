@@ -20,10 +20,13 @@ import sys
 
 import numpy as np
 
-BASE = Path(__file__).resolve().parent
-HISTRA = BASE.parent / "histra-python"
-if str(HISTRA) not in sys.path:
-    sys.path.insert(0, str(HISTRA))
+try:
+    import histra
+except ImportError:
+    BASE = Path(__file__).resolve().parent
+    HISTRA = BASE.parent / "histra-python"
+    if str(HISTRA) not in sys.path:
+        sys.path.append(str(HISTRA))
 
 from histra.io.hr_loader import load_model
 from histra.postprocessing import _average_node_displacements, _quad_local_displacement
@@ -99,9 +102,13 @@ def _static_catalog(conn, model) -> list[dict]:
             continue
         if name.lower().startswith("modal"):
             continue
+        init_key = int(getattr(analysis, "initial_analysis_key", -100)) if analysis is not None else -100
         catalog.append({
             "name": name,
             "label": name,
+            "key": key,
+            "initialAnalysisKey": init_key,
+            "initialAnalysisName": names.get(init_key) if init_key in names else None,
             "steps": int(step_count),
             "firstStep": int(first_step),
             "lastStep": int(last_step),
@@ -212,6 +219,44 @@ def _read_model_points(conn, analysis_key: int, combination: int):
             _float(row[index]) for index in range(2, 5)
         )
     return values
+
+
+def _project_model_points(model, model_points_by_step, sorted_steps):
+    mps = getattr(getattr(model, "collections", None), "model_points", None)
+    if not mps:
+        return None
+    points = []
+    for pkey, mp in sorted(mps.items(), key=lambda pair: int(pair[0])):
+        key_int = int(pkey)
+        name = str(getattr(mp, "name", key_int) or key_int)
+        desc = str(getattr(mp, "description", "") or "")
+        ux_list = []
+        uy_list = []
+        uz_list = []
+        available = False
+        for step in sorted_steps:
+            disp = model_points_by_step.get(step, {}).get(key_int)
+            if disp is not None:
+                available = True
+                ux_list.append(float(disp[0]))
+                uy_list.append(float(disp[1]))
+                uz_list.append(float(disp[2]))
+            else:
+                ux_list.append(0.0)
+                uy_list.append(0.0)
+                uz_list.append(0.0)
+        points.append({
+            "key": key_int,
+            "name": name,
+            "description": desc,
+            "label": desc or name,
+            "available": available,
+            "displacement_cm": {"ux": ux_list, "uy": uy_list, "uz": uz_list},
+        })
+    return {
+        "step": [int(step) for step in sorted_steps],
+        "points": points,
+    }
 
 
 def _read_spring_states(conn, analysis_key: int, combination: int, step: int):
@@ -1441,8 +1486,11 @@ def project_csharp(hrx_path: str | Path, results_path: str | Path,
         "mesh": mesh,
         "analyses": [{
             "name": name,
+            "key": analysis_key,
+            "initialAnalysisKey": int(getattr(analysis, "initial_analysis_key", -100)) if analysis is not None else -100,
             "outcome": f"C# Results · {len(records)} saved steps",
             "steps": records,
+            "modelPoints": _project_model_points(model, model_points, steps),
             "diagnostics": {"equilibriumCheckedSteps": 0, "equilibriumFailedSteps": 0},
             "interfaces": interfaces,
             "interfaceOrder": [int(key) for key in interface_order],

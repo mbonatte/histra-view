@@ -201,7 +201,7 @@ def _mesh(hrx_path, z, hrx_model=None):
         raise ValueError("Bridge mesh projection lost interfaces.")
     if not thrust_pairs:
         raise ValueError("Bridge mesh has no opposite-face thrust pairs.")
-    return {
+    res = {
         "name": Path(hrx_path).name,
         "nodes": nodes_out,
         "quads": quads_out,
@@ -209,6 +209,9 @@ def _mesh(hrx_path, z, hrx_model=None):
         "thrustPairs": thrust_pairs,
         "interfaces": interfaces,
     }
+    if hrx_model and "modelPoints" in hrx_model:
+        res["modelPoints"] = hrx_model["modelPoints"]
+    return res
 
 
 def _encode_float32(values):
@@ -1151,6 +1154,87 @@ def _stress_field_descriptors(step):
     return fields
 
 
+def _saved_strain_available_ids(z):
+    available = set()
+    for quantity, normal_id, in_id, out_id in (
+        ('strain', 'localStrainNormal', 'localStrainInPlane', 'localStrainOutOfPlane'),
+        ('plastic_strain', 'plasticStrainNormal', 'plasticStrainInPlane', 'plasticStrainOutOfPlane'),
+        ('plastic_ratio', 'plasticStrainRatioNormal', None, None),
+    ):
+        valid = []
+        for group in ('transverse', 'sliding'):
+            key = f'springs/{group}_{quantity}'
+            data, mask = z.get(key), z.get(key + '_valid')
+            valid.append(data is not None and mask is not None and np.asarray(mask).size > 0
+                         and bool(np.asarray(mask, dtype=bool).all()) and bool(np.isfinite(data).all()))
+        if quantity == 'plastic_ratio':
+            normalized = z.get('springs/transverse_plastic_ratio_is_normalized')
+            valid[0] = valid[0] and normalized is not None and bool(np.asarray(normalized, dtype=bool).all())
+        if valid[0]: available.add(normal_id)
+        if valid[1] and in_id: available.update((in_id, out_id))
+        if quantity == 'strain' and all(valid):
+            available.update(('globalStrainX', 'globalStrainY', 'globalStrainZ', 'globalStrainXY',
+                              'globalStrainXZ', 'globalStrainYZ', 'principalStrainTensile', 'principalStrainCompressive'))
+    return available
+
+
+def _saved_strain_fields(z, mesh=None):
+    """Project only valid saved final spring strains; never invent missing fibres."""
+    mappings = {
+        'strain': {'localStressNormal': 'localStrainNormal', 'localStressInPlane': 'localStrainInPlane',
+                   'localStressOutOfPlane': 'localStrainOutOfPlane',
+                   'globalStressX': 'globalStrainX', 'globalStressY': 'globalStrainY',
+                   'globalStressZ': 'globalStrainZ', 'globalStressXY': 'globalStrainXY',
+                   'globalStressXZ': 'globalStrainXZ', 'globalStressYZ': 'globalStrainYZ',
+                   'principalTensile': 'principalStrainTensile', 'principalCompressive': 'principalStrainCompressive'},
+        'plastic_strain': {'localStressNormal': 'plasticStrainNormal',
+                           'localStressInPlane': 'plasticStrainInPlane',
+                           'localStressOutOfPlane': 'plasticStrainOutOfPlane'},
+        'plastic_ratio': {'localStressNormal': 'plasticStrainRatioNormal'},
+    }
+    out = {}
+    for quantity, mapping in mappings.items():
+        names = [f'springs/{group}_{quantity}' for group in ('transverse', 'sliding')]
+        if any(name not in z or name + '_valid' not in z for name in names):
+            continue
+        transverse, sliding = (np.asarray(z[name], dtype=float) for name in names)
+        tv, sv = (np.asarray(z[name + '_valid'], dtype=bool) for name in names)
+        normal_ok = bool(tv.size and tv.all() and np.isfinite(transverse).all())
+        sliding_ok = bool(sv.size and sv.all() and np.isfinite(sliding).all())
+        if quantity == 'plastic_ratio':
+            normalized = z.get('springs/transverse_plastic_ratio_is_normalized')
+            normal_ok = normal_ok and normalized is not None and bool(np.asarray(normalized, dtype=bool).all())
+            sliding_ok = False
+        if not normal_ok and not sliding_ok:
+            continue
+        # Scalar sliding maps do not depend on the missing normal values. The
+        # temporary zeroes are never exposed as normal or tensor fields.
+        proxy = dict(z)
+        if quantity in ('plastic_strain', 'plastic_ratio'):
+            transverse = np.maximum(transverse, 0.0)
+            sliding = np.maximum(sliding, 0.0)
+        proxy['springs/transverse_stress'] = transverse if normal_ok else np.zeros_like(transverse)
+        proxy['springs/transverse_stress_valid'] = np.ones_like(tv, dtype=bool)
+        proxy['springs/sliding_stress'] = sliding if sliding_ok else np.zeros_like(sliding)
+        fields, _ = _stress_fields(proxy, mesh=None, include_face_grids=False)
+        for field in fields:
+            target = mapping.get(field['id'])
+            if not target or not field.get('available'):
+                continue
+            if field['id'] == 'localStressNormal' and not normal_ok:
+                continue
+            if field['id'] in ('localStressInPlane', 'localStressOutOfPlane') and not sliding_ok:
+                continue
+            if field['id'].startswith('globalStress') or field['id'].startswith('principal'):
+                if not (normal_ok and sliding_ok):
+                    continue
+            from result_fields import available_field
+            result = available_field(target, field['quadCornerValues'], field['step'],
+                                     'Saved final interface-spring strain; C# projection')
+            out[target] = result
+    return out
+
+
 def _analysis(entry, summary, mesh, z, include_face_grids=True,
               include_stress_fields=True):
     interface_order = sorted(z["mesh/interface_keys"].astype(int).tolist())
@@ -1185,14 +1269,27 @@ def _analysis(entry, summary, mesh, z, include_face_grids=True,
         stress_fields, von_mises_field = _stress_fields(
             z, mesh, include_face_grids=include_face_grids
         )
+        strain_fields = _saved_strain_fields(z, mesh)
+        stress_fields = [strain_fields.get(field["id"], field) for field in stress_fields]
     else:
         stress_fields = _stress_field_descriptors(int(z["steps/step_index"][-1]))
+        strain_ids = _saved_strain_available_ids(z)
+        for field in stress_fields:
+            if field['id'] in strain_ids:
+                field['available'] = True
+                field['lazy'] = True
+                field.pop('reason', None)
         von_mises_field = None
+    if any(key in z for key in ('springs/transverse_strain', 'springs/sliding_strain')):
+        for field in stress_fields:
+            if not field['available'] and field['kind'] in ('strain', 'plastic'):
+                field['reason'] = 'This saved snapshot lacks valid spring values needed for this field.' 
     return {
         "name": summary["metadata"].get("analysis_name", entry["case_id"]),
         "caseId": entry["case_id"],
         "outcome": summary.get("metrics", {}).get("outcome", "completed"),
         "steps": steps,
+        "modelPoints": summary.get("model_points"),
         "diagnostics": {"equilibriumCheckedSteps": 0, "equilibriumFailedSteps": 0},
         "interfaces": _interfaces_summary(z, interface_order),
         "interfaceOrder": interface_order,
