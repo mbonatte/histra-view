@@ -89,7 +89,23 @@ class ModelManager:
                 for name in ("_perf_hysteretic_batch", "_perf_hysteretic_slice"):
                     if hasattr(interface, name):
                         delattr(interface, name)
-            for spring in getattr(runtime, "managed_springs", runtime.springs):
+                group = getattr(interface, "trasv_1", None)
+                if getattr(group, "is_batch_backed", False):
+                    group._histra_batch_managed = False
+                    group._batch_slice = None
+                    for sp in group._cache.values():
+                        sp._histra_batch_managed = False
+                elif group is not None:
+                    for sp in group:
+                        if hasattr(sp, "_histra_batch_managed"):
+                            sp._histra_batch_managed = False
+            for spring in getattr(runtime, "coulomb_springs", ()):
+                if hasattr(spring, "_histra_batch_managed"):
+                    spring._histra_batch_managed = False
+            for quad in getattr(runtime, "quad_records", ()):
+                spring = getattr(quad, "spring", None)
+                if spring is None:
+                    continue
                 if hasattr(spring, "_histra_batch_managed"):
                     spring._histra_batch_managed = False
                 for name in (
@@ -98,6 +114,10 @@ class ModelManager:
                 ):
                     if hasattr(spring, name):
                         delattr(spring, name)
+            if not getattr(runtime, "is_batch_backed", False):
+                for spring in getattr(runtime, "springs", ()):
+                    if hasattr(spring, "_histra_batch_managed"):
+                        spring._histra_batch_managed = False
         cls._hysteretic_batch = None
         cls._hysteretic_batch_model_id = None
         cls._hysteretic_batch_error = None
@@ -309,18 +329,26 @@ class ModelManager:
 
     @classmethod
     def refresh_saved_interface_forces(cls, model: Model) -> None:
-        """Mirror the force cache written by C# AddStateElements."""
+        """Mirror the force and bending-moment cache written by C# AddStateElements."""
         runtime = cls.hysteretic_batch_for(model)
         if runtime is not None:
-            np.copyto(runtime._pdelta_saved_resultants, runtime.all_resultant_forces())
-            for row, record in zip(runtime._pdelta_saved_resultants, runtime.records):
-                record.interface.status.forces = tuple(float(value) for value in row)
+            forces = runtime.all_resultant_forces()
+            moments = runtime.all_bending_moments()
+            np.copyto(runtime._pdelta_saved_resultants, forces)
+            np.copyto(runtime._saved_bending_moments, moments)
+            for f_row, m_row, record in zip(
+                runtime._pdelta_saved_resultants, runtime._saved_bending_moments, runtime.records
+            ):
+                record.interface.status.forces = tuple(float(value) for value in f_row)
+                record.interface.status.bending_moments = tuple(float(value) for value in m_row)
             interfaces = runtime.unmanaged_interfaces
         else:
             interfaces = model.collections.interfaces.values()
-        from histra.postprocessing import _interface_local_resultant
+        from histra.postprocessing import _interface_local_resultants
         for interface in interfaces:
-            interface.status.forces = tuple(float(value) for value in _interface_local_resultant(interface))
+            forces_row, moments_row = _interface_local_resultants(interface)
+            interface.status.forces = tuple(float(value) for value in forces_row)
+            interface.status.bending_moments = tuple(float(value) for value in moments_row)
 
     @classmethod
     def compute_and_assemble_pdelta_load(
@@ -482,6 +510,10 @@ class ModelManager:
                     gdl = entry.gdl - 1
                     if 0 <= gdl < ls.n:
                         ls.sumb(gdl, -quad.status.f * entry.alfa)
+        from histra.preprocessing.restraint_support import (
+            scatter_restraint_resisting_force,
+        )
+        scatter_restraint_resisting_force(model, ls)
 
     @classmethod
     def update_domain(cls, model: Model, ls: LinearSystem, state: IntegratorState) -> None:
@@ -501,6 +533,8 @@ class ModelManager:
         else:
             for quad in model.collections.quads.values():
                 quad.update_domain(ls, state, model.collections)
+        from histra.preprocessing.restraint_support import update_restraint_domain
+        update_restraint_domain(model, ls)
 
     @classmethod
     def compute_energy(cls, model: Model, initial_elastic=0.0, initial_plastic=0.0) -> tuple[float, float]:

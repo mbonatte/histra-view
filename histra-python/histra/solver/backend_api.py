@@ -6,7 +6,7 @@ from pathlib import Path
 import time
 from typing import Any, Callable, Iterable, Mapping
 
-from histra.io.hr_loader import load_model
+from histra.io.hr_loader import load_solver_model as load_model
 from histra.solver.cancellation import CancelCheck, SolverCancelled
 from histra.solver.capabilities import inspect_solver_capabilities
 from histra.solver.interface_material import InterfaceMaterialMutationReport
@@ -84,6 +84,7 @@ def run_python_solver_job(
     equilibrium_policy: str = "error",
     strategy_policy: str = "warn",
     performance_policy: str = "compiled",
+    output_directory: str | Path | None = None,
 ) -> PythonSolverJobResult:
     """Run an HRX analysis plan entirely in process with deadline enforcement.
 
@@ -114,8 +115,11 @@ def run_python_solver_job(
         Independent static equilibrium audit policy.
     strategy_policy : {"warn", "error", "off"}, default="warn"
         Solver strategy advisor warning/enforcement policy.
-    performance_policy : {"compiled", "warn", "off"}, default="compiled"
+    performance_policy : {"compiled", "diagnostic-scalar"}, default="compiled"
         Compiled backend coverage enforcement policy.
+    output_directory : str or Path, optional
+        Export a .histra bundle after the requested chain completes. Includes
+        generalized displacements and stage snapshots; node projection is omitted.
 
     Returns
     -------
@@ -153,13 +157,10 @@ def run_python_solver_job(
     )
     capability_report.require_supported()
 
-    from histra.solver.backend_coverage import inspect_solver_backend
+    from histra.solver.backend_coverage import require_compiled_dependencies
 
-    backend_report = inspect_solver_backend(
-        model, [request.name for request in requested]
-    )
     if performance_policy == "compiled":
-        backend_report.require_compiled()
+        require_compiled_dependencies(model, [request.name for request in requested])
 
     captured_logs: list[str] = []
 
@@ -218,6 +219,11 @@ def run_python_solver_job(
 
         execution = session.run(definition, should_cancel=analysis_cancelled)
         if not execution.completed:
+            if output_directory is not None:
+                try:
+                    _export_job_session(session, path, output_directory)
+                except Exception as exc:
+                    log(f"Partial results export failed: {type(exc).__name__}: {exc}")
             if time.monotonic() >= analysis_deadline:
                 raise PythonSolverTimeout(
                     f"Analysis {name!r} exceeded its effective timeout."
@@ -239,6 +245,7 @@ def run_python_solver_job(
                 mutations=tuple(mutation_reports),
             )
 
+    exported = _export_job_session(session, path, output_directory)
     return PythonSolverJobResult(
         analyses=results,
         executions=tuple(session.executions),
@@ -250,8 +257,17 @@ def run_python_solver_job(
             "equilibrium_policy": str(equilibrium_policy),
             "strategy_policy": str(strategy_policy),
             "performance_policy": str(performance_policy),
-            "backend_coverage": backend_report,
+            "backend_coverage": session.backend_coverage,
+            "exported_results": exported,
         },
+    )
+
+
+def _export_job_session(session, path: Path, output_directory):
+    if output_directory is None:
+        return None
+    return session.export_session(
+        output_directory, path.stem, format="histra", include_node_displacements=False,
     )
 
 

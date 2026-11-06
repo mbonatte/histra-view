@@ -136,6 +136,8 @@ class IncrementalIntegrator(ABC):
             collection = getattr(model.collections, collection_name, {})
             for element in collection.values():
                 element.revert_to_last_commit(ls)
+        from histra.preprocessing.restraint_support import update_restraint_domain
+        update_restraint_domain(model, ls)
         from histra.solver.model_manager import ModelManager
         if ModelManager._pq_prev is not None and ModelManager._pq is not None:
             ModelManager._pq[:] = ModelManager._pq_prev

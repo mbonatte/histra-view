@@ -16,6 +16,7 @@ from histra.io.results_reader import ResultsStateError, find_results_path
 from histra.model.model import Model
 from histra.preprocessing import inspect_solver_readiness, require_solver_ready
 from histra.solver.assembler import assemble_global_k
+from histra.solver.modal_assembly import assemble_modal_stiffness
 from histra.solver.cancellation import (
     CancelCheck,
     exclusive_solver_access,
@@ -42,6 +43,12 @@ class ModalAnalysisError(RuntimeError):
 _SUPPORTED_MODAL_PROCEDURES = {"SubspaceIterations", "InverseIterations"}
 _SUPPORTED_MODAL_CRITERIA = {"Frquency", "EigenVector"}
 _SUPPORTED_MASS_MATRIX_TYPES = {"Lumped", "Consistent"}
+
+
+def modal_linear_solver_backend(analysis: Any) -> str | None:
+    """Subspace uses SuperLU; inverse iteration uses LinearSystem's environment default."""
+    procedure = str(getattr(analysis, "modal_procedure", "InverseIterations"))
+    return "superlu" if procedure == "SubspaceIterations" else None
 
 
 class _DotNetRandom:
@@ -255,6 +262,7 @@ def solve_modal_analysis(
     auto_prepare: bool = True,
     should_cancel: CancelCheck | None = None,
     eigensolver_tolerance: float | None = None,
+    performance_policy: str = "compiled",
 ) -> ModalAnalysisResult:
     """Run the C# modal workflow on the supported Python Quad model.
 
@@ -290,6 +298,9 @@ def solve_modal_analysis(
         marked solver-ready.
     should_cancel : CancelCheck | None, optional
         Callable polled between subspace iterations for cooperative cancellation.
+    performance_policy : {"compiled", "diagnostic-scalar"}, optional
+        Enforce compiled coverage after state initialization and before assembly.
+        Diagnostic scalar mode retains the reference assembly path explicitly.
     eigensolver_tolerance : float | None, optional
         Custom convergence tolerance override for subspace/inverse iterations.
 
@@ -314,6 +325,20 @@ def solve_modal_analysis(
     >>> result.modes[0].frequency                # doctest: +SKIP
     3.84
     """
+    policy = str(performance_policy).strip().lower()
+    if policy not in {"compiled", "diagnostic-scalar"}:
+        raise ValueError(f"Unknown performance_policy {performance_policy!r}; "
+                         "expected 'compiled' or 'diagnostic-scalar'.")
+    collections = getattr(model, "collections", None)
+    if collections is not None and any(
+        any(float(value) >= 0.0 for value in restraint.k)
+        for restraint in collections.restraints.values()
+    ):
+        raise ModalAnalysisError(
+            "Modal analysis with elastic/free restraint DOFs is not translated: "
+            "the added foundation-spring DOFs are massless and require a "
+            "verified static-condensation path. Use fixed restraints."
+        )
     with exclusive_solver_access(should_cancel):
         return _solve_modal_analysis_impl(
             model,
@@ -327,6 +352,7 @@ def solve_modal_analysis(
             auto_prepare=auto_prepare,
             should_cancel=should_cancel,
             eigensolver_tolerance=eigensolver_tolerance,
+            performance_policy=policy,
         )
 
 
@@ -343,6 +369,7 @@ def _solve_modal_analysis_impl(
     auto_prepare: bool,
     should_cancel: CancelCheck | None,
     eigensolver_tolerance: float | None,
+    performance_policy: str,
 ) -> ModalAnalysisResult:
     started = time.perf_counter()
 
@@ -399,6 +426,10 @@ def _solve_modal_analysis_impl(
             "brand new Python computational model before solving."
         )
     require_solver_ready(model)
+    if performance_policy == "compiled":
+        from histra.solver.backend_coverage import require_compiled_dependencies
+
+        require_compiled_dependencies(model, [analysis], linear_solver_backend=modal_linear_solver_backend(analysis))
     progress(0.05)
     raise_if_cancelled(should_cancel)
 
@@ -461,6 +492,12 @@ def _solve_modal_analysis_impl(
         )
 
     raise_if_cancelled(should_cancel)
+    if performance_policy == "compiled":
+        from histra.solver.backend_coverage import inspect_solver_backend
+
+        # Initialization can discard a preflight runtime. Audit the live domain
+        # here, before any stiffness/mass work, and reuse it after the solve.
+        inspect_solver_backend(model, [analysis], linear_solver_backend=modal_linear_solver_backend(analysis)).require_compiled()
     # C# PrepareModelForAnalysis regenerates the element loads before the
     # modal execution: GenerateLoadsForceAnalysis zeroes every Quad P and
     # rebuilds only the modal analysis's own combination.  GetCombCoeffGravity
@@ -476,7 +513,8 @@ def _solve_modal_analysis_impl(
     generate_line_loads(model, analysis_key, combination)
 
     log("Assembling current tangent stiffness matrix (alfa=1).")
-    stiffness = assemble_global_k(model, alfa=1.0).tocsc()
+    assembly = assemble_modal_stiffness if performance_policy == "compiled" else assemble_global_k
+    stiffness = assembly(model, alfa=1.0).tocsc()
     stiffness.sum_duplicates()
     if stiffness.nnz == 0 or np.any(~np.isfinite(stiffness.data)):
         raise ModalAnalysisError("The assembled modal stiffness matrix is empty or invalid.")

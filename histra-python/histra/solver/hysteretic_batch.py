@@ -23,6 +23,7 @@ from histra.solver.hysteretic_runtime import (  # noqa: F401
     _advance_transverse_targets,
     _assemble_full_interface_forces,
     _batch_interface_resultants,
+    _batch_interface_resultants_and_moments,
     _build_force_by_dof_topology,
     _commit_elastic_sliding_batch,
     _commit_initial_coulomb_batch,

@@ -59,3 +59,15 @@ def warmup_compiled_backends(verbose: bool = False) -> None:
     except Exception as exc:
         if verbose:
             logger.debug("Quad kernel warmup skipped: %s", exc)
+
+    try:
+        from histra.solver.hysteretic_kernels.resultant_geometry import resultant_moment_arms
+
+        resultant_moment_arms(
+            np.zeros((1, 4, 2), dtype=np.float32), np.ones(1, dtype=np.float32),
+            np.ones(1, dtype=np.int64), np.ones(1, dtype=np.int64),
+            np.zeros(1, dtype=np.int64), np.ones(1, dtype=np.int64), 1,
+        )
+    except Exception as exc:
+        if verbose:
+            logger.debug("Resultant geometry warmup skipped: %s", exc)

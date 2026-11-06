@@ -148,6 +148,52 @@ if njit is not None:
             resultants[r, 2] = fz
 
     @njit(cache=True, nogil=True)
+    def _batch_interface_resultants_and_moments(
+        starts, stops, trial_stresses, vec_x, vec_y, lengths,
+        slid_indices, oop0_indices, oop1_indices, coulomb_state,
+        resultants, moments,
+    ):
+        n = starts.shape[0]
+        for r in range(n):
+            fy = np.float32(0.0)
+            mx = np.float32(0.0)
+            mz = np.float32(0.0)
+            st = starts[r]
+            sp = stops[r]
+            for s in range(st, sp):
+                num2 = np.float32(trial_stresses[s, 6])
+                fy = np.float32(fy + num2)
+                mz = np.float32(mz + np.float32(num2 * vec_x[s]))
+                mx = np.float32(mx + np.float32(num2 * vec_y[s]))
+            resultants[r, 1] = fy
+            moments[r, 0] = mx
+            moments[r, 2] = mz
+
+            fx = np.float32(0.0)
+            idx_slid = slid_indices[r]
+            if idx_slid >= 0:
+                fx = np.float32(fx - np.float32(coulomb_state[idx_slid, 29]))
+            resultants[r, 0] = fx
+
+            fz = np.float32(0.0)
+            my = np.float32(0.0)
+            length_f32 = np.float32(lengths[r])
+            idx_oop0 = oop0_indices[r]
+            if idx_oop0 >= 0:
+                num2 = np.float32(-np.float32(coulomb_state[idx_oop0, 29]))
+                fz = np.float32(fz + num2)
+                vx0 = np.float32(length_f32 / np.float32(2.0))
+                my = np.float32(my + np.float32(num2 * vx0))
+            idx_oop1 = oop1_indices[r]
+            if idx_oop1 >= 0:
+                num2 = np.float32(-np.float32(coulomb_state[idx_oop1, 29]))
+                fz = np.float32(fz + num2)
+                vx1 = np.float32(length_f32 / np.float32(-2.0))
+                my = np.float32(my + np.float32(num2 * vx1))
+            resultants[r, 2] = fz
+            moments[r, 1] = my
+
+    @njit(cache=True, nogil=True)
     def _eval_pdelta_interfaces_kernel(
         quad_local_u,
         all_res_forces,
@@ -301,6 +347,51 @@ else:  # pragma: no cover - exercised when numba is unavailable
             if idx_oop1 >= 0:
                 fz = np.float32(fz - np.float32(coulomb_state[idx_oop1, 29]))
             resultants[r, 2] = fz
+
+    def _batch_interface_resultants_and_moments(
+        starts, stops, trial_stresses, vec_x, vec_y, lengths,
+        slid_indices, oop0_indices, oop1_indices, coulomb_state,
+        resultants, moments,
+    ):
+        n = starts.shape[0]
+        for r in range(n):
+            fy = np.float32(0.0)
+            mx = np.float32(0.0)
+            mz = np.float32(0.0)
+            st = starts[r]
+            sp = stops[r]
+            for s in range(st, sp):
+                num2 = np.float32(trial_stresses[s, 6])
+                fy = np.float32(fy + num2)
+                mz = np.float32(mz + np.float32(num2 * vec_x[s]))
+                mx = np.float32(mx + np.float32(num2 * vec_y[s]))
+            resultants[r, 1] = fy
+            moments[r, 0] = mx
+            moments[r, 2] = mz
+
+            fx = np.float32(0.0)
+            idx_slid = slid_indices[r]
+            if idx_slid >= 0:
+                fx = np.float32(fx - np.float32(coulomb_state[idx_slid, 29]))
+            resultants[r, 0] = fx
+
+            fz = np.float32(0.0)
+            my = np.float32(0.0)
+            length_f32 = np.float32(lengths[r])
+            idx_oop0 = oop0_indices[r]
+            if idx_oop0 >= 0:
+                num2 = np.float32(-np.float32(coulomb_state[idx_oop0, 29]))
+                fz = np.float32(fz + num2)
+                vx0 = np.float32(length_f32 / np.float32(2.0))
+                my = np.float32(my + np.float32(num2 * vx0))
+            idx_oop1 = oop1_indices[r]
+            if idx_oop1 >= 0:
+                num2 = np.float32(-np.float32(coulomb_state[idx_oop1, 29]))
+                fz = np.float32(fz + num2)
+                vx1 = np.float32(length_f32 / np.float32(-2.0))
+                my = np.float32(my + np.float32(num2 * vx1))
+            resultants[r, 2] = fz
+            moments[r, 1] = my
 
     def _eval_pdelta_interfaces_kernel(
         quad_local_u,

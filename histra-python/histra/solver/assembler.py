@@ -65,6 +65,30 @@ def _assemble_afference(
 
 # ── Public API ──────────────────────────────────────────────────────────────
 
+def _with_restraint_support(model: Model, matrix: sp.csc_matrix) -> sp.csc_matrix:
+    """Add native elastic Restraint diagonal stiffness to an assembled matrix.
+
+    The rigid-restraint path contributes no extra diagonal and therefore keeps
+    every existing fixed model unchanged.  An elastic foundation restraint has
+    one independent local DOF; its ``K2`` (force/length) belongs on that DOF
+    once, separately from the interface fibre stiffness.
+    """
+    from histra.preprocessing.restraint_support import restraint_support_entries
+
+    rows, cols, values = restraint_support_entries(model)
+    if not values:
+        return matrix
+    support = sp.csc_matrix(
+        (np.asarray(values, dtype=np.float64),
+         (np.asarray(rows, dtype=np.int64), np.asarray(cols, dtype=np.int64))),
+        shape=matrix.shape,
+    )
+    result = (matrix + support).tocsc()
+    result._has_sorted_indices = True
+    result._has_canonical_format = True
+    return result
+
+
 def _assemble_global_k_legacy(
     model: Model,
     alfa: float = 0.0,
@@ -155,7 +179,7 @@ def _assemble_global_k_legacy(
                                             intf.aff[ai], intf.aff[aj], k_ij)
 
     K = sp.coo_matrix((vals, (rows, cols)), shape=(n, n)).tocsc()
-    return K
+    return _with_restraint_support(model, K)
 
 
 class _AssemblyPlanIncompatible(RuntimeError):
@@ -282,6 +306,12 @@ class _StiffnessAssemblyPlan:
                 return False
         return True
 
+    def __deepcopy__(self, memo: dict[int, Any]) -> None:
+        # Cached assembly plans are rebuilt lazily per model on demand; omit
+        # them from deep copies so branching a session does not duplicate
+        # sparse scatter topology and batch stiffness tables.
+        return None
+
     def ensure_batch_data(self, model: Model, runtime: Any) -> None:
         if self.batch_data is not None:
             return
@@ -372,6 +402,7 @@ class _StiffnessAssemblyPlan:
         )
         mat._has_sorted_indices = True
         mat._has_canonical_format = True
+        mat = _with_restraint_support(model, mat)
         ls.set_zero()
         ls.k = mat
 
@@ -1143,12 +1174,20 @@ def _build_stiffness_batch_data(
         dj_c = intf._perf_dj[:sc]
         ecc_c = intf._perf_ecc[:sc]
         L = float(intf.length)
-        for s_idx in range(sc):
-            all_di.append(float(di_c[s_idx]))
-            all_dj.append(float(dj_c[s_idx]))
-            all_ecc.append(float(ecc_c[s_idx]))
-            all_dm.append(0.5 * L - float(di_c[s_idx]))
-            all_k0.append(float(intf.trasv_1[s_idx].k))
+        group = intf.trasv_1
+        if getattr(group, "is_batch_backed", False) and not group._cache:
+            all_di.extend(float(d) for d in di_c)
+            all_dj.extend(float(d) for d in dj_c)
+            all_ecc.extend(float(e) for e in ecc_c)
+            all_dm.extend(0.5 * L - float(d) for d in di_c)
+            all_k0.extend(float(k_val) for k_val in group._k[:sc])
+        else:
+            for s_idx in range(sc):
+                all_di.append(float(di_c[s_idx]))
+                all_dj.append(float(dj_c[s_idx]))
+                all_ecc.append(float(ecc_c[s_idx]))
+                all_dm.append(0.5 * L - float(di_c[s_idx]))
+                all_k0.append(float(intf.trasv_1[s_idx].k))
 
         sp_offset += sc
         term_idx += 21 + (3 if layout.has_slid else 0) + (10 if layout.has_out_of_plane else 0)
@@ -1232,7 +1271,7 @@ def _assemble_global_k_cached(model: Model, plan: _StiffnessAssemblyPlan) -> sp.
     )
     mat._has_sorted_indices = True
     mat._has_canonical_format = True
-    return mat
+    return _with_restraint_support(model, mat)
 
 
 def _get_stiffness_assembly_plan(model: Model) -> _StiffnessAssemblyPlan:

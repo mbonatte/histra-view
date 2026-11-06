@@ -27,6 +27,12 @@ def get_restrained_dofs(model: Model, K: Optional[sp.csc_matrix] = None) -> Set[
 
     # ── 1. Explicit restraints ──
     for r in model.collections.restraints.values():
+        # Elastic/free restraints own independent local DOFs.  Their fixed
+        # directions are enforced by the constrained interface springs; fixing
+        # the parent Quad translations here would constrain the elastic
+        # direction as well (and would ignore the restraint's local axes).
+        if any(float(value) >= 0.0 for value in r.k):
+            continue
         # Restraint references NodeC objects via node_c_keys
         for nc_key in r.node_c_keys:
             if nc_key == 0 or nc_key not in model.collections.node_c:

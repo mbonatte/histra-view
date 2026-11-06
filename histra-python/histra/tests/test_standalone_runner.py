@@ -48,6 +48,63 @@ def test_total_reaction_matches_csharp_reaction_sum_exactly():
     assert reaction.balancing_z == -reference[2]
 
 
+def test_interface_resultants_and_bending_moments_match_csharp_exactly():
+    from histra.postprocessing import _interface_local_resultants
+    from histra.solver.model_manager import ModelManager
+
+    model, _u = _restore_vert_final()
+    with sqlite3.connect(RESULTS) as connection:
+        rows = connection.execute(
+            "SELECT ParentKey, ForceX, ForceY, ForceZ, "
+            "BendingMomentsX, BendingMomentsY, BendingMomentsZ "
+            "FROM InterfaceStates "
+            "WHERE AnalysisKey=1 AND Combination=1 AND Step=5"
+        ).fetchall()
+
+    assert len(rows) == len(model.collections.interfaces)
+    for key, fx, fy, fz, mx, my, mz in rows:
+        intf = model.collections.interfaces[key]
+        forces, moments = _interface_local_resultants(intf)
+        np.testing.assert_array_equal(forces, np.asarray((fx, fy, fz), dtype=np.float32))
+        np.testing.assert_array_equal(moments, np.asarray((mx, my, mz), dtype=np.float32))
+
+    runtime = ModelManager.prepare_hysteretic_batch(model, rebuild=True)
+    assert runtime is not None
+    try:
+        runtime.sync_all_to_objects()
+        for key, fx, fy, fz, mx, my, mz in rows:
+            intf = model.collections.interfaces[key]
+            assert intf.status.forces == (
+                float(np.float32(fx)),
+                float(np.float32(fy)),
+                float(np.float32(fz)),
+            )
+            assert intf.status.bending_moments == (
+                float(np.float32(mx)),
+                float(np.float32(my)),
+                float(np.float32(mz)),
+            )
+            assert any(v != 0.0 for v in intf.f)
+    finally:
+        ModelManager.clear_hysteretic_batch()
+
+
+def test_node_displacements_skip_auxiliary_interface_nodes_when_prepared():
+    from histra.solver.model_manager import ModelManager
+
+    model = load_model(HRX)
+    ModelManager.prepare_model(model, force=True, use_cache=False)
+    u = np.ones(model.gdl, dtype=float) * 1.0e-3
+    rows = compute_node_displacements(model, u)
+    quad_node_keys = {
+        int(nk)
+        for quad in model.collections.quads.values()
+        for nk in quad.node_keys
+    }
+    assert {row.node_key for row in rows} == quad_node_keys
+    assert all(row.contributing_quads > 0 for row in rows)
+
+
 def test_node_displacements_export_global_xyz_for_every_model_node():
     model, u = _restore_vert_final()
     rows = compute_node_displacements(model, u)

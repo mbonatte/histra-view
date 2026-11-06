@@ -162,7 +162,42 @@ def inspect_solver_capabilities(
                 )
             )
     _inspect_materials(collections, issues)
+    _inspect_elastic_restraint_scope(collections, reachable, issues)
     return SolverCapabilityReport(supported=not issues, issues=tuple(issues))
+
+
+def _inspect_elastic_restraint_scope(
+    collections: Any, analyses: Iterable[Any], issues: list[SolverCapabilityIssue]
+) -> None:
+    """Reject modal analyses whose added elastic restraint DOFs are massless.
+
+    The static solver assembles the native elastic restraint diagonal
+    directly.  A modal generalized eigenproblem would require condensing those
+    massless DOFs; that condensation has no C# reference yet, so fail clearly
+    instead of silently solving a different eigenproblem.
+    """
+    modal = [
+        analysis for analysis in analyses
+        if int(getattr(analysis, "analysis_type", 2)) == 5
+    ]
+    if not modal:
+        return
+    elastic = [
+        restraint for restraint in getattr(collections, "restraints", {}).values()
+        if any(float(value) >= 0.0 for value in restraint.k)
+    ]
+    if not elastic:
+        return
+    for analysis in modal:
+        issues.append(
+            SolverCapabilityIssue(
+                "MODAL_ELASTIC_RESTRAINT_UNSUPPORTED",
+                "Modal analysis with elastic/free restraint DOFs is not translated; "
+                "the added foundation-spring DOFs are massless. Use fixed "
+                "restraints for modal analyses.",
+                str(getattr(analysis, "name", analysis)),
+            )
+        )
 
 
 def _inspect_materials(collections: Any, issues: list[SolverCapabilityIssue]) -> None:

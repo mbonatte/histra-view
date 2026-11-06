@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 import copy
+from pathlib import Path
 import time
 from typing import Any, Callable, Iterable
 
 import numpy as np
 
-from histra.postprocessing import compute_total_reaction
+from histra.postprocessing import ReactionResult, compute_total_reaction
 from histra.solver.cancellation import CancelCheck
 from histra.solver.interface_material import (
     InterfaceMaterialMutationReport,
@@ -23,7 +24,7 @@ from histra.solver.outcomes import (
     AnalysisStep,
     classify_analysis_outcome,
 )
-from histra.solver.modal import solve_modal_analysis
+from histra.solver.modal import modal_linear_solver_backend, solve_modal_analysis
 from histra.solver.solve import solve_static_nonlinear
 from histra.solver.equilibrium import UNSAFE_EQUILIBRIUM_EXIT_CODE
 from histra.solver.capabilities import inspect_solver_capabilities
@@ -58,8 +59,12 @@ class AnalysisSession:
         Callback receiving numerical step progress (0.0 to 100.0).
     equilibrium_policy : {"warn", "strict", "off"}, default="warn"
         Policy for independent equilibrium force residual balance auditing.
-    performance_policy : {"compiled", "warn", "off"}, default="compiled"
+    performance_policy : {"compiled", "diagnostic-scalar"}, default="compiled"
         Policy enforcing compiled Numba backend execution.
+    preserve_predecessor_load : bool, default=False
+        Carry the committed applied load into chained static analyses. This is
+        useful when a material change must re-equilibrate under the same load;
+        the default retains the C# restart's resisting-force baseline.
 
     Examples
     --------
@@ -92,10 +97,16 @@ class AnalysisSession:
         tangent_refresh_cadence: int | None = None,
         allow_experimental_methods: bool = False,
         interface_registration: str = "csharp",
+        capture_csharp_results: bool = False,
+        preserve_predecessor_load: bool = False,
     ) -> None:
         if model.collections is None:
             raise AnalysisSessionError("Model.collections is not initialized.")
         self.model = model
+        self.capture_csharp_results = bool(capture_csharp_results)
+        self.preserve_predecessor_load = bool(preserve_predecessor_load)
+        self._committed_external_load: np.ndarray | None = None
+        self._committed_reaction: ReactionResult | None = None
         self.interface_registration = normalize_interface_registration(interface_registration)
         self.combination_row = int(combination_row)
         self.on_log = on_log
@@ -274,12 +285,27 @@ class AnalysisSession:
         if self.allow_experimental_methods:
             definition.allow_experimental_methods = True
         inspect_solver_capabilities(self.model, [definition]).require_supported()
+        is_modal = int(getattr(definition, "analysis_type", 0)) == 5
+        execution_backend = modal_linear_solver_backend(definition) if is_modal else getattr(
+            definition, "linear_solver_backend", self.linear_solver_backend
+        )
         if self.performance_policy == "compiled":
+            from histra.solver.backend_coverage import require_compiled_dependencies
+
+            require_compiled_dependencies(
+                self.model, [definition],
+                linear_solver_backend=execution_backend,
+            )
+        # Restart resultants are numerical work too: audit their live runtime
+        # before capturing predecessor reactions. Virgin state is built in setup.
+        if self.performance_policy == "compiled" and int(definition.initial_analysis_key) >= 0:
             from histra.solver.backend_coverage import inspect_solver_backend
 
-            coverage = inspect_solver_backend(self.model, [definition])
-            self.backend_coverage = coverage
-            coverage.require_compiled()
+            self.backend_coverage = inspect_solver_backend(
+                self.model, [definition],
+                linear_solver_backend=execution_backend,
+            )
+            self.backend_coverage.require_compiled()
         emit_strategy_advisories(
             definition,
             policy=self.strategy_policy,
@@ -296,7 +322,15 @@ class AnalysisSession:
                     f"Analysis {definition.key}:{definition.name} is virgin but session "
                     f"already contains committed analysis {self.current_analysis_key}."
                 )
-            initial_step = AnalysisStep.initial(np.zeros(int(self.model.gdl), dtype=float))
+            interfaces = getattr(self.model.collections, "interfaces", None)
+            num_intf = len(interfaces) if interfaces is not None else 0
+            init_f = np.zeros((num_intf, 3), dtype=np.float32) if num_intf > 0 else None
+            init_m = np.zeros((num_intf, 3), dtype=np.float32) if num_intf > 0 else None
+            initial_step = AnalysisStep.initial(
+                np.zeros(int(self.model.gdl), dtype=float),
+                interface_resultants=init_f,
+                interface_moments=init_m,
+            )
         else:
             if self.current_analysis_key != initial_key or self.current_displacement is None:
                 raise AnalysisSessionError(
@@ -305,20 +339,49 @@ class AnalysisSession:
                     f"{self.current_analysis_key}."
                 )
             predecessor_reaction = compute_total_reaction(self.model)
+            from histra.solver.model_manager import ModelManager
+
+            pred_rt = ModelManager.hysteretic_batch_for(self.model)
+            pred_f = (
+                pred_rt.all_resultant_forces().copy()
+                if pred_rt is not None and getattr(pred_rt, "active", False)
+                else None
+            )
+            pred_m = (
+                pred_rt.all_bending_moments().copy()
+                if pred_rt is not None and getattr(pred_rt, "active", False)
+                else None
+            )
             initial_step = AnalysisStep.initial(
                 self.current_displacement,
                 reaction_x=predecessor_reaction.x,
                 reaction_y=predecessor_reaction.y,
                 reaction_z=predecessor_reaction.z,
+                interface_resultants=pred_f,
+                interface_moments=pred_m,
             )
             kwargs.update(
                 initial_displacement=self.current_displacement,
                 restart_from_current_state=True,
             )
+            if self.preserve_predecessor_load and not is_modal:
+                if self._committed_external_load is None or self._committed_reaction is None:
+                    raise AnalysisSessionError("No committed predecessor load is available")
+                kwargs.update(
+                    initial_external_load=self._committed_external_load.copy(),
+                    equilibrium_reference_reaction=self._committed_reaction,
+                )
 
+        capture = None
+        if self.capture_csharp_results:
+            from histra.io.csharp_results_capture import CSharpResultsCapture
+
+            if int(definition.analysis_type) == 5:
+                raise AnalysisSessionError("Native .Results capture currently supports static Quad/Interface analyses only")
+            capture = CSharpResultsCapture(self.model, self.combination_row)
         started = time.perf_counter()
         try:
-            if int(getattr(definition, "analysis_type", 0)) == 5:
+            if is_modal:
                 modal_result = solve_modal_analysis(
                     self.model,
                     definition,
@@ -326,6 +389,7 @@ class AnalysisSession:
                     on_log=self.on_log,
                     on_progress=self.on_progress,
                     should_cancel=should_cancel,
+                    performance_policy=self.performance_policy,
                     **kwargs,
                 )
                 code = 0
@@ -341,10 +405,9 @@ class AnalysisSession:
                     max_committed_steps=max_committed_steps,
                     should_stop_after_commit=should_stop_after_commit,
                     on_step_committed=on_step_committed,
+                    on_state_saved=capture.capture if capture is not None else None,
                     should_cancel=should_cancel,
-                    linear_solver_backend=getattr(
-                        definition, "linear_solver_backend", self.linear_solver_backend
-                    ),
+                    linear_solver_backend=execution_backend,
                     linear_solver_precision=getattr(
                         definition, "linear_solver_precision", self.linear_solver_precision
                     ),
@@ -370,12 +433,23 @@ class AnalysisSession:
                     performance_policy=self.performance_policy,
                     **kwargs,
                 )
+            if self.performance_policy == "compiled":
+                from histra.solver.backend_coverage import inspect_solver_backend
+
+                self.backend_coverage = inspect_solver_backend(
+                    self.model, [definition],
+                    linear_solver_backend=execution_backend,
+                )
+                self.backend_coverage.require_compiled()
         except Exception as exc:
             self._tainted_reason = f"{type(exc).__name__}: {exc}"
             raise
         runtime = time.perf_counter() - started
         steps = tuple(AnalysisStep.from_mapping(step) for step in raw_steps)
         outcome = classify_analysis_outcome(int(code), steps, definition)
+        from histra.io.results_snapshot import capture_export_snapshot
+        from histra.io.model_point_summary import build_model_point_summary
+
         execution = AnalysisExecution(
             analysis_key=int(definition.key),
             analysis_name=str(definition.name),
@@ -391,6 +465,11 @@ class AnalysisSession:
             ),
             initial_step=initial_step,
             modal_result=modal_result,
+            export_snapshot=capture_export_snapshot(self.model) if modal_result is None else None,
+            csharp_records=capture.finish(definition.key) if capture is not None and capture.last_row is not None else None,
+            model_point_output=build_model_point_summary(
+                self.model, ((initial_step,) if initial_step is not None else ()) + tuple(s for s in steps if s.committed), definition,
+            ) if modal_result is None else None,
         )
         committed = execution.committed_steps
         if execution.completed and execution.modal_result is not None:
@@ -399,6 +478,19 @@ class AnalysisSession:
         elif execution.completed and committed:
             self.current_analysis_key = int(definition.key)
             self.current_displacement = committed[-1].u.copy()
+            if self.preserve_predecessor_load:
+                from histra.solver.model_manager import ModelManager
+
+                if ModelManager._fext is None:
+                    raise AnalysisSessionError("Completed analysis has no external load vector")
+                self._committed_external_load = ModelManager._fext.copy()
+                last = committed[-1]
+                reaction_x, reaction_y, reaction_z = last.reaction_x, last.reaction_y, last.reaction_z
+                if reaction_x is None or reaction_y is None or reaction_z is None:
+                    raise AnalysisSessionError("Completed analysis has no reaction reference")
+                self._committed_reaction = ReactionResult(
+                    reaction_x, reaction_y, reaction_z,
+                )
         elif not execution.completed:
             self._tainted_reason = (
                 f"analysis {definition.key}:{definition.name} ended as {outcome.value}"
@@ -455,6 +547,163 @@ class AnalysisSession:
     ) -> tuple[AnalysisExecution, ...]:
         return tuple(
             self.run(analysis, should_cancel=should_cancel) for analysis in analyses
+        )
+
+    # Alias matching session documentation and user intuition
+    run_analysis = run
+
+    def export_analysis(
+        self,
+        analysis_key_or_name: int | str,
+        output_dir: str | Path,
+        base_name: str | None = None,
+        format: str = "npz",
+        tier: str = "all",
+        include_node_displacements: bool = True,
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Path]:
+        """Export simulation results of a single executed analysis.
+
+        Parameters
+        ----------
+        analysis_key_or_name : int or str
+            Key or name of an already executed analysis in this session.
+        output_dir : str or Path
+            Target directory for export.
+        base_name : str, optional
+            Base filename prefix (defaults to '{model_name}_{analysis_name}').
+        format : {"npz", "h5", "json", "histra", "results"}, default="npz"
+            Array format for dense fields.
+        tier : {"all", "summary", "fields"}, default="all"
+            Which tiers to export.
+        include_node_displacements : bool, default=True
+            Whether to project and store full 3D node translations across steps.
+        metadata : dict, optional
+            Additional metadata merged into the summary manifest.
+
+        Returns
+        -------
+        dict[str, Path]
+            Dictionary of created files: {'summary': path, 'fields': path}.
+        """
+        target_analysis = self.resolve_analysis(analysis_key_or_name)
+        target_key = int(target_analysis.key)
+        execution = next(
+            (e for e in reversed(self.executions) if int(e.analysis_key) == target_key),
+            None,
+        )
+        if execution is None:
+            raise AnalysisSessionError(
+                f"No execution found in session for analysis {target_key}:{target_analysis.name}. "
+                "Execute the analysis first using session.run(...) before exporting."
+            )
+
+        if base_name is None:
+            model_stem = getattr(self.model, "name", None) or (
+                Path(self.model.source_path).stem if getattr(self.model, "source_path", None) else "model"
+            )
+            base_name = f"{model_stem}_{execution.analysis_name}"
+
+        filepath = Path(output_dir) / base_name
+        from histra.io.results_writer import ResultsWriter
+
+        return ResultsWriter.export(
+            model=self.model,
+            execution=execution,
+            filepath=filepath,
+            format=format,
+            tier=tier,
+            include_node_displacements=include_node_displacements,
+            metadata=metadata,
+        )
+
+    def export_session(
+        self,
+        output_dir: str | Path,
+        bundle_name: str,
+        format: str = "npz",
+        tier: str = "all",
+        include_node_displacements: bool = True,
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, dict[str, Path]]:
+        """Export all executed analyses in this session.
+
+        Parameters
+        ----------
+        output_dir : str or Path
+            Target directory.
+        bundle_name : str
+            Prefix for all exported analyses.
+        format : {"npz", "h5", "json", "histra", "results"}, default="npz"
+            Array format for dense fields.
+        tier : {"all", "summary", "fields"}, default="all"
+            Which tiers to export.
+        include_node_displacements : bool, default=True
+            Whether to project and store full 3D node translations across steps.
+        metadata : dict, optional
+            Additional metadata merged into the summary manifests.
+
+        Returns
+        -------
+        dict[str, dict[str, Path]]
+            Mapping of analysis_name -> dict of created file paths.
+        """
+        if not self.executions:
+            raise AnalysisSessionError("Session contains no completed or executed analyses to export.")
+
+        if str(format).lower().strip() in {"results", "result", "csharp"}:
+            if str(tier).lower().strip() != "all":
+                raise ValueError("Native .Results export requires tier='all'")
+            path = self.export_csharp_results(Path(output_dir) / bundle_name)
+            return {execution.analysis_name: {"results": path} for execution in self.executions}
+        if str(format).lower().strip() == "histra":
+            path = self.export_bundle(
+                Path(output_dir) / bundle_name, tier=tier,
+                include_node_displacements=include_node_displacements, metadata=metadata,
+            )
+            return {execution.analysis_name: {"bundle": path} for execution in self.executions}
+
+        results: dict[str, dict[str, Path]] = {}
+        from histra.io.results_writer import ResultsWriter
+
+        # Match export_analysis: the most recent execution wins on reruns.
+        latest = {execution.analysis_name: execution for execution in self.executions}
+        for execution in latest.values():
+            base_name = f"{bundle_name}_{execution.analysis_name}"
+            filepath = Path(output_dir) / base_name
+            meta = dict(metadata or {})
+            meta["bundle_name"] = bundle_name
+            exported = ResultsWriter.export(
+                model=self.model,
+                execution=execution,
+                filepath=filepath,
+                format=format,
+                tier=tier,
+                include_node_displacements=include_node_displacements,
+                metadata=meta,
+            )
+            results[execution.analysis_name] = exported
+        from histra.io.results_writer import write_session_manifest
+
+        write_session_manifest(self.model, results, Path(output_dir) / f"{bundle_name}.session.json")
+        return results
+
+    def export_csharp_results(self, filepath, *, reference_path=None) -> Path:
+        """Export captured native static records; optionally demand exact reference values."""
+        from histra.io.csharp_results_writer import export_csharp_executions
+
+        return export_csharp_executions(self.executions, filepath, reference_path=reference_path)
+
+    def export_bundle(self, filepath, *, tier="all", include_node_displacements=True, metadata=None) -> Path:
+        """Export the latest execution of every analysis in one .histra file."""
+        from histra.io.results_writer import ResultsWriter
+
+        if not self.executions:
+            raise AnalysisSessionError("Session contains no executed analyses to export.")
+        latest = {execution.analysis_name: execution for execution in self.executions}
+        return ResultsWriter.export_bundle(
+            self.model, latest, filepath, tier=tier,
+            include_node_displacements=include_node_displacements, metadata=metadata,
         )
 
 

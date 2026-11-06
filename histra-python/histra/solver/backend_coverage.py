@@ -108,6 +108,30 @@ class SolverBackendCoverageReport:
             )
 
 
+def require_compiled_dependencies(
+    model: Model,
+    analysis_names: Iterable[int | str | Any] | None = None,
+    *,
+    linear_solver_backend: str | None = None,
+) -> None:
+    """Reject missing dependencies without constructing pre-initialization state.
+
+    This is not a coverage audit. Nonlinear setup must still enforce actual
+    object coverage after initialization/restart, before any numerical step.
+    """
+    from histra.solver.hysteretic_runtime import _evaluate_linear_batch
+
+    disabled = os.environ.get("HISTRA_DISABLE_COMPILED_SPRINGS", "").strip().lower()
+    if _evaluate_linear_batch is None or disabled in {"1", "true", "yes", "on"}:
+        raise CompiledBackendRequiredError("Numba is unavailable or disabled via environment variable.")
+    requested, _, available, error = _resolve_linear_solver_backend(linear_solver_backend)
+    if not available:
+        raise CompiledBackendRequiredError(f"Sparse backend {requested!r} is unavailable: {error}")
+    _, errors = _resolve_requested_analyses(model, analysis_names)
+    if errors:
+        raise CompiledBackendRequiredError("Cannot preflight requested analysis selection: " + "; ".join(errors))
+
+
 def inspect_solver_backend(
     model: Model,
     analysis_names: Iterable[int | str | Any] | None = None,
@@ -284,6 +308,11 @@ def _resolve_linear_solver_backend(
             "CHOLMOD was requested but no native library was found; set "
             "HISTRA_CHOLMOD_LIBRARY or select another backend.",
         )
+    if system.backend == "cudss":
+        from histra.types.cudss import probe_cudss
+
+        available, error = probe_cudss()
+        return system.requested_backend, system.backend, available, error
     return system.requested_backend, system.backend, True, None
 
 

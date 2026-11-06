@@ -260,7 +260,12 @@ def _iter_springs(
             yield spring
     for intf in interface_values:
         for name in ("trasv_1", "trasv_2", "slid", "slid_out_plan"):
-            for spring in getattr(intf, name, ()):
+            group = getattr(intf, name, ())
+            if getattr(group, "is_batch_backed", False) and getattr(
+                group, "_histra_batch_managed", False
+            ):
+                continue
+            for spring in group:
                 if (
                     spring is not None
                     and not getattr(spring, "_histra_batch_managed", False)
@@ -288,6 +293,7 @@ class SolverStateSnapshot:
     line_search_state: dict[str, Any] | None
     quad_state: list[tuple[Any, dict[str, Any]]]
     interface_state: list[tuple[Any, dict[str, Any]]]
+    restraint_state: list[tuple[Any, list[float]]]
     spring_state: list[tuple[Any, dict[str, Any]]]
     batch_state: tuple[np.ndarray, ...] | None
 
@@ -360,6 +366,10 @@ class SolverStateSnapshot:
                 "status": _copy_state_dict(intf.status.__dict__),
                 "f": _copy_array(intf.f),
             }))
+        restraints = [
+            (restraint, [float(value) for value in restraint.u])
+            for restraint in getattr(model.collections, "restraints", {}).values()
+        ]
         if runtime is not None:
             sliding_interfaces = (
                 tuple(
@@ -406,6 +416,7 @@ class SolverStateSnapshot:
             line_search_state=_copy_state_dict(line_search.__dict__) if line_search else None,
             quad_state=quads,
             interface_state=interfaces,
+            restraint_state=restraints,
             spring_state=springs,
             batch_state=batch_state,
         )
@@ -469,6 +480,8 @@ class SolverStateSnapshot:
         for intf, saved in self.interface_state:
             _restore_state_dict(intf.status.__dict__, saved["status"])
             intf.f[:] = saved["f"]
+        for restraint, saved in self.restraint_state:
+            restraint.u[:] = saved
         for spring, saved in self.spring_state:
             _restore_object_state(spring, saved)
         if self.batch_state is not None:
@@ -491,6 +504,7 @@ class SolverStateSnapshot:
             self.line_search_state,
             [saved for _obj, saved in self.quad_state],
             [saved for _obj, saved in self.interface_state],
+            [saved for _obj, saved in self.restraint_state],
             [saved for _obj, saved in self.spring_state],
             self.batch_state,
         )

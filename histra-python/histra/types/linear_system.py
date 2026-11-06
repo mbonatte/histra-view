@@ -17,6 +17,7 @@ from histra.types.pcg import (
     PCGConvergenceError,
     PCGFactorization,
 )
+from histra.types.cudss import CudssFactorization
 from histra.types.vector_norm import csharp_vector_norm
 
 from histra.types.umfpack import (
@@ -66,6 +67,8 @@ class LinearSystem:
             backend or os.environ.get("HISTRA_LINEAR_SOLVER", "auto")
         ).strip().lower()
         aliases = {
+            "cpu": "auto",
+            "gpu": "cudss",
             "suite_sparse": "umfpack",
             "suitesparse": "umfpack",
             "super_lu": "superlu",
@@ -74,9 +77,9 @@ class LinearSystem:
             "preconditioned_conjugate_gradient": "pcg",
         }
         requested = aliases.get(requested, requested)
-        if requested not in {"auto", "umfpack", "superlu", "cholmod", "pcg"}:
+        if requested not in {"auto", "umfpack", "superlu", "cholmod", "pcg", "cudss"}:
             raise ValueError(
-                "linear solver backend must be one of: auto, umfpack, superlu, cholmod, pcg; "
+                "linear solver backend must be one of: auto, umfpack, superlu, cholmod, pcg, cudss; "
                 f"received {requested!r}"
             )
         self.requested_backend = requested
@@ -223,6 +226,11 @@ class LinearSystem:
 
         refactored = False
         if (
+            self.backend == "cudss"
+            and isinstance(self._factorization, CudssFactorization)
+        ):
+            refactored = self._factorization.refactor_numeric(matrix)
+        elif (
             self.backend == "pcg"
             and isinstance(self._factorization, PCGFactorization)
             and self._factor_backend == "pcg"
@@ -259,7 +267,11 @@ class LinearSystem:
 
     def _create_factorization(self, matrix: sp.csc_matrix) -> None:
         """Create a fresh factorization based on the active backend configuration."""
-        if self.backend == "pcg":
+        if self.backend == "cudss":
+            self._invalidate_factorization()
+            self._factorization = CudssFactorization(matrix)
+            self._factor_backend = "cudss"
+        elif self.backend == "pcg":
             self._invalidate_factorization()
             self._factorization = PCGFactorization(matrix)
             self._factor_backend = "pcg"
@@ -332,7 +344,7 @@ class LinearSystem:
         try:
             self._ensure_factorization(matrix)
             effective_backend = self._factor_backend or self.backend
-            if effective_backend in ("umfpack", "cholmod", "pcg"):
+            if effective_backend in ("umfpack", "cholmod", "pcg", "cudss"):
                 solution = self._factorization.solve(vector, out=self.x)
             else:
                 solution = self._factorization.solve(vector)

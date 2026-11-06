@@ -70,6 +70,7 @@ def _setup_nonlinear_analysis(
     results_path: str | Path | None = None,
     initial_displacement: np.ndarray | None = None,
     restart_from_current_state: bool = False,
+    initial_external_load: np.ndarray | None = None,
     auto_prepare: bool = True,
     diagnostics: DiagnosticOptions | str | Path | None = None,
     linear_solver_backend: str | None = None,
@@ -159,12 +160,11 @@ def _setup_nonlinear_analysis(
 
     policy = str(performance_policy).strip().lower()
     if policy == "compiled":
-        from histra.solver.backend_coverage import inspect_solver_backend
+        from histra.solver.backend_coverage import require_compiled_dependencies
 
-        backend = inspect_solver_backend(
+        require_compiled_dependencies(
             model, [analysis], linear_solver_backend=linear_solver_backend
         )
-        backend.require_compiled()
     elif policy == "diagnostic-scalar" and on_log is not None:
         on_log(
             "PERFORMANCE POLICY NOTICE: Running in 'diagnostic-scalar' mode. "
@@ -207,7 +207,10 @@ def _setup_nonlinear_analysis(
     # Without this reset, the first Python increment is added to the saved local
     # element displacements, producing a completely different residual path.
     initial_analysis_key = int(getattr(analysis, "initial_analysis_key", -100))
+    preserved_external_load = initial_external_load
     initial_external_load = np.zeros(n)
+    if preserved_external_load is not None and not restart_from_current_state:
+        raise ValueError("An explicit initial external load requires an in-memory restart")
     if initial_analysis_key < 0:
         if restart_from_current_state or initial_displacement is not None:
             raise ValueError(
@@ -285,6 +288,14 @@ def _setup_nonlinear_analysis(
             f"Restored chained baseline load from committed resisting forces: "
             f"norm={np.linalg.norm(initial_external_load):.6g}"
         )
+    if preserved_external_load is not None:
+        if pdelta_enabled(getattr(analysis, "pdelta_effect", None)):
+            raise ValueError("Preserved-load restart is not yet validated with P-Delta")
+        preserved_external_load = np.asarray(preserved_external_load, dtype=np.float64)
+        if preserved_external_load.shape != (n,) or not np.all(np.isfinite(preserved_external_load)):
+            raise ValueError(f"Expected a finite initial external load vector with shape ({n},)")
+        initial_external_load = preserved_external_load.copy()
+        p.log("Preserved the predecessor's applied external load for re-equilibration")
     runtime = ModelManager.hysteretic_batch_for(model)
     if policy == "compiled":
         if runtime is None:
@@ -457,8 +468,14 @@ def _set_initial_state(
         for spring_group in (
             intf.trasv_1, intf.trasv_2, intf.slid, intf.slid_out_plan
         ):
+            if getattr(spring_group, "is_batch_backed", False):
+                spring_group.revert_to_start()
+                spring_group.revert_to_last_commit()
+                continue
             for spring in spring_group:
                 if spring is None:
                     continue
                 spring.revert_to_start()
                 spring.revert_to_last_commit()
+    for restraint in model.collections.restraints.values():
+        restraint.u = [0.0] * 6

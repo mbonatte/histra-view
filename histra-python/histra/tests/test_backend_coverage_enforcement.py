@@ -101,9 +101,18 @@ def test_nonlinear_preflight_receives_the_selected_sparse_backend(monkeypatch) -
 
     model = load_model(MODEL_LIVE)
     original = coverage_module.inspect_solver_backend
+    dependencies = coverage_module.require_compiled_dependencies
     observed: list[str | None] = []
+    dependency_backends: list[str | None] = []
+
+    def check_dependencies(*args, **kwargs):
+        dependency_backends.append(kwargs.get("linear_solver_backend"))
+        return dependencies(*args, **kwargs)
+
+    monkeypatch.setattr(coverage_module, "require_compiled_dependencies", check_dependencies)
 
     def inspect_with_capture(*args, **kwargs):
+        assert ModelManager.hysteretic_batch_for(model) is not None
         observed.append(kwargs.get("linear_solver_backend"))
         return original(*args, **kwargs)
 
@@ -120,8 +129,9 @@ def test_nonlinear_preflight_receives_the_selected_sparse_backend(monkeypatch) -
     )
 
     assert code == 0
-    # Setup preflights before and after the execution-boundary rebuild.
-    assert observed == ["superlu", "superlu"]
+    # Full coverage is audited after the execution-boundary rebuild.
+    assert observed == ["superlu"]
+    assert dependency_backends == ["superlu"]
 
 
 def test_compiled_policy_fails_closed_when_numba_disabled(monkeypatch) -> None:

@@ -18,7 +18,7 @@ from histra.solver.program import Program
 from histra.solver.solution_algorithm import EquiSolnAlgo
 from histra.solver.state_snapshot import SolverStateSnapshot
 from histra.solver.restart import restore_committed_analysis_state
-from histra.postprocessing import compute_total_reaction
+from histra.postprocessing import ReactionResult, compute_total_reaction
 from histra.preprocessing import inspect_solver_readiness, require_solver_ready
 from histra.types.linear_system import LinearSolveError, LinearSystem
 from histra.solver.diagnostics import DiagnosticOptions, create_diagnostics
@@ -47,10 +47,13 @@ def solve_static_nonlinear(
     results_path: str | Path | None = None,
     initial_displacement: np.ndarray | None = None,
     restart_from_current_state: bool = False,
+    initial_external_load: np.ndarray | None = None,
+    equilibrium_reference_reaction: ReactionResult | None = None,
     auto_prepare: bool = True,
     max_committed_steps: int | None = None,
     should_stop_after_commit: Callable[[dict[str, Any]], bool] | None = None,
     on_step_committed: Callable[[dict[str, Any], Any], None] | None = None,
+    on_state_saved: Callable[[dict[str, Any], Any], None] | None = None,
     should_cancel: CancelCheck | None = None,
     diagnostics: DiagnosticOptions | str | Path | None = None,
     linear_solver_backend: str | None = None,
@@ -74,9 +77,16 @@ def solve_static_nonlinear(
     ArcLength branch returning to zero load; it is never evaluated on trial or
     failed states.
 
+    ``on_state_saved`` observes step 0 and committed state before integrator
+    domain changes. It is used for native database capture; it must not mutate state.
+
     ``on_step_committed`` receives the same committed row plus the private
     analysis definition used by the solve. It may adjust continuation controls
     such as ``dr2`` for the next step without modifying an accepted state.
+
+    ``initial_external_load`` and ``equilibrium_reference_reaction`` may be
+    supplied together for an in-memory restart to retain the preceding applied
+    load and audit against its committed reaction after a material change.
 
     Reversible Newton trials create thousands of short-lived state containers.
     CPython's cyclic collector can pause for minutes while scanning these fully
@@ -99,10 +109,13 @@ def solve_static_nonlinear(
                     on_progress=on_progress, results_path=results_path,
                     initial_displacement=initial_displacement,
                     restart_from_current_state=restart_from_current_state,
+                    initial_external_load=initial_external_load,
+                    equilibrium_reference_reaction=equilibrium_reference_reaction,
                     auto_prepare=auto_prepare,
                     max_committed_steps=max_committed_steps,
                     should_stop_after_commit=should_stop_after_commit,
                     on_step_committed=on_step_committed,
+                    on_state_saved=on_state_saved,
                     should_cancel=should_cancel,
                     diagnostics=diagnostics,
                     linear_solver_backend=linear_solver_backend,
@@ -146,10 +159,13 @@ def _solve_static_nonlinear_impl(
     results_path: str | Path | None = None,
     initial_displacement: np.ndarray | None = None,
     restart_from_current_state: bool = False,
+    initial_external_load: np.ndarray | None = None,
+    equilibrium_reference_reaction: ReactionResult | None = None,
     auto_prepare: bool = True,
     max_committed_steps: int | None = None,
     should_stop_after_commit: Callable[[dict[str, Any]], bool] | None = None,
     on_step_committed: Callable[[dict[str, Any], Any], None] | None = None,
+    on_state_saved: Callable[[dict[str, Any], Any], None] | None = None,
     should_cancel: CancelCheck | None = None,
     diagnostics: DiagnosticOptions | str | Path | None = None,
     linear_solver_backend: str | None = None,
@@ -166,6 +182,8 @@ def _solve_static_nonlinear_impl(
 ) -> tuple[int, list[dict[str, Any]]]:
     """C#-ordered static nonlinear solver implementation."""
     raise_if_cancelled(should_cancel)
+    if (initial_external_load is None) != (equilibrium_reference_reaction is None):
+        raise ValueError("A preserved external load requires its predecessor reaction reference")
     if model.collections is None:
         raise ValueError("Model.collections is not initialized")
 
@@ -187,6 +205,7 @@ def _solve_static_nonlinear_impl(
         on_log=on_log, on_progress=on_progress, should_cancel=should_cancel,
         results_path=results_path, initial_displacement=initial_displacement,
         restart_from_current_state=restart_from_current_state,
+        initial_external_load=initial_external_load,
         auto_prepare=auto_prepare, diagnostics=diagnostics,
         linear_solver_backend=linear_solver_backend,
         linear_solver_precision=linear_solver_precision,
@@ -218,43 +237,54 @@ def _solve_static_nonlinear_impl(
     equilibrium_force_relative_tolerance = setup.equilibrium_force_relative_tolerance
     equilibrium_residual_tolerance = setup.equilibrium_residual_tolerance
 
-    final_code, step_data, unsafe_equilibrium_steps, step = _execute_steps(
-        model, analysis, combination,
-        p=p, ls=ls, n=n, integrator=integrator, algorithm=algorithm,
-        alfa=alfa, dof=dof, diagnostic_writer=diagnostic_writer,
-        initial_reaction=initial_reaction,
-        equilibrium_reference_load_factor=equilibrium_reference_load_factor,
-        equilibrium_target_force=equilibrium_target_force,
-        reference=reference,
-        reference_displacement=reference_displacement,
-        equilibrium_policy=equilibrium_policy,
-        equilibrium_force_absolute_tolerance=equilibrium_force_absolute_tolerance,
-        equilibrium_force_relative_tolerance=equilibrium_force_relative_tolerance,
-        equilibrium_residual_tolerance=equilibrium_residual_tolerance,
-        on_step_committed=on_step_committed,
-        should_stop_after_commit=should_stop_after_commit,
-        max_committed_steps=max_committed_steps,
-    )
-    if final_code == 0:
-        p.log("Analysis executed and completed" if step else "Analysis not executed")
-    else:
-        p.log("Analysis executed but not completed")
-    if unsafe_equilibrium_steps:
-        p.log(
-            f"EQUILIBRIUM SAFETY SUMMARY: {unsafe_equilibrium_steps} candidate "
-            f"step(s) failed the independent audit (policy={equilibrium_policy})."
-        )
-    if diagnostic_writer is not None:
-        diagnostic_writer.emit(
-            "analysis_end",
-            exit_code=final_code,
-            committed_steps=sum(1 for row in step_data if row.get("status") == "OK"),
-            attempted_steps=len(step_data),
-            unsafe_equilibrium_steps=unsafe_equilibrium_steps,
+    try:
+        if on_state_saved is not None:
+            on_state_saved({
+                "step": 0, "u": p.u.copy(), "elastic_energy": 0.0, "dissipated_energy": 0.0,
+                "reaction_x": initial_reaction.x, "reaction_y": initial_reaction.y, "reaction_z": initial_reaction.z,
+            }, analysis)
+        final_code, step_data, unsafe_equilibrium_steps, step = _execute_steps(
+            model, analysis, combination,
+            p=p, ls=ls, n=n, integrator=integrator, algorithm=algorithm,
+            alfa=alfa, dof=dof, diagnostic_writer=diagnostic_writer,
+            initial_reaction=(initial_reaction if equilibrium_reference_reaction is None
+                              else equilibrium_reference_reaction),
+            equilibrium_reference_load_factor=equilibrium_reference_load_factor,
+            equilibrium_target_force=equilibrium_target_force,
+            reference=reference,
+            reference_displacement=reference_displacement,
             equilibrium_policy=equilibrium_policy,
+            equilibrium_force_absolute_tolerance=equilibrium_force_absolute_tolerance,
+            equilibrium_force_relative_tolerance=equilibrium_force_relative_tolerance,
+            equilibrium_residual_tolerance=equilibrium_residual_tolerance,
+            on_step_committed=on_step_committed,
+            on_state_saved=on_state_saved,
+            should_stop_after_commit=should_stop_after_commit,
+            max_committed_steps=max_committed_steps,
         )
-        diagnostic_writer.close()
-    return final_code, step_data
+        if final_code == 0:
+            p.log("Analysis executed and completed" if step else "Analysis not executed")
+        else:
+            p.log("Analysis executed but not completed")
+        if unsafe_equilibrium_steps:
+            p.log(
+                f"EQUILIBRIUM SAFETY SUMMARY: {unsafe_equilibrium_steps} candidate "
+                f"step(s) failed the independent audit (policy={equilibrium_policy})."
+            )
+        if diagnostic_writer is not None:
+            diagnostic_writer.emit(
+                "analysis_end",
+                exit_code=final_code,
+                committed_steps=sum(1 for row in step_data if row.get("status") == "OK"),
+                attempted_steps=len(step_data),
+                unsafe_equilibrium_steps=unsafe_equilibrium_steps,
+                equilibrium_policy=equilibrium_policy,
+            )
+            diagnostic_writer.close()
+        return final_code, step_data
+    finally:
+        ls.close()
+        p.ls = None
 
 
 # Compatibility re-exports: histra.solver.__init__ and tests import these
