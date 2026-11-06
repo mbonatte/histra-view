@@ -1,0 +1,45 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+build/
+dist/
+*.egg-info/
+
+work/
+jobs/
+C#_Original/
+python-results/
+my_model/
+.pytest_cache/
+__pycache__/
+.venv-linux/
+.native-parity/
+.ai-jail
+temp-six-jobs/
+profile.prof
+profile.svg
+profiles.zip
+profiles/
+profiling.py
+C#_Original.zip
+histra-python-performance-pass2.patch
+.venv_pkgs/
+scratch/
+*.npz
+benchmark_outputs/
+docs/PhD-Thesis/
+.agents/
+csharp_runner/
+
+# Local notebooks and saved outputs are not repository source.
+*.ipynb
+.ipynb_checkpoints/
+
+# Keep reference models as individual audited files, not duplicate archives.
+histra/model-output/*.zip
+
+# Generated single-file simulation studies.
+*.histra
+.histra_cache/
+*.prepared.cache

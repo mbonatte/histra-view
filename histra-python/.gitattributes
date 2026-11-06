@@ -1,0 +1,3 @@
+# This is a byte-preserved spreadsheet export. Its trailing empty CSV cells are
+# structural, so Git whitespace diagnostics must not reinterpret the source.
+release-evidence/article-source-data/Original_article_data.csv -whitespace

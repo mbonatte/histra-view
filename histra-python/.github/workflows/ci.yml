@@ -1,0 +1,39 @@
+name: Linux CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test-and-package:
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13", "3.14"]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - name: Install clean dependencies
+        run: python -m pip install --upgrade pip && python -m pip install -e ".[dev]"
+      - name: Code quality and static typing
+        run: |
+          python -m ruff check histra
+          python -m mypy
+      - name: Full suite
+        run: python -m pytest -q
+      - name: Build and validate distributions
+        run: python -m build && python -m twine check dist/*.whl dist/*.tar.gz
+      - name: Wheel-install smoke test
+        run: |
+          python -m venv wheel-smoke
+          wheel-smoke/bin/python -m pip install dist/*.whl
+          (cd wheel-smoke && bin/python -c "import histra, importlib.metadata as m; assert 'site-packages' in histra.__file__; assert histra.__version__ == m.version('histra-python'); assert callable(histra.inspect_solver_strategy)")
+      - name: Compact deterministic release checks
+        run: python -m pytest -q histra/tests/test_article_models_benchmark.py histra/tests/test_package_metadata.py histra/tests/test_backend_api.py
