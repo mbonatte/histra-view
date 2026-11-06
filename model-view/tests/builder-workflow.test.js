@@ -242,3 +242,66 @@ test('analysis step count edits the referenced load function and excludes dynami
     input.value = '5'; input.listeners.change(); assert.equal(builder.changes.size, 0);
   } finally { globalThis.document = oldDocument; }
 });
+
+test('analysisPropertyGroups adapts groups based on AnalysisType', async () => {
+  const { analysisPropertyGroups } = await import('../static/builder.js');
+  // Static nonlinear (AnalysisType 2) should include iterative and convergence but exclude modal
+  const staticAttrs = {
+    AnalysisType: '2',
+    Name: 'Pushover',
+    PdeltaEffect: 'EachStep',
+    ConvergenceTolerance: '0.001',
+    NumberOfEigenModes: '5',
+  };
+  const staticGroups = analysisPropertyGroups(staticAttrs);
+  const staticGroupIds = staticGroups.map(g => g.id);
+  assert.ok(staticGroupIds.includes('control'));
+  assert.ok(staticGroupIds.includes('iterative'));
+  assert.ok(staticGroupIds.includes('convergence'));
+  assert.ok(!staticGroupIds.includes('modal'), 'Static analysis must not include modal group');
+
+  // Modal analysis (AnalysisType 5) should include modal but exclude iterative and convergence
+  const modalAttrs = {
+    AnalysisType: '5',
+    Name: 'Modal_0',
+    NumberOfEigenModes: '10',
+    PdeltaEffect: 'None',
+    ConvergenceTolerance: '0.001',
+  };
+  const modalGroups = analysisPropertyGroups(modalAttrs);
+  const modalGroupIds = modalGroups.map(g => g.id);
+  assert.ok(modalGroupIds.includes('control'));
+  assert.ok(modalGroupIds.includes('modal'), 'Modal analysis must include modal group');
+  assert.ok(!modalGroupIds.includes('iterative'), 'Modal analysis must not include iterative group');
+  assert.ok(!modalGroupIds.includes('convergence'), 'Modal analysis must not include convergence group');
+});
+
+test('material units toNativeValue converts display values back to native units', async () => {
+  const { toNativeValue, convertedValue } = await import('../static/material-units.js');
+  // Stress (MPa in engineering, factor 10): 16200 MPa -> 1620 kN/cm²
+  assert.equal(toNativeValue('16200', 'Ehor', 'engineering'), '1620');
+  assert.equal(convertedValue('1620', 'Ehor', 'engineering'), '16200');
+
+  // Weight (kN/m³ in engineering, factor 1e6): 22.4 kN/m³ -> 0.0000224 kN/cm³
+  const nativeWeight = toNativeValue('22.4', 'w', 'engineering');
+  assert.equal(Number(nativeWeight), 2.24e-5);
+  assert.equal(convertedValue(nativeWeight, 'w', 'engineering'), '22.4');
+
+  // Native set preserves values exactly
+  assert.equal(toNativeValue('1620', 'Ehor', 'native'), '1620');
+});
+
+test('builder materialOptions formats items as name (key)', () => {
+  const builder = new Builder({}, () => {});
+  builder.materials = [
+    { key: '18', name: 'Masonry' },
+    { key: '141', name: 'Foundation' },
+  ];
+  const options = builder.materialOptions();
+  assert.deepEqual(options, [
+    ['0', 'None (0)'],
+    ['18', 'Masonry (18)'],
+    ['141', 'Foundation (141)'],
+  ]);
+});
+

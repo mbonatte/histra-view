@@ -27,3 +27,12 @@ export function convertedValue(value, key, set = 'engineering') {
   const scaled = Number(value) * unitSets[set][kind][1];
   return Number(scaled.toPrecision(9)).toString();
 }
+
+export function toNativeValue(value, key, set = 'engineering') {
+  const kind = dimension(key);
+  if (!kind || value === undefined || value === '' || !Number.isFinite(Number(value)) || Number(value) === -1) return value;
+  if (set === 'native') return value;
+  const factor = unitSets[set][kind][1];
+  const native = Number(value) / factor;
+  return Number(native.toPrecision(9)).toString();
+}

@@ -1,4 +1,5 @@
 import { PDELTA_LABELS, isDynamicOnlyAnalysisField } from './analysis-properties.js';
+import { unitSets, unitFor, convertedValue, toNativeValue, dimension } from './material-units.js';
 
 const ANALYSIS_GROUPS = [
   ['control', 'Control parameters', ['Name', 'Description', 'AnalysisType', 'InitialAnalysisKey', 'Mult', 'LoadCombinationKey', 'MasterPoint', 'ForceControl', 'Direction', 'DirX', 'DirY', 'DirZ']],
@@ -14,10 +15,30 @@ const ANALYSIS_LABELS = {
   ForceControl: 'Force control', Mult: 'Load multiplier', MasterPoint: 'Control model point',
 };
 export function analysisPropertyGroups(attributes = {}) {
+  const analysisType = String(attributes.AnalysisType ?? '2');
+  const isModal = analysisType === '5';
+  const modalKeys = new Set(ANALYSIS_GROUPS.find(g => g[0] === 'modal')?.[2] || []);
   const assigned = new Set(ANALYSIS_GROUPS.flatMap(group => group[2]));
-  return ANALYSIS_GROUPS.map(([id, title, keys]) => ({ id, title,
-    keys: id === 'advanced' ? Object.keys(attributes).filter(key => !assigned.has(key) && !isDynamicOnlyAnalysisField(key)) : keys.filter(key => Object.hasOwn(attributes, key))
-  })).filter(group => group.keys.length);
+
+  return ANALYSIS_GROUPS
+    .filter(([id]) => {
+      if (id === 'modal' && !isModal) return false;
+      if (isModal && (id === 'iterative' || id === 'convergence')) return false;
+      return true;
+    })
+    .map(([id, title, keys]) => ({
+      id,
+      title,
+      keys: id === 'advanced'
+        ? Object.keys(attributes).filter(key => {
+            if (assigned.has(key)) return false;
+            if (isDynamicOnlyAnalysisField(key)) return false;
+            if (!isModal && modalKeys.has(key)) return false;
+            return true;
+          })
+        : keys.filter(key => Object.hasOwn(attributes, key))
+    }))
+    .filter(group => group.keys.length);
 }
 
 const isMasonryItem = item => {
@@ -30,9 +51,9 @@ const labels = {
   nl: 'Mesh size',
   width: 'Width',
   height: 'Height',
-  material_key: 'Material key',
-  material_pulvino_key: 'Pulvino material key',
-  material_foundation_key: 'Foundation material key',
+  material_key: 'Material',
+  material_pulvino_key: 'Pulvino material',
+  material_foundation_key: 'Foundation material',
   Kz: 'Subgrade modulus Kz',
   L: 'Length',
   f: 'Rise',
@@ -62,10 +83,10 @@ const labels = {
   TreinfBotLeft: 'Reinforcement bottom left',
   TreinfTopRight: 'Reinforcement top right',
   TreinfBotRight: 'Reinforcement bottom right',
-  material_reinforcement_left_key: 'Reinforcement material left',
-  material_reinforcement_right_key: 'Reinforcement material right',
-  material_geo1_key: 'Geotechnical material left',
-  material_geo2_key: 'Geotechnical material right',
+  material_reinforcement_left_key: 'Reinforcement material (left)',
+  material_reinforcement_right_key: 'Reinforcement material (right)',
+  material_geo1_key: 'Geotechnical material (left)',
+  material_geo2_key: 'Geotechnical material (right)',
   spinta_passiva_sx: 'Add lateral restraint left',
   spinta_passiva_dx: 'Add lateral restraint right',
   Hsp1: 'Lateral restraint height left',
@@ -77,9 +98,9 @@ const labels = {
   H1: 'Height 1',
   H2: 'Height 2',
   H3: 'Height 3',
-  layer1_material_key: 'Layer 1 material key',
-  layer2_material_key: 'Layer 2 material key',
-  layer3_material_key: 'Layer 3 material key',
+  layer1_material_key: 'Layer 1 material',
+  layer2_material_key: 'Layer 2 material',
+  layer3_material_key: 'Layer 3 material',
   load_position: 'Live load position',
   load_value: 'Line load (kN/cm)',
 };
@@ -368,6 +389,7 @@ export class Builder {
     this.mode = 'create';
     this.payload = null;
     this.catalog = null;
+    this.materialUnits = 'engineering';
     // Edit-mode state
     this.source = null;
     this.sourceName = null;
@@ -480,13 +502,50 @@ export class Builder {
     return body;
   }
 
+  isMaterialKey(key) {
+    return /material.*key|layer[123]_material_key/i.test(key) || key === 'MaterialKey';
+  }
+
+  materialOptions() {
+    const materials = (this.mode === 'create'
+      ? (this.createMaterials?.length ? this.createMaterials : this.materials)
+      : (this.materials?.length ? this.materials : this.createMaterials))
+      || [];
+    const options = [['0', 'None (0)']];
+    for (const material of materials) {
+      const keyStr = String(material.key);
+      const name = material.name || `Material #${keyStr}`;
+      options.push([keyStr, `${name} (${keyStr})`]);
+    }
+    return options;
+  }
+
   field(parent, object, key, fallbackValue, onChange = null) {
     if (object[key] === undefined && fallbackValue !== undefined) {
       object[key] = fallbackValue;
     }
     const label = node('label', labels[key] || key);
     let input;
-    if (FIELD_OPTIONS[key]) {
+    if (this.isMaterialKey(key)) {
+      input = node('select');
+      const currentVal = String(object[key] ?? fallbackValue ?? '0');
+      const opts = this.materialOptions();
+      let hasCurrent = false;
+      for (const [val, txt] of opts) {
+        if (String(val) === currentVal) hasCurrent = true;
+        input.add(new Option(txt, String(val)));
+      }
+      if (!hasCurrent && currentVal !== '' && currentVal !== 'undefined') {
+        input.add(new Option(`Unknown material (${currentVal})`, currentVal));
+      }
+      input.value = currentVal;
+      input.addEventListener('change', () => {
+        object[key] = Number(input.value);
+        this.propagateCreateLink(object, key);
+        if (onChange) onChange();
+        this.scheduleGeometryPreview();
+      });
+    } else if (FIELD_OPTIONS[key]) {
       input = node('select');
       for (const [val, txt] of FIELD_OPTIONS[key]) {
         input.add(new Option(txt, val));
@@ -544,19 +603,29 @@ export class Builder {
     }
   }
 
-  renderGeometryLinks(parent) {
-    const group = node("div");
-    group.append(node("p", "Link edits across matching components. Existing differences remain until edited; abutment sides are mirrored."));
-    for (const [key, title] of [["abutments", "Link abutments"], ["piers", "Link piers and foundations"], ["spans", "Link spans"]]) {
-      const label = node("label", title);
-      const input = node("input");
-      input.type = "checkbox";
-      input.checked = this.geometryLinks[key];
-      input.addEventListener("change", () => { this.geometryLinks[key] = input.checked; });
-      label.prepend(input);
-      group.append(label);
+  renderGeometryLinkControl(key, title, parent, hint = null) {
+    const wrap = node('div');
+    wrap.className = 'builder-link-wrap';
+    const label = node('label');
+    label.className = 'builder-link-checkbox';
+    const input = node('input');
+    input.type = 'checkbox';
+    input.checked = Boolean(this.geometryLinks[key]);
+    input.addEventListener('change', () => { this.geometryLinks[key] = input.checked; });
+    label.append(input, document.createTextNode(' ' + title));
+    wrap.append(label);
+    if (hint) {
+      const help = node('span', hint);
+      help.className = 'builder-link-help';
+      wrap.append(help);
     }
-    parent.append(group);
+    parent.append(wrap);
+  }
+
+  renderGeometryLinks(parent) {
+    for (const [key, title] of [['spans', 'Link spans'], ['piers', 'Link piers and foundations'], ['abutments', 'Link abutments']]) {
+      this.renderGeometryLinkControl(key, title, parent);
+    }
   }
 
   fieldsGrid(object, keys, parent, defaultsMap = {}, onChange = null) {
@@ -710,7 +779,6 @@ export class Builder {
       return;
     }
 
-    this.renderGeometryLinks(this.root);
     const generalBody = this.collapsibleGroup('general', 'General', `nl = ${this.payload.nl ?? ''}`);
     this.fieldsGrid(this.payload, ['name', 'nl'], generalBody);
 
@@ -721,7 +789,12 @@ export class Builder {
         'Deck strip',
         ['width', 'height', 'material_key'],
         { material_key: 0 },
-        item => `W ${item.width ?? '—'} · H ${item.height ?? '—'}`,
+        item => {
+          const mats = this.createMaterials || [];
+          const m = mats.find(mat => String(mat.key) === String(item.material_key));
+          const matSuffix = m ? ` · ${m.name}` : (item.material_key && item.material_key !== 0 ? ` · Mat ${item.material_key}` : '');
+          return `W ${item.width ?? '—'} · H ${item.height ?? '—'}${matSuffix}`;
+        },
       ],
       [
         'spans',
@@ -743,6 +816,11 @@ export class Builder {
     for (const [key, groupTitle, itemTitle, fieldKeys, defaultsMap, metaFn] of collections) {
       const items = this.payload[key] || [];
       const groupBody = this.collapsibleGroup(key, groupTitle, items.length);
+      if (key === 'spans') {
+        this.renderGeometryLinkControl('spans', 'Link spans', groupBody, 'Link edits across all spans.');
+      } else if (key === 'piers') {
+        this.renderGeometryLinkControl('piers', 'Link piers and foundations', groupBody, 'Link edits across matching piers and foundations.');
+      }
       if (!items.length) {
         groupBody.append(node('p', 'No intermediate piers (single-span bridge).'));
       }
@@ -810,6 +888,7 @@ export class Builder {
     }
 
     const abutmentsBody = this.collapsibleGroup('abutments', 'Abutments', '2');
+    this.renderGeometryLinkControl('abutments', 'Link abutments', abutmentsBody, 'Link edits across abutments (mirrors left and right).');
     for (const [key, title] of [['left_abutment', 'Left abutment'], ['right_abutment', 'Right abutment']]) {
       const item = this.payload[key];
       const { body: itemBody, updateMeta } = this.collapsibleItem(
@@ -1026,14 +1105,6 @@ export class Builder {
     }, 500);
   }
 
-  materialOptions() {
-    const options = [['0', 'None (0)']];
-    for (const material of this.materials || []) {
-      options.push([material.key, `${material.name} (#${material.key})`]);
-    }
-    return options;
-  }
-
   renderBackfillStripOverrides(parent, corsias) {
     const overriding = corsias.map((_, index) => index).filter(index => {
       const key = this.wizardCurrent('wizard_corsia', index, 'MaterialKey');
@@ -1128,10 +1199,6 @@ export class Builder {
         'Edit the bridge geometry and materials. The view regenerates as you change geometry, and the downloaded HRX includes the updated mesh.'
       )
     );
-    this.renderGeometryLinks(this.root);
-    const supports = this.collapsibleGroup('wizard:end-supports', 'Abutment end restraints', '', this.root);
-    supports.append(node('p', 'Fully fix each outer vertical end face through the deck level, in all translations and rotations.'));
-    this.button('Add fixed restraints to both ends', () => this.addAbutmentEndRestraints(), supports);
     const definition = this.wizardRecord('wizard_definition', 0);
     if (definition) {
       const body = this.collapsibleGroup('wizard:general', 'General / bridge definition', `${this.collections.wizard_corsia?.length || 0} lanes`);
@@ -1179,6 +1246,10 @@ export class Builder {
 
     const abutments = this.collections.wizard_abutment || [];
     const abutmentBody = this.collapsibleGroup('wizard:abutments', 'Abutments', `${abutments.length}`);
+    this.renderGeometryLinkControl('abutments', 'Link abutments', abutmentBody, 'Link edits across abutments (mirrors left and right).');
+    const { body: supportsBody } = this.collapsibleItem('wizard:end-supports', 'Abutment end restraints', () => '', abutmentBody);
+    supportsBody.append(node('p', 'Fully fix each outer vertical end face through the deck level, in all translations and rotations.'));
+    this.button('Add fixed restraints to both ends', () => this.addAbutmentEndRestraints(), supportsBody);
     abutments.forEach((record, index) => {
       const entry = this.wizardRootNode(record);
       const { body } = this.collapsibleItem(
@@ -1209,6 +1280,7 @@ export class Builder {
 
     const spans = this.collections.wizard_span || [];
     const spanBody = this.collapsibleGroup('wizard:spans', 'Spans / vaults', `${spans.length}`);
+    this.renderGeometryLinkControl('spans', 'Link spans', spanBody, 'Link edits across all spans.');
     spans.forEach((record, index) => {
       const entry = this.wizardRootNode(record);
       const { body } = this.collapsibleItem(
@@ -1242,6 +1314,7 @@ export class Builder {
 
     const piers = this.collections.wizard_pier || [];
     const pierBody = this.collapsibleGroup('wizard:piers', 'Piers', `${piers.length}`);
+    this.renderGeometryLinkControl('piers', 'Link piers and foundations', pierBody, 'Link edits across matching piers and foundations.');
     if (!piers.length) pierBody.append(node('p', 'No intermediate piers.'));
     piers.forEach((record, index) => {
       const entry = this.wizardRootNode(record);
@@ -1645,23 +1718,71 @@ export class Builder {
       return;
     }
 
-    const select = node('select');
-    select.setAttribute('aria-label', 'Model entry');
-    indexedItems.forEach(({ item, idx }) => select.add(new Option(`${item.name} [${item.key}]`, idx)));
     const validSelected = indexedItems.some(({ idx }) => idx === this.selectedObject)
       ? this.selectedObject
       : indexedItems[0].idx;
     this.selectedObject = validSelected;
+
+    if (['material', 'analysis'].includes(activeKind) && this.catalog) {
+      const addBar = node('div');
+      addBar.className = 'builder-add-bar';
+      const addLabel = node('label');
+      addLabel.className = 'builder-inline-label';
+      addLabel.append(node('span', activeKind === 'material' ? 'Add material from catalog:' : 'Add analysis from catalog:'));
+      const addSelect = node('select');
+      addSelect.setAttribute('aria-label', activeKind === 'material' ? 'Material template' : 'Analysis template');
+      if (activeKind === 'analysis') {
+        for (const name of this.catalog.analyses) addSelect.add(new Option(name, name));
+      } else {
+        const masonryTemplates = this.catalog.materials.filter(t => !t.type || t.type.endsWith('.MasonryMaterial'));
+        for (const template of masonryTemplates) addSelect.add(new Option(`${template.name} [${template.key}]`, template.key));
+      }
+      addLabel.append(addSelect);
+      addBar.append(addLabel);
+      this.button(
+        activeKind === 'material' ? '+ Add material' : '+ Add analysis',
+        () => this.apply({ op: activeKind === 'analysis' ? 'add_analysis' : 'add_material', template: addSelect.value }, allItems.length, isCreate),
+        addBar
+      );
+      this.root.append(addBar);
+    }
+
+    const selectionBar = node('div');
+    selectionBar.className = 'builder-selection-bar';
+    const selectLabel = node('label');
+    selectLabel.className = 'builder-current-label';
+    const currentTitle = activeKind === 'material' ? 'Selected material:' : activeKind === 'analysis' ? 'Selected analysis:' : 'Selected entry:';
+    selectLabel.append(node('span', currentTitle));
+    const select = node('select');
+    select.setAttribute('aria-label', 'Model entry');
+    indexedItems.forEach(({ item, idx }) => select.add(new Option(`${item.name} [${item.key}]`, idx)));
     select.value = validSelected;
     select.addEventListener('change', () => {
       this.selectedObject = Number(select.value);
       this.selectedNode = 0;
       this.render();
     });
-    this.root.append(select);
+    selectLabel.append(select);
+    selectionBar.append(selectLabel);
+
+    if (['material', 'analysis'].includes(activeKind) && this.catalog) {
+      const itemActions = node('div');
+      itemActions.className = 'builder-item-actions';
+      this.button(
+        'Duplicate',
+        () => this.apply({ op: activeKind === 'analysis' ? 'duplicate_analysis' : 'duplicate_material', duplicate: validSelected }, allItems.length, isCreate),
+        itemActions
+      );
+      this.button(
+        'Delete',
+        () => this.apply({ op: activeKind === 'analysis' ? 'delete_analysis' : 'delete_material', index: validSelected }, Math.max(0, validSelected - 1), isCreate),
+        itemActions
+      );
+      selectionBar.append(itemActions);
+    }
+    this.root.append(selectionBar);
 
     const item = allItems[validSelected];
-    this.renderManage(activeKind, allItems, validSelected, isCreate);
     if (activeKind === 'vehicle_load' || activeKind === 'line_load') {
       this.renderLoadTemplateEditor(activeKind, validSelected);
       return;
@@ -1734,7 +1855,10 @@ export class Builder {
   renderAnalysisEditor(item, index, changes) {
     const rootEntry = item.nodes.find(entry => !entry.path.length);
     if (!rootEntry) { this.root.append(node('p', 'This analysis has no editable properties.')); return; }
-    const groups = analysisPropertyGroups(rootEntry.attributes);
+    const currentAttrs = { ...rootEntry.attributes };
+    const typeChange = changes.get(`analysis:${index}::AnalysisType`);
+    if (typeChange) currentAttrs.AnalysisType = typeChange.value;
+    const groups = analysisPropertyGroups(currentAttrs);
     if (item.nodes.some(entry => entry.path.length && !entry.tag.toLowerCase().includes('dynamic'))) groups.push({ id: 'nested', title: 'Additional sections', keys: [] });
     if (!groups.some(group => group.id === this.analysisEditorGroup)) this.analysisEditorGroup = groups[0]?.id;
     this.renderTabs(groups.map(group => [group.id, group.title]), this.analysisEditorGroup, group => {
@@ -1784,6 +1908,7 @@ export class Builder {
       input.addEventListener('change', () => {
         if (input.value === original) changes.delete(id);
         else changes.set(id, { collection: 'analysis', index, node: entry.path, attribute: key, value: input.value });
+        if (key === 'AnalysisType') this.render();
         this.scheduleGeometryPreview();
       });
       row.append(input); grid.append(row);
@@ -1857,10 +1982,40 @@ export class Builder {
       this.scheduleGeometryPreview();
     };
 
+    const formatPoisson = () => {
+      const eVal = Number(getVal('Ehor') ?? getVal('E'));
+      const gVal = Number(getVal('Gd') ?? getVal('G'));
+      if (Number.isFinite(eVal) && Number.isFinite(gVal) && gVal > 0) {
+        const nu = eVal / (2 * gVal) - 1;
+        if (Number.isFinite(nu)) {
+          return ` (v=${Number(nu.toFixed(2)).toString()})`;
+        }
+      }
+      return '';
+    };
+
     const addAttrField = (parent, labelText, key, customOptions = null, rerenderOnChange = false) => {
       if (!key || attrs[key] === undefined) return;
       const original = attrs[key];
-      const label = node('label', labelText);
+
+      const isDim = Boolean(dimension(key));
+      const u = isDim ? unitFor(key, this.materialUnits) : null;
+      const uSuffix = u && u !== '—' ? ` [${u}]` : '';
+
+      const getFullLabel = () => {
+        let text = labelText;
+        if (key === 'Gd') {
+          text += formatPoisson();
+        }
+        text += uSuffix;
+        return text;
+      };
+
+      const label = node('label');
+      const labelSpan = node('span', getFullLabel());
+      if (key === 'Gd') labelSpan.setAttribute('data-poisson-gd', 'true');
+      label.append(labelSpan);
+
       let input;
       if (customOptions) {
         input = node('select');
@@ -1876,15 +2031,66 @@ export class Builder {
         input.add(new Option('No', 'false'));
       } else {
         input = node('input');
+        if (isDim || typeof original === 'number' || Number.isFinite(Number(original))) {
+          input.type = 'number';
+          input.step = 'any';
+        }
       }
-      input.value = getVal(key) ?? '';
+
+      const rawVal = getVal(key);
+      const displayVal = isDim ? convertedValue(rawVal, key, this.materialUnits) : (rawVal ?? '');
+      input.value = displayVal ?? '';
+
       input.addEventListener('change', () => {
-        setVal(key, input.value);
-        if (rerenderOnChange) this.render();
+        let saveVal = input.value;
+        if (isDim && input.value !== '') {
+          saveVal = toNativeValue(input.value, key, this.materialUnits);
+        }
+        setVal(key, saveVal);
+        if (rerenderOnChange || key === 'Ehor' || key === 'Gd') this.render();
       });
+
+      if (key === 'Ehor' || key === 'Gd') {
+        input.addEventListener('input', () => {
+          const gdLabels = this.root.querySelectorAll('[data-poisson-gd]');
+          for (const gdLabel of gdLabels) {
+            let eVal = Number(key === 'Ehor' ? (isDim ? toNativeValue(input.value, 'Ehor', this.materialUnits) : input.value) : (getVal('Ehor') ?? getVal('E')));
+            let gVal = Number(key === 'Gd' ? (isDim ? toNativeValue(input.value, 'Gd', this.materialUnits) : input.value) : (getVal('Gd') ?? getVal('G')));
+            let pStr = '';
+            if (Number.isFinite(eVal) && Number.isFinite(gVal) && gVal > 0) {
+              const nu = eVal / (2 * gVal) - 1;
+              if (Number.isFinite(nu)) {
+                pStr = ` (v=${Number(nu.toFixed(2)).toString()})`;
+              }
+            }
+            const gdUnit = unitFor('Gd', this.materialUnits);
+            const gdUnitSuffix = gdUnit && gdUnit !== '—' ? ` [${gdUnit}]` : '';
+            gdLabel.textContent = `Shear modulus, G${pStr}${gdUnitSuffix}`;
+          }
+        });
+      }
+
       label.append(input);
       parent.append(label);
     };
+
+    const unitBar = node('div');
+    unitBar.className = 'builder-unit-bar';
+    const unitLabel = node('label');
+    unitLabel.className = 'builder-unit-label';
+    unitLabel.append(node('span', 'Display units:'));
+    const unitSelect = node('select');
+    unitSelect.setAttribute('aria-label', 'Material display units');
+    for (const [uKey, uDef] of Object.entries(unitSets)) {
+      unitSelect.add(new Option(uDef.label, uKey, false, uKey === this.materialUnits));
+    }
+    unitSelect.addEventListener('change', () => {
+      this.materialUnits = unitSelect.value;
+      this.render();
+    });
+    unitLabel.append(unitSelect);
+    unitBar.append(unitLabel);
+    this.root.append(unitBar);
 
     this.renderTabs(
       [
@@ -2208,37 +2414,13 @@ export class Builder {
         body.append(grid);
       }
     }
+    const footnote = node('p', 'HRX models are always exported in default native units (kN, cm, kN/cm²). Display unit conversion applies to view and edition.');
+    footnote.className = 'builder-help';
+    this.root.append(footnote);
   }
 
   renderManage(kind, items, index, isCreate = false) {
-    if (!['material', 'analysis'].includes(kind) || !this.catalog) return;
-    const actions = node('div');
-    actions.className = 'builder-actions';
-    if (kind === 'analysis') {
-      const add = node('select');
-      add.setAttribute('aria-label', 'Analysis template');
-      for (const name of this.catalog.analyses) add.add(new Option(name, name));
-      actions.append(add);
-      this.button('Add analysis', () => this.apply({ op: 'add_analysis', template: add.value }, items.length, isCreate), actions);
-    } else {
-      const add = node('select');
-      add.setAttribute('aria-label', 'Material template');
-      const masonryTemplates = this.catalog.materials.filter(t => !t.type || t.type.endsWith('.MasonryMaterial'));
-      for (const template of masonryTemplates) add.add(new Option(`${template.name} [${template.key}]`, template.key));
-      actions.append(add);
-      this.button('Add material', () => this.apply({ op: 'add_material', template: add.value }, items.length, isCreate), actions);
-    }
-    this.button(
-      'Duplicate',
-      () => this.apply({ op: kind === 'analysis' ? 'duplicate_analysis' : 'duplicate_material', duplicate: index }, items.length, isCreate),
-      actions
-    );
-    this.button(
-      'Delete',
-      () => this.apply({ op: kind === 'analysis' ? 'delete_analysis' : 'delete_material', index }, Math.max(0, index - 1), isCreate),
-      actions
-    );
-    this.root.append(actions);
+    // Managed actions (Add / Duplicate / Delete) are rendered in renderCollectionEditor
   }
 
   async apply(operation, selected, isCreate = this.mode === 'create') {
