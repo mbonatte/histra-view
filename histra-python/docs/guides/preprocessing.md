@@ -3,6 +3,25 @@
 The Python preprocessor implements the validated masonry subset required by the
 committed bridge benchmarks.
 
+## Fresh preparation boundary
+
+Serialized HRX interfaces, springs and afferences are reference snapshots from
+past C# runs. Regenerate them from the structural geometry before numerical or
+modal solving:
+
+```python
+from histra import load_model
+from histra.solver.model_manager import ModelManager
+
+model = load_model("bridge.hrx")
+ModelManager.prepare_model(model, force=True)
+```
+
+`AnalysisSession` and solver entry points with `auto_prepare=True` enforce the
+required preparation boundary. Disabling automatic preparation does not make a
+serialized model valid for solving; unsupported unprepared states fail closed.
+The source HRX remains unchanged for differential auditing.
+
 ## Supported geometry
 
 - four-node masonry Quad elements;

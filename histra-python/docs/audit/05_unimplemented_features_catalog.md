@@ -1,5 +1,10 @@
 # Chapter 05: Exhaustive Catalog of Unimplemented C# HiStrA Features, Algorithms, and Models
 
+Historical source-review snapshot: coverage scores, model counts and release
+statements below describe the original review. Consult [current status](../STATUS.md)
+and the [audit corrections](csharp_python_function_mapping_matrix.md) for the
+present evidence boundary.
+
 ## High-Fidelity Comparative Parity Audit, Boundary Preflight Enforcement, and Strategic Porting Pathways
 
 ---
@@ -52,7 +57,7 @@ This boundary is enforced by a three-tiered defense:
 
 ```
                                 PYTHON PREFLIGHT DEFENSE LAYERS
- 
+
     1. HRX Ingestion (histra.io.hr_loader)
        │ • Scans XML tags against _UNSUPPORTED_V1_ELEMENT_TAGS
        │ • Records unsupported elements in model.unsupported_v1_features["element:<Tag>"]
@@ -160,7 +165,7 @@ The table below catalogs the 12 unported element classes, their file locations, 
   - `histra/io/hr_loader.py:54` intercepts the `<Frame>` XML tag and calls `_record_unsupported(model, "element", "Frame")`.
   - `histra/solver/capabilities.py:179-185` inspects `model.unsupported_v1_features` during preflight and halts execution:
     ```python
-    SolverCapabilityIssue("V1_ELEMENT_DOMAIN_UNSUPPORTED", 
+    SolverCapabilityIssue("V1_ELEMENT_DOMAIN_UNSUPPORTED",
         f"HRX contains {count} Frame object(s); Frame is outside the V1 Quad/Interface masonry domain.")
     ```
 - **Porting Complexity & Prerequisites**:
@@ -712,7 +717,7 @@ The table below catalogs these unported load generators and boundary condition c
 - **Python Boundary Guard**:
   - `histra/solver/capabilities.py:290-300` inspects `analysis.type_load_distribution`. If set to `"Modal"`, it halts execution:
     ```python
-    SolverCapabilityIssue("STATIC_LOAD_DISTRIBUTION_UNSUPPORTED", 
+    SolverCapabilityIssue("STATIC_LOAD_DISTRIBUTION_UNSUPPORTED",
         f"TypeLoadDistribution='Modal' requires a pushover load generator not implemented "
         "in the V1 Quad/Interface core; use Force or LoadCombination.")
     ```
@@ -1203,7 +1208,7 @@ Based on engineering utility and prerequisite dependencies, a structured 5-phase
 
 ```
                            RECOMMENDED 5-PHASE EXPANSION ROADMAP
- 
+
   PHASE 1: Code Pushover & Foundations (Months 1–3)
   ├── Inverted Triangular Pushover Distribution
   ├── Single-Mode and Multi-Mode Modal Pushover Distribution

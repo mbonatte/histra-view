@@ -1,114 +1,105 @@
 # Current feature status
 
-The package metadata is now 1.6.2. This patch includes the reviewed native
-material-transfer and initialization corrections, elastic state-field fixes,
-and explicit C# spring-type history-reset compatibility with rejection by default.
-The [loaded foundation reference](benchmarks/material-modal-gui-2026-10-17.md)
-qualifies 84 committed static steps and six available modal comparisons;
-successful return-stage results remain absent from the native references.
-The [2026-10-17 audit correction](audit/csharp_python_function_mapping_matrix.md)
-replaces the blanket verification claim with evidence boundaries. Native-backed
-material transfer and all-numeric runtime initialization regressions now cover
-two additional gaps; complete parity for every supported masonry input is not
-established.
+The latest package release is **1.7.3**. Its native results schema is **2.1.0**;
+package and file-format versions are independent. The
+[results reference](reference/native-results-format.md) defines corrected units,
+force curves, topology, named model-point histories and stage-end spring strain/plastic-state snapshots.
+[Single-file bundles](reference/histra-bundle-format.md) provide lossless compressed
+study storage. Optional [C# SQLite output](reference/csharp-results-export.md)
+preserves the native schema for supported captured static states; new Python solves
+are not guaranteed to reproduce C# values bit for bit.
 
-Historical release context: **v1.5.0** was published on 2026-10-14;
-the **v1.6.0** [preparation record](release/v1.6.0-preparation.md) describes
-its earlier local qualification. The
-[critical review response](release/v1.6.0-critical-review-response.md) records
-accepted findings, source-backed disagreements and the remaining Article gate.
-Current reviewed artifacts and platform verification supersede the earlier
-preparation build. The broader native wall references have arrived and exposed
-a modal line-load mass correction; see [the wall comparison](benchmarks/masonry-wall-native-parity-2026-10-15.md).
-The reviewed packages predate these corrections. All four walls now match every
-available checked static output through Vert and both reversal combinations,
-including phases and private spring histories. The initial envelope-tangent
-correction and native regression fixtures are recorded in that comparison.
+This page describes capabilities and remaining limits. Exact numerical and
+performance claims belong to their dated benchmark reports.
 
-A [systematic precision-boundary audit](benchmarks/masonry-precision-audit-2026-10-16.md)
-now tracks source types, native fixtures and remaining checks across the masonry
-pipeline. Recent fixes include load coefficients, oblique self-weight, mass
-inputs, modal output storage, analysis controls and geometry tolerances.
-Native whole-analysis tests now cover secant stiffness switching and P-Delta
-updates, including the original saved-force cache and sparse result saving.
-These qualify their recorded inputs; the wider source audit remains ongoing.
-Fresh large-model regressions after the virgin tangent correction retain exact
-available-field parity through all 88 Dhir and 521 horizontal commits, with
-the original stopping behavior. Their benchmark reports record the numerical
-source boundary and unavailable measurements.
+Version 1.7.3 includes an opt-in, experimental
+[cuDSS GPU sparse backend](guides/gpu-solving.md) and CPU/GPU comparison tools.
+[CPU/GPU optimization measurements](benchmarks/cpu-gpu-fast-mode-2026-10-26.md)
+cover automatic compiled CPU geometry, deterministic CUDA tests, and selected
+bridge comparisons; GPU qualification remains limited to the recorded cases.
+Element updates remain on the compiled CPU backend. GPU remains opt-in.
 
-The released package has been rerun from fresh Dhir geometry through Vert,
-constant load and the final committed pushover step. Every available measured
-field matches C# 2026.1.1 exactly for this configuration, including all committed
-iteration counts. See [the full-chain benchmark](benchmarks/dhir-full-chain-native-parity-progress.md).
+Version 1.7.3 also includes [CPU workflow improvements](guides/cpu-performance.md):
+solver-only HRX loading, one compiled initialization per virgin static solve,
+reused fibre face geometry, and bounded independent CPU processes.
+The single-model resource runner also supports project-local threaded BLAS,
+independent kernel/BLAS budgets, and saved `.histra` results.
 
-The current snapshot optimization preserves every checked field in both full
-static references at source ed8a104. One sequential profiled Newton-step pair
-measures an 8.50% runtime reduction; see [the performance report](benchmarks/newton-snapshot-reuse-performance.md).
-Original C# residual assembly and convergence routines explain the independent
-equilibrium warnings in five selected states. The native norm-selector fix has
-direct bit-exact routine coverage; see [the investigation](investigations/dhir-equilibrium-diagnostics.md).
-Faster library configurations are separate global-response experiments and do
-not weaken the routine tests or independent equilibrium policy.
-
-Post-release changes cover native elastic transverse and zero-friction diagonal
-springs, compiled lifecycle coverage, and restraint-axis/material selection.
-Linear normal-force evaluation (`NR=False`) and omitted masonry constitutive
-attributes also have native routine coverage. Static tangent factorization
-uses the native initial-stiffness fallback within the current Newton call.
-Modal mass assembly preserves C# Single gravity and masonry weight. The existing
-Dhir reference validates all 20 virgin modes with small remaining arithmetic
-differences; see [the modal benchmark](benchmarks/dhir-modal-native-parity.md) and
-[the remaining masonry audit](benchmarks/masonry-source-audit-2026-10-14.md).
-
-The horizontal out-of-plane reference also matches every available checked
-output through Vert step 20 and pushover step 501, stopping at the native
-attempt-502 displacement limit. A fresh original-Dhir regression at 02f5f84
-checks the latest static changes through all 88 commits. See the
-[horizontal benchmark](benchmarks/dhir-horizontal-native-parity.md) for source
-boundaries and unavailable measurements.
-
-Historical Article/interface-chain evidence qualifies its recorded source and
-environment; it is not a fresh v1.5.0 rerun of those models.
-
-## Supported
+## Supported boundary
 
 | Area | Current boundary |
 |---|---|
-| HRX loading | Supported for committed benchmark models |
-| Locked models | Supported when required computational objects are present |
-| Unlocked preprocessing | Validated masonry four-node Quad and fixed line-Restraint subset, including C# directional sliding-law selection |
-| Quad–Quad contacts | Full-edge and collinear partial-edge contacts, including partition/T-junction overlaps |
-| Springs | Masonry diagonal, transverse hysteretic, in-plane and out-of-plane Coulomb paths used by the benchmarks |
-| Static integration | LoadControl, ArcLength and ArcLengthLinear paths, with explicit C# `ArcLength1` corrector behavior |
+| HRX loading | Supported masonry geometry and analysis definitions, locked or unlocked |
+| Preparation | Fresh four-node masonry Quad and fixed line-Restraint computational model; serialized C# state is reference-only |
+| Quad contacts | Full-edge, collinear partial-edge and partition/T-junction overlaps |
+| Static integration | LoadControl, ArcLength and ArcLengthLinear, with supported C# control procedures |
+| Mechanics | Supported masonry diagonal/transverse laws and in-plane/out-of-plane sliding paths; capability preflight enforces the boundary |
 | Chained analyses | In-memory HRX dependency execution through `AnalysisSession` |
-| Interface material changes | Supported between committed analyses with committed-state transfer |
-| C# results database | Readable as a numerical reference and restart source for supported schemas |
-| Performance backend | Compiled policy and runtime-rebuild fail-closed coverage are implemented; complete hot-path performance qualification remains a release gate |
-| Modal eigenanalysis | C#-compatible Quad mass matrix, SubspaceIterations, InverseIterations, modal quantities and shapes |
+| Interface material changes | Committed analysis boundaries, with the supported history-transfer policy |
+| Production backend | Compiled Numba numerical execution with lifecycle coverage enforcement |
+| Modal analysis | Supported Quad mass integration, Subspace/Inverse iterations, modal quantities and mode shapes |
+| Reference databases | C# SQLite result reading and supported restart/projection schemas |
+| Native results | Summary JSON, NPZ or optional HDF5 fields, independent Quad corner translations and stage-end spring snapshots |
 
-## Important limitations
+See [supported features](reference/v1-supported-features.md) and the
+[C# feature matrix](reference/v1-csharp-feature-matrix.md) for individual enum,
+material and element restrictions.
 
-- The [independent review](release/v1-independent-review.md) remains in progress;
-  Article strict qualification, strict interface-chain convergence, and full
-  strategy/performance evidence remain open. The former interface-chain false
-  PASS and compiled lifecycle fallback are corrected, but are not release
-  evidence by themselves.
-- The translated preprocessor is not the complete desktop preprocessor.
-  Unsupported element types and topologies fail explicitly.
-- Interface material mutation is implemented at committed analysis boundaries,
-  not as arbitrary stage changes inside an individual load step.
-- Numerical equivalence claims are benchmark-specific.
-- Some C# result databases omit information needed to independently validate
-  every multiplier or continue from every terminal state.
-- The first run on a new platform may include Numba compilation time.
-- `python -m histra` inspects/assembles the HRX; it does not execute the full
-  standalone nonlinear workflow.
-- Modal mass for future Vertex, Solid, Frame and Fiber domain entities is not
-  yet ported; populated unsupported collections fail explicitly.
+## Safety and execution
 
-## Source of truth
+- A solve freshly prepares HRX models requiring Python computational objects;
+  direct low-level callers must honor the same preparation boundary.
+- The high-level job API defaults to strict equilibrium checks. Direct session
+  calls default to warning mode unless the caller requests `equilibrium_policy="error"`.
+- Work or DispRotation convergence alone does not prove physical equilibrium.
+  See [convergence safety](nonlinear_convergence_safety.md).
+- The strategy advisor reports guidance without changing analysis definitions.
+  A recommendation needs model-specific response and equilibrium evidence.
+- One solve runs per Python process. Cancellation is cooperative and cannot
+  interrupt an individual native linear-system call.
+- The first run can include Numba compilation; cold and warm timings differ.
 
-For behavior, use the Python implementation and tests. For user workflow, use
-the maintained guides. Treat files under `docs/archive/` as historical context
-only.
+## Numerical evidence
+
+Evidence is tied to recorded inputs, source revisions, backends and checked
+fields. Current reference families include:
+
+- [Dhir full static chain](benchmarks/dhir-full-chain-native-parity-progress.md)
+  and [horizontal out-of-plane chain](benchmarks/dhir-horizontal-native-parity.md).
+- [Dhir modal reference](benchmarks/dhir-modal-native-parity.md) and
+  [Ersino modal reference](benchmarks/ersino-modal-analysis.md).
+- [Masonry wall static/reversal reference](benchmarks/masonry-wall-native-parity-2026-10-15.md)
+  and [material/modal GUI reference](benchmarks/material-modal-gui-2026-10-17.md).
+- [Source-audit corrections and remaining validation](audit/csharp_python_function_mapping_matrix.md),
+  [masonry source audit](benchmarks/masonry-source-audit-2026-10-14.md), and
+  [precision-boundary audit](benchmarks/masonry-precision-audit-2026-10-16.md).
+
+[Snapshot reuse measurements](benchmarks/newton-snapshot-reuse-performance.md)
+and [linear-library experiments](benchmarks/faster-linear-library-screen-2026-10-15.md)
+are configuration-specific performance evidence. They do not replace exact
+native routine regressions.
+
+## Open limitations
+
+- Unsupported structural domains such as Frame, Solid, Vertex and fiber systems,
+  nonlinear dynamics and response-spectrum solving fail explicitly.
+- The Python preprocessor implements the supported masonry subset, not every
+  feature of the desktop application's preprocessor.
+- Material changes inside an active load step are unsupported.
+- Complete strict physical-path qualification is not implied by authored C# row
+  parity. The [Article gate](benchmarks/article-models-release-gate.md) and
+  [strategy methodology](benchmarks/solver-strategy-methodology.md) specify the
+  necessary response, equilibrium and phase checks.
+- Some C# databases omit fields required for independent validation or restart
+  from every terminal state. Successful return-stage evidence is unavailable in
+  some material-change reference models.
+- Schema 1 exports affected by the old unit/force bugs require re-export.
+  Stage-end spring arrays are snapshots, not per-step spring histories.
+- Python 3.12–3.14 is the declared package range. CI targets that Linux matrix;
+  platform evidence in older reports must not be read as a fresh run for every release.
+- `python -m histra` inspects/assembles a model. Use
+  `python -m histra.tools.run_vert_live` for the standalone nonlinear workflow.
+
+For behavior, consult the implementation and tests; for usage, consult the
+[maintained guides](README.md). Historical release plans and superseded audit
+snapshots are preserved under `archive/`.

@@ -1,8 +1,13 @@
 # HiStrA Parity Audit — Chapter 03: Solvers, Numerical Algorithms, and Eigenvalue Analysis
 
-**Audit Version**: 1.0.0  
-**Target Repository**: `histra-python`  
-**Reference Codebase**: C# HiStrA Core (`C#_Original/`)  
+Historical source-review snapshot: coverage scores, model counts and release
+statements below describe the original review. Consult [current status](../STATUS.md)
+and the [audit corrections](csharp_python_function_mapping_matrix.md) for the
+present evidence boundary.
+
+**Audit Version**: 1.0.0
+**Target Repository**: `histra-python`
+**Reference Codebase**: C# HiStrA Core (`C#_Original/`)
 **Scope**: Static Nonlinear Integrators, Solution Algorithms, Line Search Techniques, Convergence Criteria, Equilibrium Auditing, Modal Eigenvalue Solvers, and Sparse Linear System Abstractions.
 
 ---
@@ -85,9 +90,9 @@ The frequency of tangent stiffness matrix reformation differentiates Standard Ne
 
 **C# Implementation (`NewtonRaphson.cs`, lines 23–26):**
 ```csharp
-if ((an.Method == AnalysisMethodEnum.StandardNewtonRaphson || 
-     an.Method == AnalysisMethodEnum.StandardBisectionLineSearch || 
-     an.Method == AnalysisMethodEnum.StandardRegulaFalsiLineSearch || 
+if ((an.Method == AnalysisMethodEnum.StandardNewtonRaphson ||
+     an.Method == AnalysisMethodEnum.StandardBisectionLineSearch ||
+     an.Method == AnalysisMethodEnum.StandardRegulaFalsiLineSearch ||
      an.Method == AnalysisMethodEnum.StandardSecantLineSearch) && alfa != 0.0)
 {
     base.theIntegrator.UpdateK(p, Collections, ref alfa);
@@ -185,7 +190,7 @@ $$\delta \lambda = -\frac{\Delta \boldsymbol{u}_{\text{step}}^T \delta \boldsymb
 
 ### 3.3 The 1D Cylindrical Ill-Conditioning Resolution
 
-In single control-point pushover analyses (`ArcLengthProcedureEnum.OnlyControlPoint`), the constraint is evaluated exclusively on a single monitored degree of freedom $m$ ($\alpha = 0$, $\delta u_{\text{hat}} \in \mathbb{R}^1$). 
+In single control-point pushover analyses (`ArcLengthProcedureEnum.OnlyControlPoint`), the constraint is evaluated exclusively on a single monitored degree of freedom $m$ ($\alpha = 0$, $\delta u_{\text{hat}} \in \mathbb{R}^1$).
 
 Analytically, the 1D spherical constraint on scalar coordinate $s = \Delta u_{\text{step}}[m]$ is:
 $$(s + \delta u_{\text{bar}} + \delta \lambda \, \delta u_{\text{hat}})^2 = s^2$$

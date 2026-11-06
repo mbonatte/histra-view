@@ -1,5 +1,9 @@
 # HiStrA Python refactoring architecture
 
+Historical record: preserved from its original development milestone. Version,
+worktree, test-count and release-approval statements below describe that milestone.
+Use the maintained status, guides and release workflow for current instructions.
+
 This document is the working contract for the architecture-wide refactor. The
 primary invariant is numerical fidelity to the supplied C# implementation and
 its committed SQLite results. Runtime improvements are accepted only with
@@ -194,7 +198,7 @@ equal or stronger parity evidence.
     seconds—flat against the preceding gate.
 16. Continuation and the equilibrium audit are isolated:
     `solver/continuation.py` owns ALS sub-stepping (`_als_loop`), the
-    load-control predicate and the shared `_commit_state`; 
+    load-control predicate and the shared `_commit_state`;
     `solver/equilibrium_audit.py` owns the independent audit as
     `run_equilibrium_audit`, keeping the audit strictly separate from the
     selected C# convergence criterion (``warn`` warns once, ``error`` restores

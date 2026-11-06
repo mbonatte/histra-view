@@ -1,8 +1,13 @@
 # Chapter 1: Master Numerical Core File-by-File Coverage Matrix
+
+Historical source-review snapshot: coverage scores, model counts and release
+statements below describe the original review. Consult [current status](../STATUS.md)
+and the [audit corrections](csharp_python_function_mapping_matrix.md) for the
+present evidence boundary.
 ## HiStrA C# Original (`C#_Original/`) vs. HiStrA Python (`histra/`)
 
-**Author**: Forensic Audit Team (`worker_m1_gen2`)  
-**Status**: Authoritative Release Gate Audit Deliverable  
+**Author**: Forensic Audit Team (`worker_m1_gen2`)
+**Status**: Authoritative Release Gate Audit Deliverable
 **Scope**: Complete, exhaustive line-by-line and file-by-file mapping of the numerical modeling and solver core between the original C# HiStrA engine and the modern headless Python implementation.
 
 ---

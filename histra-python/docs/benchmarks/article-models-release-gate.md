@@ -35,9 +35,11 @@ C# output rows are not mistaken for missing solver steps.
 
 The preferred original-data input is the supplied workbook export
 `release-evidence/article-source-data/Original_article_data.csv`, accompanied
-by `Graphs_HISTRA.ipynb`. The harness reads its variable-width two-level header
+by `article_plot_sources.json`. This compact provenance file retains the exact
+referenced plotting cells and the SHA-256 of the original notebook, without
+saved plots or Jupyter metadata. The harness reads its variable-width two-level header
 directly; it does not round or hand-transcribe curves into derived CSVs. The
-reviewable figure-to-series selection, notebook cell, one radial-displacement
+reviewable figure-to-series selection, original cell index, one radial-displacement
 projection for Figure 22, and the deliberate 17-point plot trim for the Bridge
 5.1 original strip series are declared in `ARTICLE_SOURCE_SERIES` in the
 canonical harness. Its validation report records SHA-256 hashes, counts, and

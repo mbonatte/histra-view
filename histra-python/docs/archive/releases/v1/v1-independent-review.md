@@ -1,5 +1,9 @@
 # Independent V1 implementation review
 
+Historical record: preserved from its original development milestone. Version,
+worktree, test-count and release-approval statements below describe that milestone.
+Use the maintained status, guides and release workflow for current instructions.
+
 Reviewed: 2026-09-08. Base commit: `064f7b1`; implementation under review is
 the uncommitted worktree. Review status: in progress. Release approval: withheld.
 

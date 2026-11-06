@@ -1,11 +1,16 @@
 # Chapter 00: Executive Summary — HiStrA C# to Python Parity Audit & Comparative Architecture Review
 
-**Document**: HiStrA Parity Audit — Master Synthesis & Executive Summary  
-**Author**: Forensic Architecture & Numerical Audit Team (`worker_m6`)  
-**Status**: Authoritative Release Gate Audit Deliverable  
-**Date**: 2026-09-19  
-**Target Repository**: `histra-python`  
-**Reference Codebase**: C# HiStrA Core Engine (`C#_Original/`)  
+Historical source-review snapshot: coverage scores, model counts and release
+statements below describe the original review. Consult [current status](../STATUS.md)
+and the [audit corrections](csharp_python_function_mapping_matrix.md) for the
+present evidence boundary.
+
+**Document**: HiStrA Parity Audit — Master Synthesis & Executive Summary
+**Author**: Forensic Architecture & Numerical Audit Team (`worker_m6`)
+**Status**: Authoritative Release Gate Audit Deliverable
+**Date**: 2026-09-19
+**Target Repository**: `histra-python`
+**Reference Codebase**: C# HiStrA Core Engine (`C#_Original/`)
 **Scope**: High-Level Parity Assessment, Architectural Comparison, Multi-Chapter Synthesis (Chapters 01–05), Chapter Index, Release Readiness Certification, and Strategic Engineering Roadmap.
 
 ---
@@ -255,19 +260,19 @@ The HiStrA parity audit report is organized into five specialized chapters, each
 
 ### Chapter Direct Links & Summaries
 
-1. **[Chapter 01: Master Numerical Core File-by-File Coverage Matrix](01_file_coverage_matrix.md)**  
+1. **[Chapter 01: Master Numerical Core File-by-File Coverage Matrix](01_file_coverage_matrix.md)**
    *Authoritative mapping of every source file in `histra/` (117 files) and `C#_Original/` core (426 unique files). Establishes deduplication of 428 mirror paths, classifies every core file into Ported (131), Partial (15), Deviation (4), Unimplemented (248), or Out-of-Scope (28), and provides an automated verification script.*
 
-2. **[Chapter 02: Mathematical, Constitutive, and Algorithmic Parity Audit of Elements, Springs, and Materials](02_elements_and_materials_parity.md)**  
+2. **[Chapter 02: Mathematical, Constitutive, and Algorithmic Parity Audit of Elements, Springs, and Materials](02_elements_and_materials_parity.md)**
    *Comprehensive mathematical audit of Quad and Interface macro-elements, Mohr-Coulomb friction springs, Cacovic degradation, and hysteretic fiber springs. Documents 100% mathematical parity, bilinear warping kinematics, $2 \times 2$ Gauss integration, and compiled Numba vectorized execution.*
 
-3. **[Chapter 03: Solvers, Numerical Algorithms, and Eigenvalue Analysis](03_solvers_and_algorithms_parity.md)**  
+3. **[Chapter 03: Solvers, Numerical Algorithms, and Eigenvalue Analysis](03_solvers_and_algorithms_parity.md)**
    *Line-by-line comparative audit of Newton-Raphson, Crisfield/Linearized Arc-Length continuation, Line Search algorithms, convergence criteria, and modal eigenvalue analysis. Details C# defect corrections, Knuth PRNG modal seeding, the independent `EquilibriumAudit`, and sub-Angstrom Benchmark 3 parity.*
 
-4. **[Chapter 04: Mesh Preprocessing, Boundary Autonomy, and I/O Parity](04_preprocessing_and_io_parity.md)**  
+4. **[Chapter 04: Mesh Preprocessing, Boundary Autonomy, and I/O Parity](04_preprocessing_and_io_parity.md)**
    *Deep-dive audit of the autonomous mesh preprocessor, 6-face coplanar contact detection, Sutherland-Hodgman clipping, single-precision float32 vector arithmetic, 2D Newton inverse bilinear mapping, streaming XML parsing, SQLite output projections, and `AnalysisSession` multi-stage execution.*
 
-5. **[Chapter 05: Exhaustive Catalog of Unimplemented C# HiStrA Features, Algorithms, and Models](05_unimplemented_features_catalog.md)**  
+5. **[Chapter 05: Exhaustive Catalog of Unimplemented C# HiStrA Features, Algorithms, and Models](05_unimplemented_features_catalog.md)**
    *Exhaustive inventory of all 248 unported core C# files across 5 functional domains (12 elements, 7 materials, 10 springs, dynamics, response spectra, adaptive pushover, and CAD meshing). Details the 3-tier fail-closed preflight architecture and the 5-phase strategic expansion roadmap.*
 
 ---
@@ -319,7 +324,7 @@ To expand `histra-python` beyond its V1 Discrete Macro-Element Masonry foundatio
 
 ```
                             RECOMMENDED 5-PHASE EXPANSION ROADMAP
- 
+
   PHASE 1: Code Pushover & Foundation Impedance (Months 1–3)
   ├── Triangular and Modal Lateral Pushover Distribution Generators
   ├── Floor-Shear Load Pattern (ShearFloor)

@@ -16,6 +16,28 @@ currently supported Quad/Interface computational model. It supports:
 
 Dynamic time-history analysis remains outside this implementation.
 
+## Compiled execution and assembly
+
+Modal execution defaults to `performance_policy="compiled"`. Dependency checks
+run before initialization; coverage of the live Quad/Interface runtime is checked
+after initialization or restart and before stiffness/mass work. Virgin sessions
+construct one runtime at that boundary, rather than building and discarding one
+before resetting the model. Restart and post-analysis audits remain enforced.
+
+The modal assembler retains full local stiffness blocks, the existing COO
+contribution order and SciPy duplicate reduction. Its inner scatter loops run in
+Numba. This deliberately preserves the established modal arithmetic instead of
+switching to the static solver's upper-triangle scatter order. Element formulas
+and eigensolver stopping criteria are unchanged. Explicit
+`performance_policy="diagnostic-scalar"` retains the reference assembly path;
+there is no automatic fallback to uncompiled scatter.
+
+`SubspaceIterations` uses SuperLU. `InverseIterations` uses the existing
+`LinearSystem` environment/default backend. Session coverage reports identify
+that actual modal backend; the session's static-backend choice does not select
+the subspace factorization backend. See the
+[Scozzese modal/CPU measurements](../benchmarks/scozzese-modal-cpu-2026-10-27.md).
+
 ## C# execution path inspected
 
 The implementation was reconstructed from the current source, principally:

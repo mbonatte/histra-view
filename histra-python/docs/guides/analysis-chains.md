@@ -36,6 +36,19 @@ session.run("LiveLoad_1")
 This is an analysis-boundary operation. It is not a substitute for arbitrary
 stage mutation inside a load-control step.
 
+For a material change that must re-equilibrate under the previously applied
+load, opt in when creating the session:
+
+```python
+session = AnalysisSession(model, preserve_predecessor_load=True, equilibrium_policy="error")
+```
+
+This retains the committed applied load vector and reaction reference for the
+next static stage. The new stage must still define its intended additional load:
+for constant-load re-equilibration, use a zero additional-load combination.
+The default retains the C# restart baseline derived from resisting forces.
+Preserved-load restart is currently limited to analyses without P-Delta.
+
 Changing parameters within the same spring law is distinct from changing the
 spring class. With the default `preserve_committed_state=True`, changed spring
 classes are rejected and the mutation is rolled back. This also applies to

@@ -1,5 +1,9 @@
 # V1.0.0 private release checklist
 
+Historical record: preserved from its original development milestone. Version,
+worktree, test-count and release-approval statements below describe that milestone.
+Use the maintained status, guides and release workflow for current instructions.
+
 The package version is `1.0.0`, but the release is not approved and must not be
 tagged until every checkbox below is backed by an artifact. The authoritative
 scope, current evidence, implementation gates, and definition of done are in

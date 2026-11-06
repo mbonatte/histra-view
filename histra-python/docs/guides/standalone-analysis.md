@@ -21,7 +21,8 @@ python -m histra.tools.run_vert_live path/to/model.hrx \
 The command:
 
 1. loads the HRX;
-2. preprocesses it when the validated computational objects are absent;
+2. regenerates the computational model from structural geometry when fresh
+   Python preparation is required; serialized C# interfaces are reference data;
 3. runs the selected gravity/Vert analysis;
 4. retains committed global and constitutive state in memory;
 5. initializes the chained Live Load analysis;

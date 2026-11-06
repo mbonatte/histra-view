@@ -1,8 +1,12 @@
 # HiStrA Python V1.0.0 implementation and validation plan
 
-Status: **active and blocked for release**  
-Last consolidated: 2026-09-06  
-Working branch: `codex/v1-release`  
+Historical record: preserved from its original development milestone. Version,
+worktree, test-count and release-approval statements below describe that milestone.
+Use the maintained status, guides and release workflow for current instructions.
+
+Status: **active and blocked for release**
+Last consolidated: 2026-09-06
+Working branch: `codex/v1-release`
 Latest focused fix: `064f7b1` (`Fix ArcLength segment tangent parity`)
 
 This is the authoritative plan for completing, validating, packaging, and
@@ -121,7 +125,7 @@ under review):
 
 ### 3.2 Article source evidence
 
-The supplied `Original_article_data.csv` and `Graphs_HISTRA.ipynb` are
+The supplied `Original_article_data.csv` and compact `article_plot_sources.json` are
 integrated under `release-evidence/article-source-data/`. Harness revision 4
 validates the original series used by Figures 9, 12, 13, 15, 17, 20, 22, 24,
 and 25 and anchors Table 1 capacities to the supplied paper. Input hashes and
@@ -129,7 +133,7 @@ the exact notebook-cell/series mapping are preserved in compact evidence.
 
 ### 3.3 Article model status
 
-The current [RC aggregate](../../release-evidence/article-models-v1-rc/article_models_csharp_verification.md)
+The current [RC aggregate](../../../../release-evidence/article-models-v1-rc/article_models_csharp_verification.md)
 contains 14 authored entries and only three strict entries. Earlier attempts
 are not a substitute for complete, current evidence.
 
@@ -507,7 +511,7 @@ Package verification:
 ## 7. External evidence and current user dependency
 
 No additional user data is required for the next implementation work. The
-supplied Article CSV/notebook and Bridge 3.1 Coarse HRX/Results are integrated.
+supplied Article CSV/plotting-source provenance and Bridge 3.1 Coarse HRX/Results are integrated.
 The immediate trace target is the interface-change chain with the original HRX:
 run `Vert`, change interfaces 359–362 to material 147, then record `scour_1`
 step 2 with ForceMoment tolerance `1e-4` and the selected modified line-search

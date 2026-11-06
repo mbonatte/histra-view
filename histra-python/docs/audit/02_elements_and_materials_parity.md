@@ -1,5 +1,10 @@
 # Chapter 02: Mathematical, Constitutive, and Algorithmic Parity Audit of Elements, Springs, and Materials
 
+Historical source-review snapshot: coverage scores, model counts and release
+statements below describe the original review. Consult [current status](../STATUS.md)
+and the [audit corrections](csharp_python_function_mapping_matrix.md) for the
+present evidence boundary.
+
 ## 1. Executive Overview & Scope Definition
 
 This audit report delivers an exhaustive, line-by-line comparative analysis between the original C# HiStrA structural engine (`C#_Original/`) and the `histra-python` numerical core. The evaluation encompasses:

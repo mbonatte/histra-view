@@ -224,4 +224,4 @@ equilibrium_ok              false
 Warning mode retains this C#-matching state only for comparison and marks it
 unsafe. Strict mode returns exit code `-12`, restores the complete pre-step
 state, and does not commit it. See
-[nonlinear convergence and equilibrium safety](nonlinear_convergence_safety.md).
+[nonlinear convergence and equilibrium safety](../nonlinear_convergence_safety.md).

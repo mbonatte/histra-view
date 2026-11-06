@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-17T09:52:47.113994+00:00",
-  "source_commit": "d0ad2574ce00208e794f0d4b8bc644ebfb4f6b9f",
+  "generated_at": "2026-11-02T22:00:14.560073+00:00",
+  "source_commit": "b2a6e0b20e93e8e4284a160ec336c25b74abf62c",
   "generator": "tools/benchmarks/build_source_audit_inventory.py",
   "benchmark_id": "masonry-source-inventory-not-parity-certification",
   "definition_scope": "AST class/function definitions including nested helpers; excludes lambdas and aliases.",
   "counts": {
-    "files": 99,
-    "classes": 115,
-    "function_definitions": 858
+    "files": 104,
+    "classes": 118,
+    "function_definitions": 912
   },
   "files": [
     {
@@ -35,7 +35,7 @@
     {
       "path": "histra/model/load.py",
       "status": "inventory_only",
-      "lf_sha256": "7fa5624b3c2e30bdb1c3d70f85ce2fec43193a0102f0ef2800b90f8d86efb7e2",
+      "lf_sha256": "9e6a7e01f69a13451f9fda849831e211b54f3bf1d88dd138c9bce4b2bc049f0b",
       "classes": [
         {
           "name": "LoadCombinationItem",
@@ -75,7 +75,7 @@
         },
         {
           "name": "Analysis",
-          "line": 174
+          "line": 176
         }
       ],
       "functions": [
@@ -248,7 +248,7 @@
     {
       "path": "histra/elements/interface.py",
       "status": "inventory_only",
-      "lf_sha256": "3538a008b807ee697e7976b71d5e4dce49c24796badeaee967d9c9623c92fe61",
+      "lf_sha256": "7373823a6f9cd22ed6595be58d549e5c3e0d44804d5a42f428af0b1532688427",
       "classes": [
         {
           "name": "Interface",
@@ -261,131 +261,135 @@
           "line": 17
         },
         {
-          "name": "Interface.area",
+          "name": "Interface.__deepcopy__",
           "line": 110
         },
         {
+          "name": "Interface.area",
+          "line": 183
+        },
+        {
           "name": "Interface._linear_normal_projection",
-          "line": 131
+          "line": 204
         },
         {
           "name": "Interface.compute_flex_def",
-          "line": 143
+          "line": 216
         },
         {
           "name": "Interface.compute_dn",
-          "line": 150
+          "line": 223
         },
         {
           "name": "Interface.compute_area_corr",
-          "line": 172
-        },
-        {
-          "name": "Interface.interfaccia_vincolata_computed",
-          "line": 184
-        },
-        {
-          "name": "Interface.idx",
-          "line": 192
-        },
-        {
-          "name": "Interface.get_di",
-          "line": 196
-        },
-        {
-          "name": "Interface.get_dj",
-          "line": 213
-        },
-        {
-          "name": "Interface.get_dm",
-          "line": 217
-        },
-        {
-          "name": "Interface.geometry_spring",
-          "line": 221
-        },
-        {
-          "name": "Interface.ecc_spring",
-          "line": 228
-        },
-        {
-          "name": "Interface._ensure_stiffness_geometry_cache",
           "line": 245
         },
         {
+          "name": "Interface.interfaccia_vincolata_computed",
+          "line": 257
+        },
+        {
+          "name": "Interface.idx",
+          "line": 265
+        },
+        {
+          "name": "Interface.get_di",
+          "line": 269
+        },
+        {
+          "name": "Interface.get_dj",
+          "line": 286
+        },
+        {
+          "name": "Interface.get_dm",
+          "line": 290
+        },
+        {
+          "name": "Interface.geometry_spring",
+          "line": 294
+        },
+        {
+          "name": "Interface.ecc_spring",
+          "line": 301
+        },
+        {
+          "name": "Interface._ensure_stiffness_geometry_cache",
+          "line": 318
+        },
+        {
           "name": "Interface._ensure_performance_cache",
-          "line": 299
+          "line": 372
         },
         {
           "name": "Interface._local_increment",
-          "line": 328
+          "line": 416
         },
         {
           "name": "Interface.compute_dist_spring",
-          "line": 344
+          "line": 432
         },
         {
           "name": "Interface.compute_dist_spring_for",
-          "line": 354
+          "line": 442
         },
         {
           "name": "Interface._compute_di_from_geometry",
-          "line": 369
+          "line": 457
         },
         {
           "name": "Interface.compute_k",
-          "line": 394
+          "line": 482
         },
         {
           "name": "Interface._compute_kfless",
-          "line": 405
+          "line": 493
         },
         {
           "name": "Interface._compute_kslid",
-          "line": 563
+          "line": 651
         },
         {
           "name": "Interface._compute_kslid_out_plan",
-          "line": 577
+          "line": 665
         },
         {
           "name": "Interface.update_domain",
-          "line": 635
+          "line": 723
         },
         {
           "name": "Interface.set_resisting_force",
-          "line": 757
+          "line": 845
         },
         {
           "name": "Interface.get_resisting_force",
-          "line": 815
+          "line": 903
         },
         {
           "name": "Interface.commit",
-          "line": 830
+          "line": 918
         },
         {
           "name": "Interface.revert_to_last_commit",
-          "line": 853
+          "line": 941
         },
         {
           "name": "Interface.max_u",
-          "line": 895
+          "line": 983
         },
         {
           "name": "Interface.compute_energy",
-          "line": 899
+          "line": 987
         },
         {
           "name": "Interface.from_xml",
-          "line": 933
+          "line": 1021
         }
       ]
     },
     {
       "path": "histra/elements/interface_state.py",
       "status": "inventory_only",
-      "lf_sha256": "9f43e29936c17db6805199ce3225769e6c73f494906cee78606e8fd101c6c8fa",
+      "lf_sha256": "33349ecd9ce94c52707c3d36be23c6200a1964324e8c14d566eb0141f5c786be",
       "classes": [
         {
           "name": "InterfaceState",
@@ -403,14 +407,14 @@
         },
         {
           "name": "InterfaceState.compute_du",
-          "line": 53
+          "line": 56
         }
       ]
     },
     {
       "path": "histra/elements/quad.py",
       "status": "inventory_only",
-      "lf_sha256": "7fdd93927de33c53d40c335b471f3025eeb436a3cb11499b5b3f0e86db0395cc",
+      "lf_sha256": "df9e59d6d99699a421fcef6642994e1cce1f6dabaff856b138f3c31aa0fa4f16",
       "classes": [
         {
           "name": "Quad",
@@ -427,64 +431,68 @@
           "line": 50
         },
         {
-          "name": "Quad.set_non_linear_properties",
+          "name": "Quad.__deepcopy__",
           "line": 75
         },
         {
+          "name": "Quad.set_non_linear_properties",
+          "line": 118
+        },
+        {
           "name": "Quad.set_resisting_force",
-          "line": 96
+          "line": 139
         },
         {
           "name": "Quad.get_resisting_force",
-          "line": 107
+          "line": 150
         },
         {
           "name": "Quad.compute_volume",
-          "line": 130
+          "line": 173
         },
         {
           "name": "Quad._ensure_dn_cache",
-          "line": 180
+          "line": 223
         },
         {
           "name": "Quad.compute_dn",
-          "line": 213
+          "line": 266
         },
         {
           "name": "Quad._compute_linear_normal_force",
-          "line": 242
+          "line": 295
         },
         {
           "name": "Quad._local_increment",
-          "line": 272
+          "line": 325
         },
         {
           "name": "Quad.update_domain",
-          "line": 288
+          "line": 341
         },
         {
           "name": "Quad.commit",
-          "line": 326
+          "line": 379
         },
         {
           "name": "Quad.revert_to_last_commit",
-          "line": 333
+          "line": 386
         },
         {
           "name": "Quad.max_u",
-          "line": 347
+          "line": 400
         },
         {
           "name": "Quad._warping_coeffs",
-          "line": 354
+          "line": 407
         },
         {
           "name": "Quad.compute_energy",
-          "line": 368
+          "line": 421
         },
         {
           "name": "Quad.from_xml",
-          "line": 378
+          "line": 431
         }
       ]
     },
@@ -524,20 +532,24 @@
     {
       "path": "histra/elements/quad_kernels.py",
       "status": "inventory_only",
-      "lf_sha256": "ed1e9b6e441a5115b1605d056d3c48a3282158d3653362660167d5e054544108",
+      "lf_sha256": "a0ccfe24a3c66bdc8bd17052c6c119f8ad562281ae36d4fe3a578de94f191036",
       "classes": [],
       "functions": [
         {
           "name": "_quad_yield_search_kernel",
-          "line": 30
+          "line": 31
         },
         {
           "name": "quad_yield_search_scalar",
-          "line": 102
+          "line": 103
+        },
+        {
+          "name": "_cached_quad_yield_search",
+          "line": 207
         },
         {
           "name": "quad_yield_search",
-          "line": 205
+          "line": 223
         }
       ]
     },
@@ -698,7 +710,7 @@
     {
       "path": "histra/springs/coulomb03.py",
       "status": "inventory_only",
-      "lf_sha256": "e8bd1a0071f0a675d922331a6bcdff8ec9a6b59f2867023089bed1a07198261a",
+      "lf_sha256": "808bdb92ce91ab5dcdc179f87201f18fbe5889bb413e8a1a07dc478b06b5805a",
       "classes": [
         {
           "name": "SpringCoulomb03",
@@ -739,8 +751,16 @@
           "line": 176
         },
         {
+          "name": "SpringCoulomb03.__copy__",
+          "line": 179
+        },
+        {
+          "name": "SpringCoulomb03.__deepcopy__",
+          "line": 288
+        },
+        {
           "name": "SpringCoulomb03._from_xml",
-          "line": 184
+          "line": 302
         }
       ]
     },
@@ -922,7 +942,7 @@
     {
       "path": "histra/springs/hysteretic.py",
       "status": "inventory_only",
-      "lf_sha256": "43e0fedf361e74a7e696e316e004e8dc254f50c25b1a2661ca6357f3e449276d",
+      "lf_sha256": "ba575d20b6806fd80c3692c2c59c513fd06157f03b7715351189f0de0bc58ee2",
       "classes": [
         {
           "name": "SpringHysteretic",
@@ -935,108 +955,112 @@
           "line": 109
         },
         {
+          "name": "SpringHysteretic.__deepcopy__",
+          "line": 199
+        },
+        {
           "name": "SpringHysteretic._from_xml",
-          "line": 205
+          "line": 214
         },
         {
           "name": "SpringHysteretic.revert_to_start",
-          "line": 283
+          "line": 292
         },
         {
           "name": "SpringHysteretic.revert_to_last_commit",
-          "line": 302
+          "line": 311
         },
         {
           "name": "SpringHysteretic.commit",
-          "line": 314
+          "line": 323
         },
         {
           "name": "SpringHysteretic.get_force",
-          "line": 336
+          "line": 345
         },
         {
           "name": "SpringHysteretic.get_incr_force",
-          "line": 340
+          "line": 349
         },
         {
           "name": "SpringHysteretic.get_displacement",
-          "line": 344
+          "line": 353
         },
         {
           "name": "SpringHysteretic.set_trial_strain",
-          "line": 352
+          "line": 361
         },
         {
           "name": "SpringHysteretic._positive_increment",
-          "line": 417
+          "line": 426
         },
         {
           "name": "SpringHysteretic._negative_increment",
-          "line": 503
+          "line": 512
         },
         {
           "name": "SpringHysteretic._pos_envlp_stress",
-          "line": 593
+          "line": 602
         },
         {
           "name": "SpringHysteretic._pos_envlp_stress_linear",
-          "line": 605
+          "line": 614
         },
         {
           "name": "SpringHysteretic._pos_envlp_stress_exponential",
-          "line": 617
+          "line": 626
         },
         {
           "name": "SpringHysteretic._neg_envlp_stress",
-          "line": 628
+          "line": 637
         },
         {
           "name": "SpringHysteretic._neg_envlp_stress_linear",
-          "line": 640
+          "line": 649
         },
         {
           "name": "SpringHysteretic._neg_envlp_stress_parabolic",
-          "line": 652
+          "line": 661
         },
         {
           "name": "SpringHysteretic._pos_envlp_tangent",
-          "line": 671
+          "line": 680
         },
         {
           "name": "SpringHysteretic._pos_envlp_tangent_linear",
-          "line": 684
+          "line": 693
         },
         {
           "name": "SpringHysteretic._pos_envlp_tangent_exponential",
-          "line": 700
+          "line": 709
         },
         {
           "name": "SpringHysteretic._neg_envlp_tangent",
-          "line": 713
+          "line": 722
         },
         {
           "name": "SpringHysteretic._neg_envlp_tangent_linear",
-          "line": 726
+          "line": 735
         },
         {
           "name": "SpringHysteretic._neg_envlp_tangent_parabolic",
-          "line": 742
+          "line": 751
         },
         {
           "name": "SpringHysteretic._pos_envlp_rotlim",
-          "line": 768
+          "line": 777
         },
         {
           "name": "SpringHysteretic._neg_envlp_rotlim",
-          "line": 789
+          "line": 798
         },
         {
           "name": "SpringHysteretic.initialize",
-          "line": 814
+          "line": 823
         },
         {
           "name": "SpringHysteretic._set_envelope",
-          "line": 877
+          "line": 886
         }
       ]
     },
@@ -1092,7 +1116,7 @@
     {
       "path": "histra/springs/transverse_fiber_group.py",
       "status": "inventory_only",
-      "lf_sha256": "0978fb6dc1068d107000cc57cd10c46abb06db2e34c063042a173648f0631a88",
+      "lf_sha256": "8c2b4d04c3c295632ee2dc5fde37be10ed0068ab83117657a9caf23dc3ae4b56",
       "classes": [
         {
           "name": "TransverseFiberGroup",
@@ -1106,79 +1130,95 @@
         },
         {
           "name": "TransverseFiberGroup.is_batch_backed",
-          "line": 113
-        },
-        {
-          "name": "TransverseFiberGroup.__len__",
           "line": 116
         },
         {
-          "name": "TransverseFiberGroup.__bool__",
+          "name": "TransverseFiberGroup.__len__",
           "line": 119
         },
         {
-          "name": "TransverseFiberGroup._materialize_proxy",
+          "name": "TransverseFiberGroup.__bool__",
           "line": 122
         },
         {
+          "name": "TransverseFiberGroup._materialize_proxy",
+          "line": 125
+        },
+        {
           "name": "TransverseFiberGroup.__getitem__",
-          "line": 241
+          "line": 244
         },
         {
           "name": "TransverseFiberGroup.__setitem__",
-          "line": 255
+          "line": 258
         },
         {
           "name": "TransverseFiberGroup.__delitem__",
-          "line": 270
+          "line": 277
         },
         {
           "name": "TransverseFiberGroup.insert",
-          "line": 273
-        },
-        {
-          "name": "TransverseFiberGroup.__iter__",
-          "line": 276
-        },
-        {
-          "name": "TransverseFiberGroup.__repr__",
           "line": 280
         },
         {
-          "name": "TransverseFiberGroup.transverse_rejection_reason",
+          "name": "TransverseFiberGroup.__iter__",
           "line": 283
         },
         {
+          "name": "TransverseFiberGroup.__repr__",
+          "line": 287
+        },
+        {
+          "name": "TransverseFiberGroup.transverse_rejection_reason",
+          "line": 290
+        },
+        {
           "name": "TransverseFiberGroup.get_k_array",
-          "line": 320
+          "line": 327
         },
         {
           "name": "TransverseFiberGroup.compute_area_corr",
-          "line": 328
+          "line": 335
         },
         {
           "name": "TransverseFiberGroup.sum_force_f32",
-          "line": 344
+          "line": 351
         },
         {
           "name": "TransverseFiberGroup.sync_from_dense",
-          "line": 352
+          "line": 359
         },
         {
           "name": "TransverseFiberGroup.sync_tangents_from_dense",
-          "line": 386
+          "line": 393
         },
         {
           "name": "TransverseFiberGroup.sync_trial_from_dense",
-          "line": 394
+          "line": 401
         },
         {
           "name": "TransverseFiberGroup.copy_committed_state_from",
-          "line": 414
+          "line": 421
         },
         {
           "name": "TransverseFiberGroup._copy_committed_metadata",
-          "line": 429
+          "line": 436
+        },
+        {
+          "name": "TransverseFiberGroup.revert_to_start",
+          "line": 451
+        },
+        {
+          "name": "TransverseFiberGroup.revert_to_last_commit",
+          "line": 466
+        },
+        {
+          "name": "TransverseFiberGroup.flush_cache_to_arrays",
+          "line": 473
+        },
+        {
+          "name": "TransverseFiberGroup.__deepcopy__",
+          "line": 505
         }
       ]
     },
@@ -1192,7 +1232,7 @@
     {
       "path": "histra/preprocessing/afference.py",
       "status": "inventory_only",
-      "lf_sha256": "8daecb7046709f1c06b74e59548d717ff2902c0be4dcfa483adf1fc9455c7217",
+      "lf_sha256": "dc90a214a30eea4ad04220f6c5424ab61a814bfad416b1083932974e65acb6f7",
       "classes": [
         {
           "name": "_QuadAfferenceGeometry",
@@ -1206,75 +1246,75 @@
         },
         {
           "name": "_warping_nodal_vectors",
-          "line": 72
+          "line": 73
         },
         {
           "name": "_quad_afference_geometry",
-          "line": 109
+          "line": 110
         },
         {
           "name": "_warping_vector_from_geometry",
-          "line": 128
+          "line": 129
         },
         {
           "name": "_warping_vector_at_point",
-          "line": 138
+          "line": 139
         },
         {
           "name": "_point_afference",
-          "line": 151
+          "line": 152
         },
         {
           "name": "_rotation_afference",
-          "line": 209
+          "line": 220
         },
         {
           "name": "_assign_interface_afference",
-          "line": 222
+          "line": 241
         },
         {
           "name": "_bilinear",
-          "line": 286
+          "line": 308
         },
         {
           "name": "_bilinear_f32",
-          "line": 295
+          "line": 317
         },
         {
           "name": "_inverse_bilinear_f32_bisection_reference",
-          "line": 315
+          "line": 337
         },
         {
           "name": "_inverse_bilinear_f32_bisection_reference.project",
-          "line": 335
+          "line": 357
         },
         {
           "name": "_inverse_bilinear_f32_bisection_reference.align",
-          "line": 346
+          "line": 368
         },
         {
           "name": "_inverse_bilinear_f32_bisection_reference.inside",
-          "line": 366
+          "line": 388
         },
         {
           "name": "_inverse_bilinear_f32_python",
-          "line": 473
+          "line": 495
         },
         {
           "name": "_bilinear_component_f32_nb",
-          "line": 539
+          "line": 561
         },
         {
           "name": "_inverse_bilinear_f32_nb",
-          "line": 564
+          "line": 586
         },
         {
           "name": "_inverse_bilinear_f32",
-          "line": 673
+          "line": 695
         },
         {
           "name": "_inverse_bilinear",
-          "line": 685
+          "line": 707
         }
       ]
     },
@@ -1362,135 +1402,143 @@
     {
       "path": "histra/preprocessing/contact_geometry.py",
       "status": "inventory_only",
-      "lf_sha256": "dc0cbf8ecc3e8f3f371436d2fcdd5983e37ec594de75344c51cb4fbd4c803aaf",
+      "lf_sha256": "ae98138cdadb64a3e832aac9b580d194225b7e6467dff85e08c918e99c915736",
       "classes": [],
       "functions": [
         {
           "name": "_interface_division_count",
-          "line": 30
+          "line": 31
         },
         {
           "name": "_v",
-          "line": 45
+          "line": 46
         },
         {
           "name": "_p",
-          "line": 51
+          "line": 52
         },
         {
           "name": "_norm3",
-          "line": 55
+          "line": 56
         },
         {
           "name": "_cross3",
-          "line": 63
+          "line": 64
         },
         {
           "name": "_unit",
-          "line": 79
+          "line": 80
         },
         {
           "name": "_cross3_f32",
-          "line": 94
+          "line": 95
         },
         {
           "name": "_dot3_f32",
-          "line": 115
+          "line": 116
         },
         {
           "name": "_norm3_f32",
-          "line": 125
+          "line": 126
         },
         {
           "name": "_unit_f32",
-          "line": 130
+          "line": 131
         },
         {
           "name": "_quad_lateral_face_vertices",
-          "line": 143
+          "line": 144
         },
         {
           "name": "_quad_face_vertices",
-          "line": 158
+          "line": 159
         },
         {
           "name": "_make_interface_geometry",
-          "line": 165
+          "line": 166
         },
         {
           "name": "_node_bucket",
-          "line": 281
+          "line": 284
         },
         {
           "name": "_build_geometric_node_index",
-          "line": 285
+          "line": 288
         },
         {
           "name": "_find_or_create_geometric_node",
-          "line": 306
+          "line": 310
         },
         {
           "name": "_face_normal",
-          "line": 349
+          "line": 363
         },
         {
           "name": "_face_normals_batch",
-          "line": 371
+          "line": 385
         },
         {
           "name": "_convex_quad_overlap_prefilter_batch",
-          "line": 417
+          "line": 431
         },
         {
           "name": "_coplanar_quad_intersection_prechecked",
-          "line": 485
+          "line": 499
         },
         {
           "name": "_coplanar_quad_intersection",
-          "line": 566
+          "line": 594
         },
         {
           "name": "_polygon_edge_at_point",
-          "line": 579
+          "line": 607
         },
         {
           "name": "_quad_face_reference_edge",
-          "line": 595
+          "line": 624
         },
         {
           "name": "_prepare_interface_endpoints",
-          "line": 608
+          "line": 637
         },
         {
           "name": "_passes_csharp_lateral_area_filter",
-          "line": 656
+          "line": 685
         },
         {
           "name": "_find_broad_pairs_nb",
-          "line": 678
+          "line": 707
         },
         {
           "name": "_find_face_candidates_nb",
-          "line": 722
+          "line": 751
+        },
+        {
+          "name": "_filter_coplanar_overlap_nb",
+          "line": 871
         },
         {
           "name": "_quad_contact_pairs",
-          "line": 845
+          "line": 912
         },
         {
           "name": "_generate_interfaces",
-          "line": 995
+          "line": 1070
         },
         {
           "name": "_quad_vint",
-          "line": 1074
+          "line": 1149
+        },
+        {
+          "name": "_quad_vint_f32",
+          "line": 1165
         }
       ]
     },
     {
       "path": "histra/preprocessing/csharp_fibre_geometry.py",
       "status": "inventory_only",
-      "lf_sha256": "5951b2d0c8a1b8a7bcc6935249b93ac0aac651125da32b43e175bda5a4a7abc9",
+      "lf_sha256": "2bcb28f590adc9b8a02416f9f2613bbdf505036cdf8d6aaddaf9f35b4f141f99",
       "classes": [],
       "functions": [
         {
@@ -1539,31 +1587,31 @@
         },
         {
           "name": "_csharp_mapped",
-          "line": 124
+          "line": 127
         },
         {
           "name": "_csharp_properties",
-          "line": 136
+          "line": 142
         },
         {
           "name": "_csharp_stiffness",
-          "line": 169
+          "line": 175
         },
         {
           "name": "_csharp_cell_vertices",
-          "line": 188
+          "line": 194
         },
         {
           "name": "_csharp_interface_cells_nb",
-          "line": 212
+          "line": 218
         },
         {
           "name": "_csharp_interface_cells",
-          "line": 237
+          "line": 243
         },
         {
           "name": "_csharp_fibre_stiffness_batch_nb",
-          "line": 257
+          "line": 263
         }
       ]
     },
@@ -1589,56 +1637,56 @@
     {
       "path": "histra/preprocessing/fibre_geometry.py",
       "status": "inventory_only",
-      "lf_sha256": "b926cf7bdfda8bf99584e7ed0f05699ea79c53d84d7b126cfd0c961af29a1ba7",
+      "lf_sha256": "42d2f02e3c85cd2c177efd07d38ba4cda0a008aa942829b96a766176fd9e5897",
       "classes": [],
       "functions": [
         {
           "name": "_cell_vertices",
-          "line": 54
+          "line": 55
         },
         {
           "name": "_dot3_nb",
-          "line": 79
+          "line": 80
         },
         {
           "name": "_norm3_nb",
-          "line": 83
+          "line": 84
         },
         {
           "name": "_cross3_nb",
-          "line": 87
+          "line": 88
         },
         {
           "name": "_bilinear_nb",
-          "line": 93
+          "line": 94
         },
         {
           "name": "_interface_cells_nb",
-          "line": 107
+          "line": 108
         },
         {
           "name": "_polygon_areas_3d_nb",
-          "line": 132
+          "line": 133
         },
         {
           "name": "_inverse_bilinear_nb",
-          "line": 153
+          "line": 154
         },
         {
           "name": "_interface_cells",
-          "line": 206
+          "line": 207
         },
         {
           "name": "_polygon_areas_3d",
-          "line": 225
+          "line": 226
         },
         {
           "name": "_fiber_stiffness_batch",
-          "line": 232
+          "line": 233
         },
         {
           "name": "_fiber_stiffness",
-          "line": 260
+          "line": 268
         }
       ]
     },
@@ -1665,7 +1713,7 @@
     {
       "path": "histra/preprocessing/material_selection.py",
       "status": "inventory_only",
-      "lf_sha256": "39b56652084e4d3accdbc128141443c9047af4f0edbcbb5674bef04a86f54270",
+      "lf_sha256": "159b55d3b0342984bd5f926c75bb21a4f41c152c30b99a77fbd6f47892d88542",
       "classes": [],
       "functions": [
         {
@@ -1682,43 +1730,43 @@
         },
         {
           "name": "_blend_hysteretic_laws",
-          "line": 75
+          "line": 78
         },
         {
           "name": "_blend_hysteretic_laws.blend",
-          "line": 83
+          "line": 89
         },
         {
           "name": "_restraint_reference_e1",
-          "line": 100
+          "line": 106
         },
         {
           "name": "_restraint_flex_law",
-          "line": 114
+          "line": 120
         },
         {
           "name": "_interface_flex_law",
-          "line": 122
+          "line": 128
         },
         {
           "name": "_cached_diagonal_laws",
-          "line": 137
+          "line": 143
         },
         {
           "name": "_cached_sliding_law",
-          "line": 151
+          "line": 157
         },
         {
           "name": "_blend_coulomb_laws",
-          "line": 172
+          "line": 178
         },
         {
           "name": "_blend_coulomb_laws.blend",
-          "line": 183
+          "line": 192
         },
         {
           "name": "_interface_sliding_law",
-          "line": 196
+          "line": 205
         }
       ]
     },
@@ -1757,7 +1805,7 @@
     {
       "path": "histra/preprocessing/prepare_model.py",
       "status": "inventory_only",
-      "lf_sha256": "e4890c063a750a0559045c4bd8a1e792272e221b6d1f939c45cbbb831d86ced4",
+      "lf_sha256": "830098afbe6ba87a069a89e9a6d1c83bc1ebb62424dc0a87ca911079e70150b0",
       "classes": [
         {
           "name": "PreparationReport",
@@ -1854,7 +1902,7 @@
     {
       "path": "histra/preprocessing/spring_assignment.py",
       "status": "inventory_only",
-      "lf_sha256": "ee05b5781ef647bbd1c885a7fef7141fb1a712ca89a819d92ae904fc7b58ab1a",
+      "lf_sha256": "40325cde0378e22948285ca719b962bf7d36687c3bf32dbbdd876b44cc344e25",
       "classes": [],
       "functions": [
         {
@@ -1863,111 +1911,119 @@
         },
         {
           "name": "_quad_spring",
-          "line": 83
+          "line": 89
         },
         {
           "name": "_side_transverse_spring",
-          "line": 145
+          "line": 151
         },
         {
           "name": "_interface_parent_material",
-          "line": 169
+          "line": 175
         },
         {
           "name": "_side_sliding_spring",
-          "line": 202
+          "line": 208
         },
         {
           "name": "_out_of_plane_spring_areas",
-          "line": 269
+          "line": 275
         },
         {
           "name": "_transverse_side_properties_batch",
-          "line": 290
+          "line": 298
         },
         {
           "name": "_create_interface_springs",
-          "line": 328
+          "line": 336
         },
         {
           "name": "rebuild_interface_springs",
-          "line": 592
+          "line": 601
         }
       ]
     },
     {
       "path": "histra/preprocessing/spring_factory.py",
       "status": "inventory_only",
-      "lf_sha256": "ed077e978fa3679e61253244d34ab414372054aed6815a53f23d0a4964edfde8",
+      "lf_sha256": "e5ad853e362bfe8612352028bfffd1b2fc5e57387489f98014d37dc5c404a3bd",
       "classes": [],
       "functions": [
         {
           "name": "_new_hysteretic_spring",
-          "line": 23
-        },
-        {
-          "name": "_series",
           "line": 28
         },
         {
+          "name": "_series",
+          "line": 33
+        },
+        {
           "name": "_configure_coulomb",
-          "line": 37
+          "line": 42
         },
         {
           "name": "_set_coulomb_ultimate",
-          "line": 120
+          "line": 125
         },
         {
           "name": "_configure_hysteretic",
-          "line": 145
+          "line": 150
         },
         {
           "name": "_set_ultimate_displacement",
-          "line": 192
+          "line": 197
         },
         {
           "name": "_hysteretic_side_definition",
-          "line": 257
+          "line": 262
         },
         {
           "name": "_configure_combined_hysteretic",
-          "line": 310
+          "line": 315
         },
         {
           "name": "_series_array",
-          "line": 393
+          "line": 398
         },
         {
           "name": "_hysteretic_side_arrays",
-          "line": 401
+          "line": 406
         },
         {
           "name": "_apply_ultimate_displacement_arrays",
-          "line": 447
+          "line": 452
+        },
+        {
+          "name": "_series_nb",
+          "line": 514
+        },
+        {
+          "name": "_hysteretic_kernel_nb",
+          "line": 521
         },
         {
           "name": "_configure_combined_hysteretic_batch",
-          "line": 504
+          "line": 829
         },
         {
           "name": "_copy_hysteretic_spring",
-          "line": 904
+          "line": 1276
         },
         {
           "name": "_copy_coulomb_spring",
-          "line": 927
+          "line": 1299
         },
         {
           "name": "_combine_hysteretic",
-          "line": 937
+          "line": 1309
         },
         {
           "name": "_combine_coulomb",
-          "line": 1010
+          "line": 1382
         },
         {
           "name": "_combine_sliding",
-          "line": 1059
+          "line": 1431
         }
       ]
     },
@@ -2011,9 +2067,21 @@
     {
       "path": "histra/solver/__init__.py",
       "status": "inventory_only",
-      "lf_sha256": "5bf836ba20d0564ed288ca452237129131fce8cf837e8280788249baa0d99835",
+      "lf_sha256": "7561eb5ca3c361aaf7d3d5b140a9458a0edbbf20d051dd37217ecd4ee0f31ab8",
       "classes": [],
       "functions": []
+    },
+    {
+      "path": "histra/solver/_job_worker.py",
+      "status": "inventory_only",
+      "lf_sha256": "c91d3c5a3c03aaaf87a5d27c972b3acec1566b75532bcef7317f8d06e03249e8",
+      "classes": [],
+      "functions": [
+        {
+          "name": "main",
+          "line": 9
+        }
+      ]
     },
     {
       "path": "histra/solver/arc_length.py",
@@ -2115,7 +2183,7 @@
     {
       "path": "histra/solver/assembler.py",
       "status": "inventory_only",
-      "lf_sha256": "65838adeb0121a4b47185ffe1846596ed76e574a183d32904c90e0075d4ac18a",
+      "lf_sha256": "46486796c343f6b671c42ddd628a49940665a3bc1e4a75a80e6ac90bbbe4f85e",
       "classes": [
         {
           "name": "_AssemblyPlanIncompatible",
@@ -2152,71 +2220,75 @@
           "line": 251
         },
         {
-          "name": "_StiffnessAssemblyPlan.ensure_batch_data",
+          "name": "_StiffnessAssemblyPlan.__deepcopy__",
           "line": 285
         },
         {
+          "name": "_StiffnessAssemblyPlan.ensure_batch_data",
+          "line": 291
+        },
+        {
           "name": "_StiffnessAssemblyPlan.evaluate_and_assemble",
-          "line": 293
+          "line": 299
         },
         {
           "name": "_expand_scatter_terms_numeric",
-          "line": 380
+          "line": 386
         },
         {
           "name": "_map_contributions_to_csc_python",
-          "line": 472
+          "line": 478
         },
         {
           "name": "_map_contributions_to_csc",
-          "line": 500
+          "line": 506
         },
         {
           "name": "_build_stiffness_assembly_plan",
-          "line": 517
+          "line": 523
         },
         {
           "name": "_build_stiffness_assembly_plan.register_aff",
-          "line": 539
+          "line": 545
         },
         {
           "name": "_fill_stiffness_terms",
-          "line": 709
+          "line": 715
         },
         {
           "name": "_accumulate_csharp_order_python",
-          "line": 775
+          "line": 781
         },
         {
           "name": "_accumulate_csharp_order",
-          "line": 799
+          "line": 805
         },
         {
           "name": "_evaluate_stiffness_terms_batch_python",
-          "line": 812
+          "line": 818
         },
         {
           "name": "_build_stiffness_batch_data",
-          "line": 1042
+          "line": 1048
         },
         {
           "name": "_assemble_global_k_cached",
-          "line": 1219
+          "line": 1233
         },
         {
           "name": "_get_stiffness_assembly_plan",
-          "line": 1238
+          "line": 1252
         },
         {
           "name": "assemble_global_k",
-          "line": 1247
+          "line": 1261
         }
       ]
     },
     {
       "path": "histra/solver/backend_api.py",
       "status": "inventory_only",
-      "lf_sha256": "b2d424dcf9c6c0be9d74ee457410650e753f18cec8f51e59178fb25fbfc6542b",
+      "lf_sha256": "0ff6056c0f31769f4b4c452f503b2d9d589268b5a9324cf58f8e199a9f831d78",
       "classes": [
         {
           "name": "ConcreteInterfaceMutation",
@@ -2258,26 +2330,30 @@
         },
         {
           "name": "run_python_solver_job.log",
-          "line": 166
+          "line": 167
         },
         {
           "name": "run_python_solver_job.analysis_cancelled",
-          "line": 213
+          "line": 214
+        },
+        {
+          "name": "_export_job_session",
+          "line": 266
         },
         {
           "name": "_dependency_order",
-          "line": 258
+          "line": 274
         },
         {
           "name": "_normalize_mutations",
-          "line": 273
+          "line": 289
         }
       ]
     },
     {
       "path": "histra/solver/backend_coverage.py",
       "status": "inventory_only",
-      "lf_sha256": "dccde96103d7cf64daa0815bc20e895ba9b80cfe6a31f0c0c877ce8ef41cd91d",
+      "lf_sha256": "d40f2bd8100172cbfc8cf7262cd75549bc0ee0cd3ac85318408afe9c395f42e3",
       "classes": [
         {
           "name": "CompiledBackendError",
@@ -2306,16 +2382,20 @@
           "line": 67
         },
         {
-          "name": "inspect_solver_backend",
+          "name": "require_compiled_dependencies",
           "line": 111
         },
         {
+          "name": "inspect_solver_backend",
+          "line": 135
+        },
+        {
           "name": "_resolve_linear_solver_backend",
-          "line": 257
+          "line": 281
         },
         {
           "name": "_resolve_requested_analyses",
-          "line": 290
+          "line": 319
         }
       ]
     },
@@ -2595,14 +2675,14 @@
     {
       "path": "histra/solver/hysteretic_batch.py",
       "status": "inventory_only",
-      "lf_sha256": "38d3db604e9688695bc8c4165eb0ffdf994442660210760c600c30613df5eb7a",
+      "lf_sha256": "6b9e878c994f325bd0e5237f5fd847404514e5585ced3af55e184b216c9fe4c0",
       "classes": [],
       "functions": []
     },
     {
       "path": "histra/solver/hysteretic_kernels/__init__.py",
       "status": "inventory_only",
-      "lf_sha256": "f5b6e2cab0fdc09b5f31d072ebc59a290f155decd63f7dca477f7a1cd4c6ee3a",
+      "lf_sha256": "45f8a8f3641ba3b69d7a58474efcee984bd13578c0f0d1ca1bac188ac4ee08ea",
       "classes": [],
       "functions": []
     },
@@ -2739,9 +2819,25 @@
       ]
     },
     {
+      "path": "histra/solver/hysteretic_kernels/resultant_geometry.py",
+      "status": "inventory_only",
+      "lf_sha256": "68dd03218311e442f10e85ae116dd1105c0fa8e5483cb00ddf0af77e07efc528",
+      "classes": [],
+      "functions": [
+        {
+          "name": "_spring_centroid",
+          "line": 13
+        },
+        {
+          "name": "resultant_moment_arms",
+          "line": 62
+        }
+      ]
+    },
+    {
       "path": "histra/solver/hysteretic_kernels/scatter.py",
       "status": "inventory_only",
-      "lf_sha256": "5cbbe42513ffcfafb50052f957951087775e0c9dd84b67dccf742ab60f519180",
+      "lf_sha256": "e34f499a3715cf586071dd45bc47c65e8d6bd0b748df59eb3077fe42d1a91286",
       "classes": [],
       "functions": [
         {
@@ -2769,24 +2865,32 @@
           "line": 123
         },
         {
-          "name": "_eval_pdelta_interfaces_kernel",
+          "name": "_batch_interface_resultants_and_moments",
           "line": 151
         },
         {
+          "name": "_eval_pdelta_interfaces_kernel",
+          "line": 197
+        },
+        {
           "name": "_eval_pdelta_line_loads_kernel",
-          "line": 212
+          "line": 258
         },
         {
           "name": "_batch_interface_resultants",
-          "line": 278
+          "line": 324
+        },
+        {
+          "name": "_batch_interface_resultants_and_moments",
+          "line": 351
         },
         {
           "name": "_eval_pdelta_interfaces_kernel",
-          "line": 305
+          "line": 396
         },
         {
           "name": "_eval_pdelta_line_loads_kernel",
-          "line": 365
+          "line": 456
         }
       ]
     },
@@ -2873,433 +2977,449 @@
     {
       "path": "histra/solver/hysteretic_runtime.py",
       "status": "inventory_only",
-      "lf_sha256": "28e4395ce773767d4eedb5170a44dd17cb1188dc606beec13dbcdaab1e544c62",
+      "lf_sha256": "75e1f6a6d98074907997edab1aa661bd06446d01cfc4e7df84dee99042eaa80c",
       "classes": [
         {
           "name": "PDeltaPlan",
-          "line": 271
+          "line": 273
         },
         {
           "name": "PDeltaLineLoadPlan",
-          "line": 286
+          "line": 288
         },
         {
           "name": "_VirtualSpringSequence",
-          "line": 525
+          "line": 527
         },
         {
           "name": "_VirtualManagedSequence",
-          "line": 566
+          "line": 568
         },
         {
           "name": "_TransverseParameterView",
-          "line": 630
+          "line": 632
         },
         {
           "name": "HystereticBatchRuntime",
-          "line": 786
+          "line": 795
         }
       ],
       "functions": [
         {
           "name": "_phase_from_code",
-          "line": 302
+          "line": 304
         },
         {
           "name": "_managed_elastic_energy",
-          "line": 314
+          "line": 316
         },
         {
           "name": "_update_domain_batch",
-          "line": 345
+          "line": 347
         },
         {
           "name": "recommended_numba_threads",
-          "line": 441
+          "line": 443
         },
         {
           "name": "current_numba_threads",
-          "line": 488
+          "line": 490
         },
         {
           "name": "restore_numba_threads",
-          "line": 495
+          "line": 497
         },
         {
           "name": "_force_general_hysteretic_batch",
-          "line": 501
+          "line": 503
         },
         {
           "name": "_uses_simple_hysteretic_parameters",
-          "line": 507
+          "line": 509
         },
         {
           "name": "_VirtualSpringSequence.__init__",
-          "line": 530
+          "line": 532
         },
         {
           "name": "_VirtualSpringSequence.__len__",
-          "line": 535
+          "line": 537
         },
         {
           "name": "_VirtualSpringSequence.__bool__",
-          "line": 538
+          "line": 540
         },
         {
           "name": "_VirtualSpringSequence.__getitem__",
-          "line": 541
+          "line": 543
         },
         {
           "name": "_VirtualSpringSequence.__setitem__",
-          "line": 553
+          "line": 555
         },
         {
           "name": "_VirtualSpringSequence.__iter__",
-          "line": 561
+          "line": 563
         },
         {
           "name": "_VirtualManagedSequence.__init__",
-          "line": 571
+          "line": 573
         },
         {
           "name": "_VirtualManagedSequence.__len__",
-          "line": 581
+          "line": 583
         },
         {
           "name": "_VirtualManagedSequence.__bool__",
-          "line": 584
+          "line": 586
         },
         {
           "name": "_VirtualManagedSequence.__getitem__",
-          "line": 587
+          "line": 589
         },
         {
           "name": "_VirtualManagedSequence.__setitem__",
-          "line": 605
+          "line": 607
         },
         {
           "name": "_VirtualManagedSequence.extend",
-          "line": 619
+          "line": 621
         },
         {
           "name": "_VirtualManagedSequence.__iter__",
-          "line": 622
+          "line": 624
         },
         {
           "name": "_TransverseParameterView.__init__",
-          "line": 647
+          "line": 649
+        },
+        {
+          "name": "_TransverseParameterView._runtime",
+          "line": 653
         },
         {
           "name": "_TransverseParameterView.shape",
-          "line": 651
+          "line": 660
         },
         {
           "name": "_TransverseParameterView.ndim",
-          "line": 655
+          "line": 664
         },
         {
           "name": "_TransverseParameterView.dtype",
-          "line": 659
+          "line": 668
         },
         {
           "name": "_TransverseParameterView.size",
-          "line": 663
+          "line": 672
         },
         {
           "name": "_TransverseParameterView.__len__",
-          "line": 667
+          "line": 676
         },
         {
           "name": "_TransverseParameterView._normalise_column",
-          "line": 671
+          "line": 680
         },
         {
           "name": "_TransverseParameterView._selected_energy_a",
-          "line": 681
+          "line": 690
         },
         {
           "name": "_TransverseParameterView._materialize_rows",
-          "line": 693
+          "line": 702
         },
         {
           "name": "_TransverseParameterView.__getitem__",
-          "line": 716
+          "line": 725
         },
         {
           "name": "_TransverseParameterView.__setitem__",
-          "line": 760
+          "line": 769
         },
         {
           "name": "_TransverseParameterView.copy",
-          "line": 771
+          "line": 780
         },
         {
           "name": "_TransverseParameterView.__array__",
-          "line": 774
+          "line": 783
         },
         {
           "name": "_TransverseParameterView.__repr__",
-          "line": 782
+          "line": 791
         },
         {
           "name": "HystereticBatchRuntime.__init__",
-          "line": 789
+          "line": 798
         },
         {
           "name": "HystereticBatchRuntime._transverse_rejection_reason",
-          "line": 1334
-        },
-        {
-          "name": "HystereticBatchRuntime._coulomb_rejection_reason",
           "line": 1351
         },
         {
+          "name": "HystereticBatchRuntime._coulomb_rejection_reason",
+          "line": 1368
+        },
+        {
           "name": "HystereticBatchRuntime._refresh_elastic_sliding_indices",
-          "line": 1366
+          "line": 1383
         },
         {
           "name": "HystereticBatchRuntime._refresh_unmanaged_sliding_record_indices",
-          "line": 1376
+          "line": 1393
         },
         {
           "name": "HystereticBatchRuntime._import_interface_sliding_object",
-          "line": 1395
+          "line": 1412
         },
         {
           "name": "HystereticBatchRuntime._rebuild_interface_coulomb_storage",
-          "line": 1415
+          "line": 1432
         },
         {
           "name": "HystereticBatchRuntime._rebuild_interface_coulomb_storage.copy_run",
-          "line": 1547
+          "line": 1564
+        },
+        {
+          "name": "HystereticBatchRuntime.__deepcopy__",
+          "line": 1612
         },
         {
           "name": "HystereticBatchRuntime._read_transverse_objects_bulk",
-          "line": 1590
+          "line": 1618
         },
         {
           "name": "HystereticBatchRuntime._read_transverse_object",
-          "line": 1749
+          "line": 1779
         },
         {
           "name": "HystereticBatchRuntime._promote_transverse_parameter_storage",
-          "line": 1771
+          "line": 1801
         },
         {
           "name": "HystereticBatchRuntime._refresh_simple_hysteretic_flag",
-          "line": 1780
+          "line": 1810
         },
         {
           "name": "HystereticBatchRuntime.active",
-          "line": 1823
+          "line": 1853
         },
         {
           "name": "HystereticBatchRuntime.try_update_material_interfaces",
-          "line": 1826
+          "line": 1856
         },
         {
           "name": "HystereticBatchRuntime.performance_counts",
-          "line": 2060
+          "line": 2092
         },
         {
           "name": "HystereticBatchRuntime._read_elastic_quad_object",
-          "line": 2106
+          "line": 2138
         },
         {
           "name": "HystereticBatchRuntime._write_elastic_quad_object",
-          "line": 2117
+          "line": 2149
         },
         {
           "name": "HystereticBatchRuntime._read_quad_object",
-          "line": 2128
+          "line": 2160
         },
         {
           "name": "HystereticBatchRuntime._write_hysteretic_quad_object",
-          "line": 2194
+          "line": 2226
         },
         {
           "name": "HystereticBatchRuntime._write_quad_object",
-          "line": 2210
+          "line": 2242
         },
         {
           "name": "HystereticBatchRuntime._read_coulomb_object",
-          "line": 2284
+          "line": 2316
         },
         {
           "name": "HystereticBatchRuntime._write_coulomb_object",
-          "line": 2340
+          "line": 2372
         },
         {
           "name": "HystereticBatchRuntime._sync_interface_status_to_objects",
-          "line": 2395
+          "line": 2427
         },
         {
           "name": "HystereticBatchRuntime.prepare",
-          "line": 2402
+          "line": 2435
         },
         {
           "name": "HystereticBatchRuntime.evaluate",
-          "line": 2418
-        },
-        {
-          "name": "HystereticBatchRuntime.configure_numba_threads",
-          "line": 2429
-        },
-        {
-          "name": "HystereticBatchRuntime._refresh_transverse_cache",
-          "line": 2443
-        },
-        {
-          "name": "HystereticBatchRuntime.finish",
           "line": 2451
         },
         {
+          "name": "HystereticBatchRuntime.configure_numba_threads",
+          "line": 2462
+        },
+        {
+          "name": "HystereticBatchRuntime._refresh_transverse_cache",
+          "line": 2476
+        },
+        {
+          "name": "HystereticBatchRuntime.finish",
+          "line": 2484
+        },
+        {
           "name": "HystereticBatchRuntime.update_domain",
-          "line": 2479
+          "line": 2512
         },
         {
           "name": "HystereticBatchRuntime.update_quads",
-          "line": 2573
+          "line": 2606
         },
         {
           "name": "HystereticBatchRuntime.manages_quad",
-          "line": 2601
+          "line": 2634
         },
         {
           "name": "HystereticBatchRuntime._refresh_full_force_cache",
-          "line": 2604
+          "line": 2637
         },
         {
           "name": "HystereticBatchRuntime._advance_unmanaged_sliding_springs",
-          "line": 2614
+          "line": 2647
         },
         {
           "name": "HystereticBatchRuntime._add_unmanaged_sliding_forces",
-          "line": 2638
+          "line": 2671
         },
         {
           "name": "HystereticBatchRuntime._refresh_global_resisting_force_cache",
-          "line": 2674
-        },
-        {
-          "name": "HystereticBatchRuntime._refresh_max_u_cache",
-          "line": 2682
-        },
-        {
-          "name": "HystereticBatchRuntime.copy_resisting_force_to",
-          "line": 2687
-        },
-        {
-          "name": "HystereticBatchRuntime.scatter_quad_resisting_force",
-          "line": 2690
-        },
-        {
-          "name": "HystereticBatchRuntime.scatter_resisting_force",
-          "line": 2701
-        },
-        {
-          "name": "HystereticBatchRuntime.cached_max_u",
           "line": 2707
         },
         {
+          "name": "HystereticBatchRuntime._refresh_max_u_cache",
+          "line": 2715
+        },
+        {
+          "name": "HystereticBatchRuntime.copy_resisting_force_to",
+          "line": 2720
+        },
+        {
+          "name": "HystereticBatchRuntime.scatter_quad_resisting_force",
+          "line": 2723
+        },
+        {
+          "name": "HystereticBatchRuntime.scatter_resisting_force",
+          "line": 2734
+        },
+        {
+          "name": "HystereticBatchRuntime.cached_max_u",
+          "line": 2740
+        },
+        {
           "name": "HystereticBatchRuntime.cached_quad_max_u",
-          "line": 2717
+          "line": 2750
         },
         {
           "name": "HystereticBatchRuntime.manages",
-          "line": 2724
+          "line": 2757
         },
         {
           "name": "HystereticBatchRuntime.sync_interface_trial_to_objects",
-          "line": 2727
+          "line": 2760
         },
         {
           "name": "HystereticBatchRuntime.local_force_for",
-          "line": 2768
+          "line": 2802
         },
         {
           "name": "HystereticBatchRuntime.transverse_force_for",
-          "line": 2771
+          "line": 2805
+        },
+        {
+          "name": "HystereticBatchRuntime._ensure_resultant_moment_arms",
+          "line": 2808
         },
         {
           "name": "HystereticBatchRuntime.all_resultant_forces",
-          "line": 2774
+          "line": 2826
+        },
+        {
+          "name": "HystereticBatchRuntime.all_bending_moments",
+          "line": 2847
         },
         {
           "name": "HystereticBatchRuntime.compute_total_reaction_vector",
-          "line": 2790
+          "line": 2853
         },
         {
           "name": "HystereticBatchRuntime.get_pdelta_plan",
-          "line": 2803
+          "line": 2866
         },
         {
           "name": "HystereticBatchRuntime._build_pdelta_plan",
-          "line": 2809
+          "line": 2872
         },
         {
           "name": "HystereticBatchRuntime.compute_pdelta_interface_moments",
-          "line": 2890
+          "line": 2953
         },
         {
           "name": "HystereticBatchRuntime._build_pdelta_line_load_plan",
-          "line": 2912
+          "line": 2975
         },
         {
           "name": "HystereticBatchRuntime.compute_pdelta_line_load_moments",
-          "line": 2979
+          "line": 3042
         },
         {
           "name": "HystereticBatchRuntime.resultant_force_for",
-          "line": 3004
+          "line": 3067
         },
         {
           "name": "HystereticBatchRuntime.trial_stresses_for",
-          "line": 3026
+          "line": 3089
         },
         {
           "name": "HystereticBatchRuntime.sync_trial_to_objects",
-          "line": 3030
+          "line": 3093
         },
         {
           "name": "HystereticBatchRuntime.sync_tangents_to_objects",
-          "line": 3037
+          "line": 3100
         },
         {
           "name": "HystereticBatchRuntime.sync_all_to_objects",
-          "line": 3061
+          "line": 3124
         },
         {
           "name": "HystereticBatchRuntime.compute_energy",
-          "line": 3147
-        },
-        {
-          "name": "HystereticBatchRuntime.commit",
-          "line": 3157
-        },
-        {
-          "name": "HystereticBatchRuntime.snapshot",
-          "line": 3182
-        },
-        {
-          "name": "HystereticBatchRuntime.restore",
           "line": 3215
         },
         {
-          "name": "HystereticBatchRuntime.reset_to_initial_state",
-          "line": 3246
+          "name": "HystereticBatchRuntime.commit",
+          "line": 3225
         },
         {
-          "name": "HystereticBatchRuntime.revert_quad",
+          "name": "HystereticBatchRuntime.snapshot",
           "line": 3250
         },
         {
+          "name": "HystereticBatchRuntime.restore",
+          "line": 3283
+        },
+        {
+          "name": "HystereticBatchRuntime.reset_to_initial_state",
+          "line": 3319
+        },
+        {
+          "name": "HystereticBatchRuntime.revert_quad",
+          "line": 3337
+        },
+        {
           "name": "HystereticBatchRuntime.revert_interface",
-          "line": 3264
+          "line": 3351
         },
         {
           "name": "build_hysteretic_batch",
-          "line": 3295
+          "line": 3382
         }
       ]
     },
@@ -3800,136 +3920,168 @@
     {
       "path": "histra/solver/modal.py",
       "status": "inventory_only",
-      "lf_sha256": "14fdc26fd29124d9bd05cae550da86fe4240dedf5dc4dac7ab81c12a67746dad",
+      "lf_sha256": "542e71dd6b94e36ac080c1167989ceb452cd9126fc18363e0c309e585c841595",
       "classes": [
         {
           "name": "ModalAnalysisError",
-          "line": 38
+          "line": 39
         },
         {
           "name": "_DotNetRandom",
-          "line": 47
+          "line": 54
         },
         {
           "name": "ModalMode",
-          "line": 93
+          "line": 100
         },
         {
           "name": "ModalAnalysisResult",
-          "line": 162
+          "line": 169
         }
       ],
       "functions": [
         {
+          "name": "modal_linear_solver_backend",
+          "line": 48
+        },
+        {
           "name": "_DotNetRandom.__init__",
-          "line": 53
+          "line": 60
         },
         {
           "name": "_DotNetRandom.next_double",
-          "line": 76
+          "line": 83
         },
         {
           "name": "ModalMode.participations",
-          "line": 120
+          "line": 127
         },
         {
           "name": "ModalMode.effective_masses",
-          "line": 124
-        },
-        {
-          "name": "ModalMode.mass_percentages",
-          "line": 128
-        },
-        {
-          "name": "ModalMode.as_modal_values_row",
           "line": 131
         },
         {
+          "name": "ModalMode.mass_percentages",
+          "line": 135
+        },
+        {
+          "name": "ModalMode.as_modal_values_row",
+          "line": 138
+        },
+        {
           "name": "ModalAnalysisResult.converged_modes",
-          "line": 180
+          "line": 187
         },
         {
           "name": "ModalAnalysisResult.frequencies",
-          "line": 184
+          "line": 191
         },
         {
           "name": "ModalAnalysisResult.angular_frequencies",
-          "line": 188
+          "line": 195
         },
         {
           "name": "ModalAnalysisResult.periods",
-          "line": 192
+          "line": 199
         },
         {
           "name": "ModalAnalysisResult.mode_shapes",
-          "line": 196
+          "line": 203
         },
         {
           "name": "ModalAnalysisResult.modal_values_rows",
-          "line": 201
+          "line": 208
         },
         {
           "name": "ModalAnalysisResult.modal_shape_rows",
-          "line": 210
+          "line": 217
         },
         {
           "name": "ModalAnalysisResult.as_dict",
-          "line": 223
+          "line": 230
         },
         {
           "name": "solve_modal_analysis",
-          "line": 245
+          "line": 252
         },
         {
           "name": "_solve_modal_analysis_impl",
-          "line": 333
-        },
-        {
-          "name": "_solve_modal_analysis_impl.log",
           "line": 349
         },
         {
+          "name": "_solve_modal_analysis_impl.log",
+          "line": 366
+        },
+        {
           "name": "_solve_modal_analysis_impl.progress",
-          "line": 353
+          "line": 370
         },
         {
           "name": "_validated_symmetric",
-          "line": 592
+          "line": 620
         },
         {
           "name": "_resolve_modal_tolerance",
-          "line": 607
+          "line": 635
         },
         {
           "name": "_subspace_modes",
-          "line": 617
+          "line": 645
         },
         {
           "name": "_inverse_iterations",
-          "line": 689
+          "line": 717
         },
         {
           "name": "_inverse_iterations.normalize_euclidean",
-          "line": 722
+          "line": 750
         },
         {
           "name": "_euclidean_deflate",
-          "line": 783
+          "line": 811
         },
         {
           "name": "_sorted_positive_modes",
-          "line": 790
+          "line": 818
         },
         {
           "name": "_compute_mode",
-          "line": 806
+          "line": 834
+        }
+      ]
+    },
+    {
+      "path": "histra/solver/modal_assembly.py",
+      "status": "inventory_only",
+      "lf_sha256": "34991ccb103b781190f11b44dae8ceaf6046e0e85169de0651545f6e4b345d8c",
+      "classes": [],
+      "functions": [
+        {
+          "name": "_scatter_blocks_impl",
+          "line": 19
+        },
+        {
+          "name": "_pack_afferences",
+          "line": 67
+        },
+        {
+          "name": "_quad_chunk",
+          "line": 75
+        },
+        {
+          "name": "_interface_chunk",
+          "line": 88
+        },
+        {
+          "name": "assemble_modal_stiffness",
+          "line": 117
         }
       ]
     },
     {
       "path": "histra/solver/model_manager.py",
       "status": "inventory_only",
-      "lf_sha256": "a8cf28657662f19e500a2e9525a91da5b45749eddb0f818cfa77ba955427a40f",
+      "lf_sha256": "f39aeb2c7805e4c44d1427808562ed7f6e6ab1c5e1071478859d807ce793d95e",
       "classes": [
         {
           "name": "ModelManager",
@@ -3959,63 +4111,63 @@
         },
         {
           "name": "ModelManager.prepare_hysteretic_batch",
-          "line": 106
+          "line": 126
         },
         {
           "name": "ModelManager.hysteretic_batch_for",
-          "line": 132
+          "line": 152
         },
         {
           "name": "ModelManager.update_hysteretic_batch_material_interfaces",
-          "line": 142
+          "line": 162
         },
         {
           "name": "ModelManager.assemble_k",
-          "line": 172
+          "line": 192
         },
         {
           "name": "ModelManager.assemble_load",
-          "line": 195
+          "line": 215
         },
         {
           "name": "ModelManager.compute_ktang",
-          "line": 227
+          "line": 247
         },
         {
           "name": "ModelManager.compute_k",
-          "line": 268
+          "line": 288
         },
         {
           "name": "ModelManager.refresh_saved_interface_forces",
-          "line": 311
+          "line": 331
         },
         {
           "name": "ModelManager.compute_and_assemble_pdelta_load",
-          "line": 326
+          "line": 354
         },
         {
           "name": "ModelManager.form_unbalance",
-          "line": 446
+          "line": 474
         },
         {
           "name": "ModelManager.get_resisting_force",
-          "line": 454
+          "line": 482
         },
         {
           "name": "ModelManager.update_domain",
-          "line": 487
+          "line": 515
         },
         {
           "name": "ModelManager.compute_energy",
-          "line": 506
+          "line": 534
         },
         {
           "name": "ModelManager.find_max_u",
-          "line": 524
+          "line": 552
         },
         {
           "name": "ModelManager.get_dof_for_max_displacement",
-          "line": 550
+          "line": 578
         }
       ]
     },
@@ -4088,7 +4240,7 @@
     {
       "path": "histra/solver/nonlinear_setup.py",
       "status": "inventory_only",
-      "lf_sha256": "c9e2208abce2ff91dcb446ec975a3a3992c8e973717613a324661e85f639d187",
+      "lf_sha256": "d6de996f6ab9aa20673c88bc976e8919c427bc2cfe6517ab113f844c41181a29",
       "classes": [
         {
           "name": "_NonlinearSetup",
@@ -4102,7 +4254,7 @@
         },
         {
           "name": "_set_initial_state",
-          "line": 426
+          "line": 437
         }
       ]
     },
@@ -4116,7 +4268,7 @@
     {
       "path": "histra/solver/nonlinear_step.py",
       "status": "inventory_only",
-      "lf_sha256": "492d2b8465a00ab47740ff928104d2b8c4c36bb3e3e447b20f0b881510bff92e",
+      "lf_sha256": "dc94677bbdc09dc3a7b0bb28f192c5495865ac0dff634aec69dd84289e218571",
       "classes": [],
       "functions": [
         {
@@ -4136,7 +4288,7 @@
     {
       "path": "histra/solver/outcomes.py",
       "status": "inventory_only",
-      "lf_sha256": "189ceafab97014d70cf376a26966417bba722d879b56590597129136730173dc",
+      "lf_sha256": "dd7dce199a1ec24a53ddd95cffc50f4c64c7805538a5de2cc8e6f2b5b084b4bc",
       "classes": [
         {
           "name": "AnalysisOutcome",
@@ -4148,7 +4300,7 @@
         },
         {
           "name": "AnalysisExecution",
-          "line": 142
+          "line": 157
         }
       ],
       "functions": [
@@ -4162,71 +4314,79 @@
         },
         {
           "name": "AnalysisStep.step",
-          "line": 93
+          "line": 98
         },
         {
           "name": "AnalysisStep.status",
-          "line": 97
+          "line": 102
         },
         {
           "name": "AnalysisStep.exit_code",
-          "line": 101
+          "line": 106
         },
         {
           "name": "AnalysisStep.u",
-          "line": 105
+          "line": 110
         },
         {
           "name": "AnalysisStep.committed",
-          "line": 109
+          "line": 114
         },
         {
           "name": "AnalysisStep.cancelled",
-          "line": 113
+          "line": 118
         },
         {
           "name": "AnalysisStep.max_element_displacement",
-          "line": 117
+          "line": 122
         },
         {
           "name": "AnalysisStep.reaction_x",
-          "line": 121
+          "line": 126
         },
         {
           "name": "AnalysisStep.reaction_y",
-          "line": 125
+          "line": 130
         },
         {
           "name": "AnalysisStep.reaction_z",
-          "line": 129
+          "line": 134
+        },
+        {
+          "name": "AnalysisStep.interface_resultants",
+          "line": 138
+        },
+        {
+          "name": "AnalysisStep.interface_moments",
+          "line": 143
         },
         {
           "name": "AnalysisStep.equilibrium_ok",
-          "line": 133
+          "line": 148
         },
         {
           "name": "AnalysisStep.to_dict",
-          "line": 137
+          "line": 152
         },
         {
           "name": "AnalysisExecution.committed_steps",
-          "line": 154
+          "line": 173
         },
         {
           "name": "AnalysisExecution.completed",
-          "line": 158
+          "line": 177
         },
         {
           "name": "AnalysisExecution.output_steps",
-          "line": 167
+          "line": 186
         },
         {
           "name": "classify_analysis_outcome",
-          "line": 172
+          "line": 191
         },
         {
           "name": "_optional_float",
-          "line": 193
+          "line": 212
         }
       ]
     },
@@ -4280,6 +4440,51 @@
       ]
     },
     {
+      "path": "histra/solver/parallel_jobs.py",
+      "status": "inventory_only",
+      "lf_sha256": "ce6e24fcdb3beb7c55d55156798609ba432e98f788b70cab7419f87408fb7d54",
+      "classes": [
+        {
+          "name": "PythonSolverJob",
+          "line": 27
+        },
+        {
+          "name": "PythonSolverJobOutcome",
+          "line": 43
+        }
+      ],
+      "functions": [
+        {
+          "name": "PythonSolverJobOutcome.completed",
+          "line": 52
+        },
+        {
+          "name": "_positive_integer",
+          "line": 56
+        },
+        {
+          "name": "_worker_limit",
+          "line": 62
+        },
+        {
+          "name": "run_parallel_solver_jobs",
+          "line": 78
+        },
+        {
+          "name": "_launch_job",
+          "line": 102
+        },
+        {
+          "name": "_execute_job",
+          "line": 130
+        },
+        {
+          "name": "run_large_solver_job",
+          "line": 157
+        }
+      ]
+    },
+    {
       "path": "histra/solver/program.py",
       "status": "inventory_only",
       "lf_sha256": "1705885b0b8eccf04de8ec2c40fe745eb388ad206db543762812562f4ee18091",
@@ -4309,6 +4514,55 @@
         {
           "name": "Program.add_value_graph_static_analysis",
           "line": 114
+        }
+      ]
+    },
+    {
+      "path": "histra/solver/resources.py",
+      "status": "inventory_only",
+      "lf_sha256": "f6e74ad7cdcab02fe29425dacffa210df4ae5b869af57f710c25f8c1ca5206fa",
+      "classes": [
+        {
+          "name": "SolverResources",
+          "line": 15
+        }
+      ],
+      "functions": [
+        {
+          "name": "SolverResources.environment",
+          "line": 23
+        },
+        {
+          "name": "available_cpu_count",
+          "line": 42
+        },
+        {
+          "name": "_thread_count",
+          "line": 46
+        },
+        {
+          "name": "discover_openblas_directory",
+          "line": 52
+        },
+        {
+          "name": "_is_blas_directory",
+          "line": 58
+        },
+        {
+          "name": "_set_blas_directory",
+          "line": 62
+        },
+        {
+          "name": "inspect_process_resources",
+          "line": 72
+        },
+        {
+          "name": "validate_native_blas",
+          "line": 86
+        },
+        {
+          "name": "_native_blas_details",
+          "line": 101
         }
       ]
     },
@@ -4397,57 +4651,73 @@
     {
       "path": "histra/solver/session.py",
       "status": "inventory_only",
-      "lf_sha256": "334d8ca99c22c426253c5168c3a4ad6ba3b7c84d26a12ac122aef72e9a777fbf",
+      "lf_sha256": "394285064c55aba6ad2dccb4e318dfca13e03dd73cbb7e5a5614ce14c27af6fc",
       "classes": [
         {
           "name": "AnalysisSessionError",
-          "line": 36
+          "line": 37
         },
         {
           "name": "AnalysisSession",
-          "line": 40
+          "line": 41
         }
       ],
       "functions": [
         {
           "name": "AnalysisSession.__init__",
-          "line": 74
+          "line": 79
         },
         {
           "name": "AnalysisSession.usable",
-          "line": 142
-        },
-        {
-          "name": "AnalysisSession._require_usable",
-          "line": 146
-        },
-        {
-          "name": "AnalysisSession.resolve_analysis",
           "line": 153
         },
         {
+          "name": "AnalysisSession._require_usable",
+          "line": 157
+        },
+        {
+          "name": "AnalysisSession.resolve_analysis",
+          "line": 164
+        },
+        {
           "name": "AnalysisSession.change_interface_materials",
-          "line": 173
+          "line": 184
         },
         {
           "name": "AnalysisSession.run",
-          "line": 256
+          "line": 267
         },
         {
           "name": "AnalysisSession.dependency_chain",
-          "line": 409
+          "line": 501
         },
         {
           "name": "AnalysisSession.run_to",
-          "line": 435
+          "line": 527
         },
         {
           "name": "AnalysisSession.run_sequence",
-          "line": 450
+          "line": 542
+        },
+        {
+          "name": "AnalysisSession.export_analysis",
+          "line": 555
+        },
+        {
+          "name": "AnalysisSession.export_session",
+          "line": 620
+        },
+        {
+          "name": "AnalysisSession.export_csharp_results",
+          "line": 691
+        },
+        {
+          "name": "AnalysisSession.export_bundle",
+          "line": 697
         },
         {
           "name": "_outcome_message",
-          "line": 461
+          "line": 710
         }
       ]
     },
@@ -4487,7 +4757,7 @@
     {
       "path": "histra/solver/solve.py",
       "status": "inventory_only",
-      "lf_sha256": "eff0698a709e455c9cbf4a75239652f9496c3a5bbce9ec92bffca4cef7e5e2e8",
+      "lf_sha256": "8b364a18618da30ace6df2b037b54af94f10a1bd143e51be9a928c6cab6a5f6d",
       "classes": [],
       "functions": [
         {
@@ -4496,7 +4766,7 @@
         },
         {
           "name": "_solve_static_nonlinear_impl",
-          "line": 139
+          "line": 152
         }
       ]
     },
@@ -4535,11 +4805,11 @@
     {
       "path": "histra/solver/state_snapshot.py",
       "status": "inventory_only",
-      "lf_sha256": "26ea3150ef66d465ae4586e2a3e8a824e965554e683121ac7e558451e6649e9d",
+      "lf_sha256": "2d823664746bb3b8a8ce44aad962602ca552825eab5b200a2c8c3719629a6abb",
       "classes": [
         {
           "name": "SolverStateSnapshot",
-          "line": 274
+          "line": 279
         }
       ],
       "functions": [
@@ -4589,15 +4859,15 @@
         },
         {
           "name": "SolverStateSnapshot.capture",
-          "line": 295
+          "line": 300
         },
         {
           "name": "SolverStateSnapshot.restore",
-          "line": 413
+          "line": 418
         },
         {
           "name": "SolverStateSnapshot.fingerprint",
-          "line": 482
+          "line": 487
         }
       ]
     },
@@ -4726,7 +4996,7 @@
     {
       "path": "histra/solver/warmup.py",
       "status": "inventory_only",
-      "lf_sha256": "95e093841640a27cd948d9ae3e947402940e01060e75e5c734883cb9362f2413",
+      "lf_sha256": "e2add3a0cabceabfe5cc128b968bc9b8346891b2261e5f6339d83b39f89af215",
       "classes": [],
       "functions": [
         {

@@ -153,11 +153,10 @@ The project maintains persistent knowledge across agent sessions using the `ai-m
 
 | Category | Document | Description |
 |---|---|---|
-| **Architecture** | [Architecture Refactoring](docs/refactoring_architecture.md) | High-level subsystem architecture and design patterns |
+| **Architecture** | [Architecture](docs/reference/architecture.md) | High-level subsystem architecture and design patterns |
 | **Status & Releases** | [Current Status](docs/STATUS.md) | Supported boundary, release state, and open limitations |
-| | [V1 Release Checklist](docs/release/v1-release-checklist.md) | Formal pre-release verification checklist |
-| | [V1 Implementation Plan](docs/release/v1-implementation-plan.md) | Milestone scope and validation criteria |
-| | [V1 Independent Review](docs/release/v1-independent-review.md) | External audit findings and tracking |
+| | [Release Workflow](docs/release/README.md) | Current package verification and publication workflow |
+| | [Source Audit](docs/audit/csharp_python_function_mapping_matrix.md) | Current evidence boundaries and remaining validation |
 | **Guides** | [Standalone Analysis](docs/guides/standalone-analysis.md) | Running standalone Vert → Live Load analyses |
 | | [Analysis Chains](docs/guides/analysis-chains.md) | Dependency execution and interface mutation |
 | | [Preprocessing](docs/guides/preprocessing.md) | Mesh preparation, Quad contacts, and limitations |
