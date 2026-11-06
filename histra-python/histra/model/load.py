@@ -168,6 +168,8 @@ class ModelPoint:
     element_key: int = 0
     element_type: str = ""
     id_vertex: int = 0
+    name: str = ""
+    description: str = ""
 
 
 @dataclass

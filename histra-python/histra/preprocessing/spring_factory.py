@@ -9,6 +9,11 @@ import math
 
 import numpy as np
 
+try:
+    from numba import njit
+except Exception:  # pragma: no cover
+    njit = None
+
 from histra.preprocessing.constitutive_laws import (
     CoulombLaw as _CoulombLaw,
     HystereticLaw as _HystereticLaw,
@@ -501,6 +506,326 @@ def _apply_ultimate_displacement_arrays(
         ur_c[:] = base_c * law.eps_u_c / (law.fy_c / law.E)
 
 
+_TENSILE_CURVE_MAP = {"Elastic": 0, "LinearHardening": 1, "LinearSoftening": 2, "Exponential": 3}
+_COMPRESSIVE_CURVE_MAP = {"Elastic": 0, "LinearHardening": 1, "LinearSoftening": 2, "Parabolic": 3}
+
+if njit is not None:
+    @njit(cache=True, inline="always")
+    def _series_nb(k1: float, k2: float) -> float:
+        s = k1 + k2
+        if s == 0.0:
+            return 0.0
+        return (k1 * k2) / s
+
+    @njit(cache=True, nogil=True)
+    def _hysteretic_kernel_nb(
+        p1: np.ndarray,
+        p2: np.ndarray,
+        law1_t_curve: int,
+        law1_c_curve: int,
+        law1_E: float,
+        law1_fy_t: float,
+        law1_fy_c: float,
+        law1_ratio_et_t: float,
+        law1_ratio_et_c: float,
+        law1_G_t: float,
+        law1_G_c: float,
+        law1_eps_u_t: float,
+        law1_eps_u_c: float,
+        law2_t_curve: int,
+        law2_c_curve: int,
+        law2_E: float,
+        law2_fy_t: float,
+        law2_fy_c: float,
+        law2_ratio_et_t: float,
+        law2_ratio_et_c: float,
+        law2_G_t: float,
+        law2_G_c: float,
+        law2_eps_u_t: float,
+        law2_eps_u_c: float,
+        batch_params: np.ndarray,
+        k_out: np.ndarray,
+        area_out: np.ndarray,
+        tension_from_1_out: np.ndarray,
+        compression_from_1_out: np.ndarray,
+        fy_out: np.ndarray,
+        kt_out: np.ndarray,
+        ur_out: np.ndarray,
+    ) -> None:
+        n = p1.shape[0]
+        for i in range(n):
+            k1 = p1[i, 0]
+            area1 = p1[i, 1]
+            length1 = p1[i, 2]
+
+            k2 = p2[i, 0]
+            area2 = p2[i, 1]
+            length2 = p2[i, 2]
+
+            # Side 1
+            if law1_t_curve == 0:  # Elastic
+                fy1_t = k1 * 100000000.0
+                kt1_t = k1
+            else:
+                fy1_t = area1 * law1_fy_t
+                if law1_t_curve == 1:  # LinearHardening
+                    kt1_t = k1 * law1_ratio_et_t
+                elif law1_t_curve == 2 and law1_fy_t != 0.0:  # LinearSoftening
+                    ult_t = 2.0 * law1_G_t / (fy1_t / area1) + fy1_t / k1
+                    kt1_t = -fy1_t / (ult_t - fy1_t / k1)
+                else:
+                    kt1_t = 0.0
+
+            if law1_c_curve == 0:  # Elastic
+                fy1_c = -k1 * 100000000.0
+                kt1_c = k1
+            else:
+                fy1_c = -area1 * law1_fy_c
+                if law1_c_curve == 1:  # LinearHardening
+                    kt1_c = k1 * law1_ratio_et_c
+                elif law1_c_curve == 2 and law1_fy_c != 0.0:  # LinearSoftening
+                    ult_c = 2.0 * law1_G_c / (fy1_c / area1) + fy1_c / k1
+                    kt1_c = -fy1_c / (ult_c - fy1_c / k1)
+                else:
+                    kt1_c = 0.0
+
+            # Side 2
+            if law2_t_curve == 0:  # Elastic
+                fy2_t = k2 * 100000000.0
+                kt2_t = k2
+            else:
+                fy2_t = area2 * law2_fy_t
+                if law2_t_curve == 1:  # LinearHardening
+                    kt2_t = k2 * law2_ratio_et_t
+                elif law2_t_curve == 2 and law2_fy_t != 0.0:  # LinearSoftening
+                    ult_t = 2.0 * law2_G_t / (fy2_t / area2) + fy2_t / k2
+                    kt2_t = -fy2_t / (ult_t - fy2_t / k2)
+                else:
+                    kt2_t = 0.0
+
+            if law2_c_curve == 0:  # Elastic
+                fy2_c = -k2 * 100000000.0
+                kt2_c = k2
+            else:
+                fy2_c = -area2 * law2_fy_c
+                if law2_c_curve == 1:  # LinearHardening
+                    kt2_c = k2 * law2_ratio_et_c
+                elif law2_c_curve == 2 and law2_fy_c != 0.0:  # LinearSoftening
+                    ult_c = 2.0 * law2_G_c / (fy2_c / area2) + fy2_c / k2
+                    kt2_c = -fy2_c / (ult_c - fy2_c / k2)
+                else:
+                    kt2_c = 0.0
+
+            k = _series_nb(k1, k2)
+            k_out[i] = k
+
+            tension_from_1 = (fy1_t <= fy2_t)
+            fy_t = fy1_t if tension_from_1 else fy2_t
+            tension_curve_1 = tension_from_1
+
+            compression_area_from_2 = (fy1_c <= fy2_c)
+            fy_c = fy2_c if compression_area_from_2 else fy1_c
+            area = area2 if compression_area_from_2 else area1
+            area_out[i] = area
+            compression_curve_1 = (fy1_c >= fy2_c)
+
+            tensile_elastic = (law1_t_curve == 0) if tension_curve_1 else (law2_t_curve == 0)
+            tensile_linear_softening = (law1_t_curve == 2) if tension_curve_1 else (law2_t_curve == 2)
+            tensile_exponential = (law1_t_curve == 3) if tension_curve_1 else (law2_t_curve == 3)
+
+            compressive_elastic = (law1_c_curve == 0) if compression_curve_1 else (law2_c_curve == 0)
+            compressive_linear_softening = (law1_c_curve == 2) if compression_curve_1 else (law2_c_curve == 2)
+            compressive_parabolic = (law1_c_curve == 3) if compression_curve_1 else (law2_c_curve == 3)
+
+            series_kt_t = _series_nb(kt1_t, kt2_t)
+            series_kt_c = _series_nb(kt1_c, kt2_c)
+            kt_t = k if tensile_elastic else series_kt_t
+            kt_c = k if compressive_elastic else series_kt_c
+
+            ur_t = max(fy_t / k, 0.0) if k != 0.0 else 0.0
+            ur_c = min(fy_c / k, 0.0) if k != 0.0 else 0.0
+
+            # _apply_ultimate_displacement_arrays for law1
+            base_t = fy_t / k if k != 0.0 else 0.0
+            if law1_t_curve in (2, 3):
+                if area != 0.0 and fy_t != 0.0:
+                    if tensile_linear_softening:
+                        val = 2.0 * law1_G_t / (fy_t / area) + base_t
+                        ur_t = val
+                        kt_t = -fy_t / (val - base_t)
+                    elif tensile_exponential:
+                        ur_t = law1_G_t / (fy_t / area) + base_t
+                    ur_t = max(ur_t, base_t)
+            elif not (law1_t_curve == 0 and law1_c_curve == 0) and law1_fy_t != 0.0 and law1_E != 0.0:
+                ur_t = base_t * law1_eps_u_t / (law1_fy_t / law1_E)
+
+            base_c = fy_c / k if k != 0.0 else 0.0
+            if law1_c_curve in (2, 3):
+                if area != 0.0 and fy_c != 0.0:
+                    if compressive_linear_softening:
+                        val = 2.0 * law1_G_c / (fy_c / area) + base_c
+                        ur_c = val
+                        kt_c = -fy_c / (val - base_c)
+                    elif compressive_parabolic:
+                        ur_c = 3.0 * law1_G_c / (2.0 * fy_c / area) + 5.0 * fy_c / (3.0 * k)
+                    ur_c = min(ur_c, base_c)
+            elif not (law1_t_curve == 0 and law1_c_curve == 0) and law1_fy_c != 0.0 and law1_E != 0.0:
+                ur_c = base_c * law1_eps_u_c / (law1_fy_c / law1_E)
+
+            ur1_t = ur_t
+            ur1_c = ur_c
+
+            # _apply_ultimate_displacement_arrays for law2
+            if law2_t_curve in (2, 3):
+                if area != 0.0 and fy_t != 0.0:
+                    if tensile_linear_softening:
+                        val = 2.0 * law2_G_t / (fy_t / area) + base_t
+                        ur_t = val
+                        kt_t = -fy_t / (val - base_t)
+                    elif tensile_exponential:
+                        ur_t = law2_G_t / (fy_t / area) + base_t
+                    ur_t = max(ur_t, base_t)
+            elif not (law2_t_curve == 0 and law2_c_curve == 0) and law2_fy_t != 0.0 and law2_E != 0.0:
+                ur_t = base_t * law2_eps_u_t / (law2_fy_t / law2_E)
+
+            if law2_c_curve in (2, 3):
+                if area != 0.0 and fy_c != 0.0:
+                    if compressive_linear_softening:
+                        val = 2.0 * law2_G_c / (fy_c / area) + base_c
+                        ur_c = val
+                        kt_c = -fy_c / (val - base_c)
+                    elif compressive_parabolic:
+                        ur_c = 3.0 * law2_G_c / (2.0 * fy_c / area) + 5.0 * fy_c / (3.0 * k)
+                    ur_c = min(ur_c, base_c)
+            elif not (law2_t_curve == 0 and law2_c_curve == 0) and law2_fy_c != 0.0 and law2_E != 0.0:
+                ur_c = base_c * law2_eps_u_c / (law2_fy_c / law2_E)
+
+            ur2_t = ur_t
+            ur2_c = ur_c
+
+            first_t = (ur1_t < ur2_t) and (ur1_t != 0.0)
+            second_t = (ur2_t < ur1_t) and (ur2_t != 0.0)
+            first_c = (ur1_c > ur2_c) and (ur1_c != 0.0)
+            second_c = (ur2_c > ur1_c) and (ur2_c != 0.0)
+            previous_c_linear = not (compressive_elastic or compressive_parabolic)
+
+            if first_t:
+                tension_curve_1 = True
+            elif second_t:
+                tension_curve_1 = False
+
+            if first_c:
+                compression_curve_1 = True
+            elif second_c:
+                compression_curve_1 = False
+
+            ur_t = ur1_t if first_t else ur2_t
+            ur_c = ur1_c if first_c else ur2_c
+
+            tension_from_1_out[i] = 1 if tension_curve_1 else 0
+            compression_from_1_out[i] = 1 if compression_curve_1 else 0
+
+            # Resolved curve types for this fiber:
+            t_curve = law1_t_curve if tension_curve_1 else law2_t_curve
+            c_curve = law1_c_curve if compression_curve_1 else law2_c_curve
+
+            # Populate envelope points
+            rot1p = 0.0; mom1p = 0.0; rot2p = 0.0; mom2p = 0.0; rot3p = 0.0; mom3p = 0.0
+            e1p = 0.0; e2p = 0.0; e3p = 0.0
+            if t_curve == 0:  # Elastic
+                mom1p = 1e19 * fy_t
+                rot1p = mom1p / k if k != 0.0 else 0.0
+                rot2p = rot1p
+                rot3p = rot1p
+                mom2p = mom1p
+                mom3p = mom1p
+                e1p = mom1p / rot1p if rot1p != 0.0 else k
+            elif t_curve in (1, 2):  # LinearHardening, LinearSoftening
+                mom1p = fy_t
+                rot1p = fy_t / k if k != 0.0 else 0.0
+                mom2p = mom1p + (ur_t - rot1p) * kt_t
+                rot2p = ur_t
+                mom3p = 0.0
+                rot3p = ur_t * 1.01
+                e1p = mom1p / rot1p if rot1p != 0.0 else k
+                d2 = rot2p - rot1p
+                e2p = (mom2p - mom1p) / d2 if d2 != 0.0 else 0.0
+                d3 = rot3p - rot2p
+                e3p = (mom3p - mom2p) / d3 if d3 != 0.0 else 0.0
+            elif t_curve == 3:  # Exponential
+                mom1p = fy_t
+                rot1p = fy_t / k if k != 0.0 else 0.0
+                rot2p = ur_t
+                e1p = mom1p / rot1p if rot1p != 0.0 else k
+
+            rot1n = 0.0; mom1n = 0.0; rot2n = 0.0; mom2n = 0.0; rot3n = 0.0; mom3n = 0.0
+            e1n = 0.0; e2n = 0.0; e3n = 0.0
+            if c_curve == 0:  # Elastic
+                mom1n = 1e19 * fy_c
+                rot1n = mom1n / k if k != 0.0 else 0.0
+                e1n = mom1n / rot1n if rot1n != 0.0 else k
+            elif c_curve in (1, 2):  # LinearHardening, LinearSoftening
+                mom1n = fy_c
+                rot1n = fy_c / k if k != 0.0 else 0.0
+                mom2n = mom1n + (ur_c - rot1n) * kt_c
+                rot2n = ur_c
+                mom3n = 0.0
+                rot3n = ur_c * 1.01
+                e1n = mom1n / rot1n if rot1n != 0.0 else k
+                d2 = rot2n - rot1n
+                e2n = (mom2n - mom1n) / d2 if d2 != 0.0 else 0.0
+                d3 = rot3n - rot2n
+                e3n = (mom3n - mom2n) / d3 if d3 != 0.0 else 0.0
+            elif c_curve == 3:  # Parabolic
+                mom1n = fy_c / 3.0
+                rot1n = fy_c / (3.0 * k) if k != 0.0 else 0.0
+                mom2n = fy_c
+                rot2n = 5.0 * fy_c / (3.0 * k) if k != 0.0 else 0.0
+                mom3n = 0.0
+                rot3n = ur_c
+                e1n = mom1n / rot1n if rot1n != 0.0 else k
+                if previous_c_linear:
+                    prev_rot1 = fy_c / k if k != 0.0 else 0.0
+                    prev_mom2 = fy_c + (ur2_c - prev_rot1) * kt_c
+                    prev_d2 = ur2_c - prev_rot1
+                    prev_d3 = ur2_c * 1.01 - ur2_c
+                    e2n = (prev_mom2 - fy_c) / prev_d2 if prev_d2 != 0.0 else 0.0
+                    e3n = (-prev_mom2) / prev_d3 if prev_d3 != 0.0 else 0.0
+
+            eup = max(e1p, max(e2p, e3p))
+            eun = max(e1n, max(e2n, e3n))
+
+            batch_params[i, 0] = rot1p
+            batch_params[i, 1] = mom1p
+            batch_params[i, 2] = rot2p
+            batch_params[i, 3] = mom2p
+            batch_params[i, 4] = rot3p
+            batch_params[i, 5] = mom3p
+            batch_params[i, 6] = mom1n
+            batch_params[i, 7] = rot1n
+            batch_params[i, 8] = rot2n
+            batch_params[i, 9] = mom2n
+            batch_params[i, 10] = rot3n
+            batch_params[i, 11] = mom3n
+            batch_params[i, 12] = e1n
+            batch_params[i, 13] = e1p
+            batch_params[i, 14] = e2n
+            batch_params[i, 15] = e2p
+            batch_params[i, 16] = e3n
+            batch_params[i, 17] = e3p
+            batch_params[i, 18] = eun
+            batch_params[i, 19] = eup
+
+            fy_out[i, 0] = fy_t
+            fy_out[i, 1] = fy_c
+            kt_out[i, 0] = kt_t
+            kt_out[i, 1] = kt_c
+            ur_out[i, 0] = ur_t
+            ur_out[i, 1] = ur_c
+else:
+    _hysteretic_kernel_nb = None
+
+
 def _configure_combined_hysteretic_batch(
     props1: np.ndarray,
     law1: _HystereticLaw,
@@ -540,11 +865,15 @@ def _configure_combined_hysteretic_batch(
         return springs
 
     # Fast path: skip expensive column_stack and flatnonzero if all properties are positive and finite.
+    p1_min = float(np.min(p1))
+    p2_min = float(np.min(p2))
     if not (
-        np.all(p1 > 0.0)
-        and np.all(np.isfinite(p1))
-        and np.all(p2 > 0.0)
-        and np.all(np.isfinite(p2))
+        p1_min > 0.0
+        and p2_min > 0.0
+        and math.isfinite(p1_min)
+        and math.isfinite(p2_min)
+        and math.isfinite(float(np.max(p1)))
+        and math.isfinite(float(np.max(p2)))
     ):
         invalid = np.column_stack((
             (~np.isfinite(p1[:, 0])) | (p1[:, 0] <= 0.0),
@@ -579,6 +908,69 @@ def _configure_combined_hysteretic_batch(
             raise ModelPreparationError(
                 f"Interface {interface_key}, transverse cell {index}: {detail}"
             )
+
+    if _hysteretic_kernel_nb is not None:
+        batch_params = np.empty((n, 20), dtype=np.float64)
+        k_out = np.empty(n, dtype=np.float64)
+        area_out = np.empty(n, dtype=np.float64)
+        t_out = np.empty(n, dtype=np.uint8)
+        c_out = np.empty(n, dtype=np.uint8)
+        fy_out = np.empty((n, 2), dtype=np.float64)
+        kt_out = np.empty((n, 2), dtype=np.float64)
+        ur_out = np.empty((n, 2), dtype=np.float64)
+
+        _hysteretic_kernel_nb(
+            p1, p2,
+            _TENSILE_CURVE_MAP[law1.tensile_curve], _COMPRESSIVE_CURVE_MAP[law1.compressive_curve],
+            float(law1.E), float(law1.fy_t), float(law1.fy_c), float(law1.ratio_et_t), float(law1.ratio_et_c),
+            float(law1.G_t), float(law1.G_c), float(law1.eps_u_t), float(law1.eps_u_c),
+            _TENSILE_CURVE_MAP[law2.tensile_curve], _COMPRESSIVE_CURVE_MAP[law2.compressive_curve],
+            float(law2.E), float(law2.fy_t), float(law2.fy_c), float(law2.ratio_et_t), float(law2.ratio_et_c),
+            float(law2.G_t), float(law2.G_c), float(law2.eps_u_t), float(law2.eps_u_c),
+            batch_params, k_out, area_out, t_out, c_out, fy_out, kt_out, ur_out
+        )
+
+        alfau_t = max(float(law1.alfa_u_t), float(law2.alfa_u_t))
+        alfau_c = max(float(law1.alfa_u_c), float(law2.alfa_u_c))
+        alfar_t = max(float(law1.alfa_r_t), float(law2.alfa_r_t))
+        alfar_c = max(float(law1.alfa_r_c), float(law2.alfa_r_c))
+
+        if interface is not None:
+            interface._transverse_batch_params = batch_params
+            interface._transverse_k = k_out
+
+        if law1.tensile_curve == law2.tensile_curve:
+            t_uniform = law1.tensile_curve
+            t_seq = None
+            t_curve = t_uniform
+        else:
+            t_seq = [law1.tensile_curve if t_out[idx] else law2.tensile_curve for idx in range(n)]
+            t_curve = law1.tensile_curve if t_out[0] else law2.tensile_curve
+
+        if law1.compressive_curve == law2.compressive_curve:
+            c_uniform = law1.compressive_curve
+            c_seq = None
+            c_curve = c_uniform
+        else:
+            c_seq = [law1.compressive_curve if c_out[idx] else law2.compressive_curve for idx in range(n)]
+            c_curve = law1.compressive_curve if c_out[0] else law2.compressive_curve
+
+        return TransverseFiberGroup(
+            batch_params,
+            k=k_out,
+            area=area_out,
+            tensile_curve_type=t_curve,
+            compressive_curve_type=c_curve,
+            parent_key=interface_key,
+            betap=alfau_t,
+            betan=alfau_c,
+            tensile_curve_types=t_seq,
+            compressive_curve_types=c_seq,
+            fy=fy_out,
+            kt=kt_out,
+            ur=ur_out,
+            alfar=(alfar_t, alfar_c),
+        )
 
     k1, area1, length1 = p1[:, 0], p1[:, 1], p1[:, 2]
     k2, area2, length2 = p2[:, 0], p2[:, 1], p2[:, 2]
@@ -708,25 +1100,25 @@ def _configure_combined_hysteretic_batch(
         is_c_linear = np.isin(c_curve_arr, ("LinearHardening", "LinearSoftening"))
         is_c_para = (c_curve_arr == "Parabolic")
 
-    mom1p = np.zeros(n, dtype=np.float64)
-    rot1p = np.zeros(n, dtype=np.float64)
-    mom2p = np.zeros(n, dtype=np.float64)
-    rot2p = np.zeros(n, dtype=np.float64)
-    mom3p = np.zeros(n, dtype=np.float64)
-    rot3p = np.zeros(n, dtype=np.float64)
-    e1p = np.zeros(n, dtype=np.float64)
-    e2p = np.zeros(n, dtype=np.float64)
-    e3p = np.zeros(n, dtype=np.float64)
-
-    mom1n = np.zeros(n, dtype=np.float64)
-    rot1n = np.zeros(n, dtype=np.float64)
-    mom2n = np.zeros(n, dtype=np.float64)
-    rot2n = np.zeros(n, dtype=np.float64)
-    mom3n = np.zeros(n, dtype=np.float64)
-    rot3n = np.zeros(n, dtype=np.float64)
-    e1n = np.zeros(n, dtype=np.float64)
-    e2n = np.zeros(n, dtype=np.float64)
-    e3n = np.zeros(n, dtype=np.float64)
+    batch_params = np.zeros((n, 20), dtype=np.float64)
+    rot1p = batch_params[:, 0]
+    mom1p = batch_params[:, 1]
+    rot2p = batch_params[:, 2]
+    mom2p = batch_params[:, 3]
+    rot3p = batch_params[:, 4]
+    mom3p = batch_params[:, 5]
+    mom1n = batch_params[:, 6]
+    rot1n = batch_params[:, 7]
+    rot2n = batch_params[:, 8]
+    mom2n = batch_params[:, 9]
+    rot3n = batch_params[:, 10]
+    mom3n = batch_params[:, 11]
+    e1n = batch_params[:, 12]
+    e1p = batch_params[:, 13]
+    e2n = batch_params[:, 14]
+    e2p = batch_params[:, 15]
+    e3n = batch_params[:, 16]
+    e3p = batch_params[:, 17]
 
     if np.any(is_t_elastic):
         m = is_t_elastic
@@ -835,6 +1227,8 @@ def _configure_combined_hysteretic_batch(
 
     eup = np.maximum(np.maximum(e1p, e2p), e3p)
     eun = np.maximum(np.maximum(e1n, e2n), e3n)
+    batch_params[:, 18] = eun
+    batch_params[:, 19] = eup
 
     energy_a = 0.5 * (
         rot1p * mom1p
@@ -844,28 +1238,6 @@ def _configure_combined_hysteretic_batch(
         + (rot2n - rot1n) * (mom2n + mom1n)
         + (rot3n - rot2n) * (mom3n + mom2n)
     )
-
-    batch_params = np.empty((n, 20), dtype=np.float64)
-    batch_params[:, 0] = rot1p
-    batch_params[:, 1] = mom1p
-    batch_params[:, 2] = rot2p
-    batch_params[:, 3] = mom2p
-    batch_params[:, 4] = rot3p
-    batch_params[:, 5] = mom3p
-    batch_params[:, 6] = mom1n
-    batch_params[:, 7] = rot1n
-    batch_params[:, 8] = rot2n
-    batch_params[:, 9] = mom2n
-    batch_params[:, 10] = rot3n
-    batch_params[:, 11] = mom3n
-    batch_params[:, 12] = e1n
-    batch_params[:, 13] = e1p
-    batch_params[:, 14] = e2n
-    batch_params[:, 15] = e2p
-    batch_params[:, 16] = e3n
-    batch_params[:, 17] = e3p
-    batch_params[:, 18] = eun
-    batch_params[:, 19] = eup
 
     if interface is not None:
         interface._transverse_batch_params = batch_params

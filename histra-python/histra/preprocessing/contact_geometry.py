@@ -17,6 +17,8 @@ from histra.elements.interface import Interface
 from histra.elements.quad import Quad
 from histra.model.model import Model
 from histra.preprocessing.errors import ModelPreparationError
+from histra.preprocessing.quad_faces import align_nodes, classify_contained_contact
+from histra.preprocessing.restraint_support import classify_restraint_stiffness
 from histra.types.point import Point
 
 
@@ -248,8 +250,10 @@ def _make_interface_geometry(
     intf.reference_e1 = tuple(float(x) for x in e1)
     intf.reference_e2 = tuple(float(x) for x in e2)
     intf.reference_e3 = tuple(float(x) for x in e3)
+    intf._prep_ref_e2_f32 = e2
     intf.reference_origin = _p(origin)
     intf.vint3d = [_p(v) for v in vertices_f]
+    intf._prep_vint3d_f32 = np.asarray(vertices_f, dtype=np.float32)
     intf.vint2d = [
         Point(
             float(_dot3_f32(v - origin, e1)),
@@ -284,21 +288,22 @@ def _node_bucket(point: np.ndarray, tolerance: float) -> tuple[int, int, int]:
 
 def _build_geometric_node_index(
     model: Model, *, tolerance: float = 1.0e-4,
-) -> tuple[dict[tuple[int, int, int], list[int]], dict[int, np.ndarray]]:
-    """Build the spatial lookup used by C#-style endpoint node reuse.
-
-    The previous implementation scanned every node for every interface endpoint.
-    The generated bridge has thousands of endpoints and nodes, making that
-    quadratic scan one of PrepareModel's dominant Python costs.
-    """
+) -> tuple[dict[tuple[int, int, int], list[int]], dict[int, tuple[float, float, float]]]:
+    """Build the spatial lookup used by C#-style endpoint node reuse."""
     assert model.collections is not None
     buckets: dict[tuple[int, int, int], list[int]] = {}
-    points: dict[int, np.ndarray] = {}
+    points: dict[int, tuple[float, float, float]] = {}
     for key, node in model.collections.nodes.items():
         value = _v(node.point)
         int_key = int(key)
-        points[int_key] = value
-        buckets.setdefault(_node_bucket(value, tolerance), []).append(int_key)
+        pt = (float(value[0]), float(value[1]), float(value[2]))
+        points[int_key] = pt
+        b = (
+            int(math.floor(pt[0] / tolerance)),
+            int(math.floor(pt[1] / tolerance)),
+            int(math.floor(pt[2] / tolerance)),
+        )
+        buckets.setdefault(b, []).append(int_key)
     model._prep_geometric_node_index = (float(tolerance), buckets, points)
     return buckets, points
 
@@ -318,18 +323,28 @@ def _find_or_create_geometric_node(model: Model, point: np.ndarray, *, tolerance
     else:
         _, buckets, points = cached
 
-    bucket = _node_bucket(point, tolerance)
+    px = float(point[0])
+    py = float(point[1])
+    pz = float(point[2])
+    bx = int(math.floor(px / tolerance))
+    by = int(math.floor(py / tolerance))
+    bz = int(math.floor(pz / tolerance))
     best_key: int | None = None
     best_distance2 = float("inf")
     tolerance2 = tolerance * tolerance
+
     for dx in (-1, 0, 1):
         for dy in (-1, 0, 1):
             for dz in (-1, 0, 1):
-                for key in buckets.get(
-                    (bucket[0] + dx, bucket[1] + dy, bucket[2] + dz), ()
-                ):
-                    delta = points[key] - point
-                    distance2 = float(np.dot(delta, delta))
+                keys = buckets.get((bx + dx, by + dy, bz + dz))
+                if keys is None:
+                    continue
+                for key in keys:
+                    kx, ky, kz = points[key]
+                    ddx = kx - px
+                    ddy = ky - py
+                    ddz = kz - pz
+                    distance2 = ddx * ddx + ddy * ddy + ddz * ddz
                     if distance2 <= tolerance2 and distance2 < best_distance2:
                         best_key = key
                         best_distance2 = distance2
@@ -339,10 +354,10 @@ def _find_or_create_geometric_node(model: Model, point: np.ndarray, *, tolerance
     from histra.model.node import Node
 
     key = max(model.collections.nodes, default=0) + 1
-    value = np.asarray(point, dtype=float).copy()
-    model.collections.nodes[key] = Node(key=key, point=_p(value), name=str(key))
-    points[key] = value
-    buckets.setdefault(_node_bucket(value, tolerance), []).append(key)
+    pt_tuple = (px, py, pz)
+    model.collections.nodes[key] = Node(key=key, point=_p(point), name=str(key))
+    points[key] = pt_tuple
+    buckets.setdefault((bx, by, bz), []).append(key)
     return key
 
 
@@ -488,7 +503,6 @@ def _coplanar_quad_intersection_prechecked(
 ) -> list[np.ndarray] | None:
     """Clip two faces after the vectorized broad phase proved coplanarity."""
     if node_tolerance is not None:
-        from .quad_faces import classify_contained_contact
         code = classify_contained_contact(first, second, np.float32(node_tolerance))
         if code in (1, 3):
             return [p.copy() for p in np.asarray(first, dtype=np.float32)]
@@ -503,6 +517,21 @@ def _coplanar_quad_intersection_prechecked(
         drop, k0, k1 = 1, 0, 2
     else:
         drop, k0, k1 = 2, 0, 1
+
+    # Fast 2D projected bounding box check: reject edge-touching or disjoint faces
+    min_s0 = min(first[0, k0], first[1, k0], first[2, k0], first[3, k0])
+    max_s0 = max(first[0, k0], first[1, k0], first[2, k0], first[3, k0])
+    min_c0 = min(second[0, k0], second[1, k0], second[2, k0], second[3, k0])
+    max_c0 = max(second[0, k0], second[1, k0], second[2, k0], second[3, k0])
+    if max_s0 <= min_c0 or max_c0 <= min_s0:
+        return None
+
+    min_s1 = min(first[0, k1], first[1, k1], first[2, k1], first[3, k1])
+    max_s1 = max(first[0, k1], first[1, k1], first[2, k1], first[3, k1])
+    min_c1 = min(second[0, k1], second[1, k1], second[2, k1], second[3, k1])
+    max_c1 = max(second[0, k1], second[1, k1], second[2, k1], second[3, k1])
+    if max_s1 <= min_c1 or max_c1 <= min_s1:
+        return None
 
     subject = [
         (float(first[0, k0]), float(first[0, k1])),
@@ -579,14 +608,15 @@ def _coplanar_quad_intersection(
 def _polygon_edge_at_point(
     vertices: Sequence[np.ndarray], point: np.ndarray, *, tolerance: float = 2.0e-4,
 ) -> tuple[float, np.ndarray] | None:
-    from .quad_faces import align_nodes
     match = None
-    for start, end in zip(vertices, (*vertices[1:], vertices[0])):
-        start_f = np.asarray(start, dtype=np.float32)
-        end_f = np.asarray(end, dtype=np.float32)
-        if align_nodes(np.asarray(point, dtype=np.float32), start_f, end_f, tolerance) > 0:
-            length = float(_norm3_f32(start_f-end_f))
-            direction = _unit_f32(start_f-end_f, label="Interface thickness direction")
+    count = len(vertices)
+    for i in range(count):
+        start_f = vertices[i]
+        end_f = vertices[(i + 1) % count]
+        if align_nodes(point, start_f, end_f, tolerance) > 0:
+            diff = start_f - end_f
+            length = float(_norm3_f32(diff))
+            direction = _unit_f32(diff, label="Interface thickness direction")
             # Interface.Set overwrites its temporary on every matching edge.
             match = (length, direction)
     return match
@@ -837,9 +867,47 @@ if njit is not None:
                                 out_f2[idx] = f2
                                 idx += 1
         return out_q1, out_f1, out_q2, out_f2
+
+    @njit(fastmath=True, cache=True, parallel=True)
+    def _filter_coplanar_overlap_nb(cq1, cf1, cq2, cf2, faces, face_normal):
+        n = len(cq1)
+        mask = np.zeros(n, dtype=np.bool_)
+        for i in prange(n):
+            q1 = cq1[i]
+            f1 = cf1[i]
+            q2 = cq2[i]
+            f2 = cf2[i]
+
+            nx = abs(face_normal[q1, f1, 0])
+            ny = abs(face_normal[q1, f1, 1])
+            nz = abs(face_normal[q1, f1, 2])
+            if nx >= ny and nx >= nz:
+                k0 = 1; k1 = 2
+            elif ny >= nz:
+                k0 = 0; k1 = 2
+            else:
+                k0 = 0; k1 = 1
+
+            min_s0 = min(faces[q1, f1, 0, k0], faces[q1, f1, 1, k0], faces[q1, f1, 2, k0], faces[q1, f1, 3, k0])
+            max_s0 = max(faces[q1, f1, 0, k0], faces[q1, f1, 1, k0], faces[q1, f1, 2, k0], faces[q1, f1, 3, k0])
+            min_c0 = min(faces[q2, f2, 0, k0], faces[q2, f2, 1, k0], faces[q2, f2, 2, k0], faces[q2, f2, 3, k0])
+            max_c0 = max(faces[q2, f2, 0, k0], faces[q2, f2, 1, k0], faces[q2, f2, 2, k0], faces[q2, f2, 3, k0])
+            if max_s0 <= min_c0 or max_c0 <= min_s0:
+                continue
+
+            min_s1 = min(faces[q1, f1, 0, k1], faces[q1, f1, 1, k1], faces[q1, f1, 2, k1], faces[q1, f1, 3, k1])
+            max_s1 = max(faces[q1, f1, 0, k1], faces[q1, f1, 1, k1], faces[q1, f1, 2, k1], faces[q1, f1, 3, k1])
+            min_c1 = min(faces[q2, f2, 0, k1], faces[q2, f2, 1, k1], faces[q2, f2, 2, k1], faces[q2, f2, 3, k1])
+            max_c1 = max(faces[q2, f2, 0, k1], faces[q2, f2, 1, k1], faces[q2, f2, 2, k1], faces[q2, f2, 3, k1])
+            if max_s1 <= min_c1 or max_c1 <= min_s1:
+                continue
+
+            mask[i] = True
+        return mask
 else:
     _find_broad_pairs_nb = None
     _find_face_candidates_nb = None
+    _filter_coplanar_overlap_nb = None
 
 
 def _quad_contact_pairs(model: Model) -> list[tuple[Quad, int, Quad, int, list[np.ndarray], tuple[int, int], float]]:
@@ -891,6 +959,14 @@ def _quad_contact_pairs(model: Model) -> list[tuple[Quad, int, Quad, int, list[n
             cf1 = cf1[overlap]
             cq2 = cq2[overlap]
             cf2 = cf2[overlap]
+            if _filter_coplanar_overlap_nb is not None and len(cq1):
+                mask2d = _filter_coplanar_overlap_nb(
+                    cq1, cf1, cq2, cf2, faces, face_normal
+                )
+                cq1 = cq1[mask2d]
+                cf1 = cf1[mask2d]
+                cq2 = cq2[mask2d]
+                cf2 = cf2[mask2d]
         surface_candidates = list(
             zip(cq1.tolist(), cf1.tolist(), cq2.tolist(), cf2.tolist())
         )
@@ -1035,10 +1111,7 @@ def _generate_interfaces(model: Model) -> tuple[int, int]:
                 f"Restraint {restraint.key} targets unsupported element type "
                 f"{restraint.computational_element_type!r}."
             )
-        if any(abs(value + 1.0) > 1.0e-12 for value in restraint.k):
-            raise ModelPreparationError(
-                f"Restraint {restraint.key} is not fully fixed; elastic/free restraint DOFs are not translated."
-            )
+        classify_restraint_stiffness(restraint)
         try:
             quad = c.quads[restraint.computational_element_key]
         except KeyError as exc:
@@ -1080,6 +1153,20 @@ def _quad_vint(model: Model, quad: Quad) -> tuple[np.ndarray, ...]:
     normals = np.asarray([[_v(n) for n in quad.normal]], dtype=np.float32)
     thickness = np.asarray([quad.thickness], dtype=np.float32)
     faces = compute_quad_faces_batch(points, normals, thickness)[0]
-    cached = tuple(face.astype(np.float64) for face in faces)
+    cached_f32 = tuple(face for face in faces)
+    cached = tuple(face.astype(np.float64) for face in cached_f32)
+    quad._prep_vint_f32 = cached_f32
     quad._prep_vint = cached
+    return cached
+
+
+def _quad_vint_f32(model: Model, quad: Quad) -> tuple[np.ndarray, ...]:
+    cached = getattr(quad, "_prep_vint_f32", None)
+    if cached is not None:
+        return cached
+    vints = _quad_vint(model, quad)
+    cached = getattr(quad, "_prep_vint_f32", None)
+    if cached is None:
+        cached = tuple(np.asarray(face, dtype=np.float32) for face in vints)
+        quad._prep_vint_f32 = cached
     return cached

@@ -12,3 +12,9 @@ class AfferenceEntry:
     """
     gdl: int
     alfa: float
+
+    def __copy__(self) -> AfferenceEntry:
+        return AfferenceEntry(self.gdl, self.alfa)
+
+    def __deepcopy__(self, memo: dict) -> AfferenceEntry:
+        return AfferenceEntry(self.gdl, self.alfa)

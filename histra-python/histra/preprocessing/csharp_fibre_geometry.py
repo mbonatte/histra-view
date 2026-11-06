@@ -69,8 +69,8 @@ def _csharp_rotation(face):
     return x,y,z
 
 @njit(cache=True)
-def _csharp_project(face,points):
-    x,y,z=_csharp_rotation(face)
+def _csharp_project(face,points,rotation=None):
+    x,y,z=_csharp_rotation(face) if rotation is None else rotation
     out=np.empty((len(points),2),dtype=np.float32)
     for i in range(len(points)):
         p=points[i]-face[0]
@@ -100,9 +100,12 @@ def _csharp_intersection(a,b,c,d):
     return out
 
 @njit(cache=True)
-def _csharp_intrinsic(face,points):
+def _csharp_intrinsic(face,points,geometry=None):
     f=np.float32
-    verts=_csharp_project(face,face); pts=_csharp_project(face,points)
+    if geometry is None:
+        verts=_csharp_project(face,face); pts=_csharp_project(face,points)
+    else:
+        verts=geometry[0]; pts=_csharp_project(face,points,geometry[1])
     uv=np.zeros((4,2),dtype=np.float32)
     for i,j,k in ((0,0,3),(1,1,2)):
         p=_csharp_intersection(verts[0],verts[1],pts[j],pts[k])
@@ -121,9 +124,12 @@ def _csharp_intrinsic(face,points):
     return uv
 
 @njit(cache=True)
-def _csharp_mapped(face,u,v):
+def _csharp_mapped(face,u,v,geometry=None):
     f=np.float32
-    verts=_csharp_project(face,face);x,y,z=_csharp_rotation(face)
+    if geometry is None:
+        verts=_csharp_project(face,face);x,y,z=_csharp_rotation(face)
+    else:
+        verts=geometry[0];x,y,z=geometry[1]
     weights=np.array([f(f(f(f(1)-u)*f(f(1)-v))/f(4)),f(f(f(f(1)+u)*f(f(1)-v))/f(4)),f(f(f(f(1)+u)*f(f(1)+v))/f(4)),f(f(f(f(1)-u)*f(f(1)+v))/f(4))],dtype=np.float32)
     local=np.zeros(2,dtype=np.float32)
     for j in range(2):
@@ -133,7 +139,7 @@ def _csharp_mapped(face,u,v):
     return out
 
 @njit(cache=True)
-def _csharp_properties(near,far,cell):
+def _csharp_properties(near,far,cell,near_geometry=None,far_geometry=None):
     f=np.float32;d=np.float64
     points=cell.copy()
     if _csharp_dot(_csharp_cross(near[1]-near[0],near[3]-near[0]),_csharp_cross(points[1]-points[0],points[3]-points[0]))<f(0):
@@ -143,16 +149,16 @@ def _csharp_properties(near,far,cell):
         for k in range(4):scores[shift]=f(scores[shift]+_csharp_norm(points[(shift+k)%4]-near[k]))
     shift=np.argmin(scores);ordered=points.copy()
     for k in range(4):ordered[k]=points[(shift+k)%4]
-    uv=_csharp_intrinsic(near,ordered)
+    uv=_csharp_intrinsic(near,ordered,near_geometry)
     uc=f(f(f(f(uv[0,0]+uv[1,0])+uv[2,0])+uv[3,0])/f(4))
     vc=f(f(f(f(uv[0,1]+uv[1,1])+uv[2,1])+uv[3,1])/f(4))
-    center=_csharp_mapped(near,uc,vc);opposite=_csharp_mapped(far,uc,vc)
+    center=_csharp_mapped(near,uc,vc,near_geometry);opposite=_csharp_mapped(far,uc,vc,far_geometry)
     length=d(_csharp_norm(opposite-center));axis=_csharp_unit(opposite-center)
     transverse=_csharp_unit(ordered[0]-center-f(_csharp_dot(ordered[0]-center,axis))*axis)
     perpendicular=_csharp_cross(transverse,axis)
     a5=np.empty((4,3),dtype=np.float32);a7=np.empty((4,3),dtype=np.float32)
     for i in range(4):
-        p=ordered[i]-center;q=_csharp_mapped(far,uv[i,0],uv[i,1])-center
+        p=ordered[i]-center;q=_csharp_mapped(far,uv[i,0],uv[i,1],far_geometry)-center
         a=np.array([_csharp_dot(perpendicular,p),_csharp_dot(transverse,p),_csharp_dot(axis,p)],dtype=np.float32)
         b=np.array([_csharp_dot(perpendicular,q),_csharp_dot(transverse,q),_csharp_dot(axis,q)],dtype=np.float32)
         denominator=f(a[2]-b[2]);alpha=f(a[2]/denominator);beta=f(-(length-d(a[2]))/d(denominator))
@@ -166,8 +172,8 @@ def _csharp_properties(near,far,cell):
     return np.array([c0,c1,c2],dtype=np.float64),length,axis,area
 
 @njit(cache=True)
-def _csharp_stiffness(near,far,cell,E,e2):
-    coeff,length,axis,area=_csharp_properties(near,far,cell)
+def _csharp_stiffness(near,far,cell,E,e2,near_geometry=None,far_geometry=None):
+    coeff,length,axis,area=_csharp_properties(near,far,cell,near_geometry,far_geometry)
     a,b,c=coeff
     upper=.5
     if a<=1e-10:
@@ -255,8 +261,18 @@ def _csharp_interface_cells(intf: Interface) -> np.ndarray:
 
 @njit(cache=True, nogil=True)
 def _csharp_fibre_stiffness_batch_nb(near_face, far_face, cells, E, reference_e2, output, errors):
+    if len(cells) == 0:
+        return
+    # Each fibre shares its parent faces. Preserve C# float32 ordering while
+    # projecting those faces just once per interface rather than per corner.
+    near_rotation = _csharp_rotation(near_face)
+    far_rotation = _csharp_rotation(far_face)
+    near_geometry = (_csharp_project(near_face, near_face, near_rotation), near_rotation)
+    far_geometry = (_csharp_project(far_face, far_face, far_rotation), far_rotation)
     for index in range(len(cells)):
-        k, area, length = _csharp_stiffness(near_face, far_face, cells[index], E, reference_e2)
+        k, area, length = _csharp_stiffness(
+            near_face, far_face, cells[index], E, reference_e2, near_geometry, far_geometry
+        )
         if not (math.isfinite(k) and math.isfinite(area) and math.isfinite(length)) or area <= 0 or length <= 0:
             errors[index] = 5
         else:

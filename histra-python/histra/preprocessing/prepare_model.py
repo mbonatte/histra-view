@@ -261,21 +261,6 @@ def prepare_model(
     model.geometry_tolerance_node = float(np.float32(model.geometry_tolerance_node))
     model.geometry_tolerance_plane = float(np.float32(model.geometry_tolerance_plane))
 
-    from .cache import is_cache_enabled, load_prepared_cache, save_prepared_cache
-
-    cache_active = is_cache_enabled(use_cache)
-    source_path = getattr(model, "source_path", None)
-
-    if cache_active and source_path:
-        cached = load_prepared_cache(source_path)
-        if cached is not None:
-            cached_model, report = cached
-            model.collections = cached_model.collections
-            model.gdl = cached_model.gdl
-            model.is_locked = True
-            model.requires_python_preparation = False
-            return report
-
     # Serialized HRX interface/spring objects belong to the C# reference, not
     # to a Python computational model.  Do not let the usual idempotent-ready
     # shortcut preserve them.  This is intentionally enforced here (rather
@@ -288,13 +273,37 @@ def prepare_model(
         return PreparationReport(
             prepared=False, gdl=model.gdl, quads=len(c.quads),
             quad_springs=sum(q.spring is not None for q in c.quads.values()),
-            interfaces=len(c.interfaces),
-            quad_quad_interfaces=sum(i.parent_type_element1=="Quad" and i.parent_type_element2=="Quad" for i in c.interfaces.values()),
-            restraint_interfaces=sum("Restraint" in (i.parent_type_element1,i.parent_type_element2) for i in c.interfaces.values()),
+            interfaces=len(c.interfaces), quad_quad_interfaces=sum(1 for i in c.interfaces.values() if i.parent_type_element1 == "Quad" and i.parent_type_element2 == "Quad"),
+            restraint_interfaces=sum(1 for i in c.interfaces.values() if i.parent_type_element1 == "Restraint" or i.parent_type_element2 == "Restraint"),
             transverse_springs=sum(len(i.trasv_1) for i in c.interfaces.values()),
             sliding_springs=sum(len(i.slid) for i in c.interfaces.values()),
             out_of_plane_springs=sum(len(i.slid_out_plan) for i in c.interfaces.values()),
         )
+
+    from .cache import is_cache_enabled, load_prepared_cache, save_prepared_cache
+
+    cache_active = is_cache_enabled(use_cache)
+    source_path = getattr(model, "source_path", None)
+
+    if cache_active and source_path:
+        cached = load_prepared_cache(source_path)
+        if cached is not None:
+            cached_model, report = cached
+            if getattr(model, "requires_python_preparation", False) and not hasattr(model, "hrx_reference_interfaces"):
+                model.hrx_reference_interfaces = {
+                    int(k): v for k, v in model.collections.interfaces.items()
+                }
+            for q_key, cached_q in cached_model.collections.quads.items():
+                if q_key in model.collections.quads:
+                    q = model.collections.quads[q_key]
+                    q.spring = cached_q.spring
+                    q.status = cached_q.status
+                    q.interface_keys = cached_q.interface_keys
+            model.collections = cached_model.collections
+            model.gdl = cached_model.gdl
+            model.is_locked = True
+            model.requires_python_preparation = False
+            return report
     # Mesh creation must ALWAYS start from a brand-new structural model.
     # Purge any pre-baked C# interfaces, springs, afferences, and extra nodes.
     reset_to_brand_new_structural_model(model)
@@ -347,4 +356,3 @@ def prepare_model(
     if cache_active and source_path:
         save_prepared_cache(model, report, source_path)
     return report
-

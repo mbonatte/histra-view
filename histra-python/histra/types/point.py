@@ -3,12 +3,18 @@ from dataclasses import dataclass
 from typing import Tuple
 
 
-@dataclass
+@dataclass(slots=True)
 class Point:
     """Represents a 3D point / vector (port of C# ``Point``)."""
     x: float = 0.0
     y: float = 0.0
     z: float = 0.0
+
+    def __copy__(self) -> Point:
+        return Point(self.x, self.y, self.z)
+
+    def __deepcopy__(self, memo: dict) -> Point:
+        return Point(self.x, self.y, self.z)
 
     @classmethod
     def from_str(cls, s: str) -> Point:

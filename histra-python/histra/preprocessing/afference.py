@@ -65,8 +65,10 @@ def _assign_quad_afference(model: Model) -> None:
                 "slave-element constraints are not translated."
             )
         quad.aff = [[AfferenceEntry(gdl=gdl + i, alfa=1.0)] for i in range(7)]
+        quad._aff_by_local = tuple((gdl + i, 1.0) for i in range(7))
         gdl += 7
-    model.gdl = gdl - 1
+    from histra.preprocessing.restraint_support import assign_restraint_dofs
+    model.gdl = assign_restraint_dofs(model, gdl - 1)
 
 
 def _warping_nodal_vectors(quad: Quad, normal: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -149,11 +151,11 @@ def _warping_vector_at_point(quad: Quad, point: np.ndarray, model: Model) -> np.
 
 
 def _point_afference(
-    model: Model, quad: Quad, point: np.ndarray, node_key: int,
-    direction: np.ndarray, *, face: int,
+    model: Model, quad: Quad, point: Sequence[float], node_key: int,
+    direction: Sequence[float] | np.ndarray, *, face: int,
     _geometry: _QuadAfferenceGeometry | None = None,
     _point_cache: dict[
-        tuple[int, int], tuple[np.ndarray, np.ndarray | None]
+        tuple[int, int], tuple[float, float, float, np.ndarray | None]
     ] | None = None,
 ) -> list[AfferenceEntry]:
     geometry = (
@@ -163,60 +165,114 @@ def _point_afference(
     )
     cache_key = (int(quad.key), int(node_key))
     cached = None if _point_cache is None else _point_cache.get(cache_key)
+    f = np.float32
     if cached is None:
-        r = np.asarray(point, dtype=np.float32) - geometry.centre
+        px = float(point[0])
+        py = float(point[1])
+        pz = float(point[2])
+        cx, cy, cz = geometry.centre
+        rx = float(f(px - cx))
+        ry = float(f(py - cy))
+        rz = float(f(pz - cz))
         warping = None
     else:
-        r, warping = cached
+        rx, ry, rz, warping = cached
 
     if face <= 3 and warping is None:
-        warping = _warping_vector_from_geometry(geometry, point)
+        pt_arr = np.asarray(point, dtype=np.float32)
+        warping = _warping_vector_from_geometry(geometry, pt_arr)
     if _point_cache is not None:
-        if cached is None or (cached[1] is None and warping is not None):
-            _point_cache[cache_key] = (r, warping)
+        if cached is None or (cached[3] is None and warping is not None):
+            _point_cache[cache_key] = (rx, ry, rz, warping)
 
-    direction_f = (
-        direction
-        if isinstance(direction, np.ndarray) and direction.dtype == np.float32
-        else np.asarray(direction, dtype=np.float32)
-    )
-    dx, dy, dz = direction_f
-    rx, ry, rz = float(r[0]), float(r[1]), float(r[2])
-    shear = _f32(0.0) if face > 3 else _dot3_f32(warping, direction_f)
+    dx = float(f(direction[0]))
+    dy = float(f(direction[1]))
+    dz = float(f(direction[2]))
+    shear = 0.0 if face > 3 else float(f(warping[0] * dx + warping[1] * dy + warping[2] * dz))
     coeff = (
-        float(dx),
-        float(dy),
-        float(dz),
-        float(_f32(_f32(ry * dz) - _f32(rz * dy))),
-        float(_f32(_f32(rz * dx) - _f32(rx * dz))),
-        float(_f32(_f32(rx * dy) - _f32(ry * dx))),
+        dx,
+        dy,
+        dz,
+        float(f(f(ry * dz) - f(rz * dy))),
+        float(f(f(rz * dx) - f(rx * dz))),
+        float(f(f(rx * dy) - f(ry * dx))),
         shear,
     )
     out: list[AfferenceEntry] = []
-    # C# Quad.PointAfference delegates to
-    # AfferenceMatrix.SetFromCoefficients, which discards coefficients whose
-    # absolute value is not greater than 1e-4.
-    for local, value in enumerate(coeff):
-        if abs(value) <= 1.0e-4:
-            continue
-        for entry in quad.aff[local]:
-            out.append(
-                AfferenceEntry(gdl=entry.gdl, alfa=float(value * entry.alfa))
-            )
+    append = out.append
+    aff_local = getattr(quad, "_aff_by_local", None)
+    if aff_local is not None:
+        for local, value in enumerate(coeff):
+            if abs(value) <= 1.0e-4:
+                continue
+            gdl, alfa = aff_local[local]
+            append(AfferenceEntry(gdl=gdl, alfa=float(value * alfa)))
+    else:
+        for local, value in enumerate(coeff):
+            if abs(value) <= 1.0e-4:
+                continue
+            for entry in quad.aff[local]:
+                append(
+                    AfferenceEntry(gdl=entry.gdl, alfa=float(value * entry.alfa))
+                )
     return out
 
 
 def _rotation_afference(quad: Quad, direction: np.ndarray) -> list[AfferenceEntry]:
     out: list[AfferenceEntry] = []
-    for local in range(3, 6):
-        value = float(np.float32(direction[local - 3]))
-        # InterfacePoligonalOperations.ComputeAff applies the same 1e-4
-        # directional cutoff before adding rotational afference terms.
-        if abs(value) <= 1.0e-4:
-            continue
-        for entry in quad.aff[local]:
-            out.append(AfferenceEntry(gdl=entry.gdl, alfa=value * entry.alfa))
+    append = out.append
+    aff_local = getattr(quad, "_aff_by_local", None)
+    if aff_local is not None:
+        for local in (3, 4, 5):
+            value = float(np.float32(direction[local - 3]))
+            if abs(value) <= 1.0e-4:
+                continue
+            gdl, alfa = aff_local[local]
+            append(AfferenceEntry(gdl=gdl, alfa=value * alfa))
+    else:
+        for local in range(3, 6):
+            value = float(np.float32(direction[local - 3]))
+            if abs(value) <= 1.0e-4:
+                continue
+            for entry in quad.aff[local]:
+                append(AfferenceEntry(gdl=entry.gdl, alfa=value * entry.alfa))
     return out
+
+
+def _restraint_interface_afference(
+    intf, restraint
+) -> list[list[AfferenceEntry]]:
+    """Port C# ``Restraint.ComputeInterfaceAfference`` into the 12 rows."""
+    from histra.preprocessing.restraint_support import restraint_interface_signs
+
+    rows: list[list[AfferenceEntry]] = [[] for _ in range(12)]
+    sign_e1, sign_e2, sign_e3 = restraint_interface_signs(restraint, intf)
+    half_length = 0.5 * float(intf.length)
+    for local_index, gdl in enumerate(restraint.solver_gdls):
+        if gdl <= 0:
+            continue
+        if local_index == 0:
+            rows[6].append(AfferenceEntry(gdl, sign_e1))
+        elif local_index == 1:
+            rows[0].append(AfferenceEntry(gdl, sign_e2))
+        elif local_index == 2:
+            rows[8].append(AfferenceEntry(gdl, sign_e3))
+            rows[9].append(AfferenceEntry(gdl, sign_e3))
+        elif local_index == 3:
+            rows[4].append(AfferenceEntry(gdl, sign_e1))
+        elif local_index == 4:
+            rows[8].append(AfferenceEntry(gdl, half_length * sign_e2))
+            rows[9].append(AfferenceEntry(gdl, -half_length * sign_e2))
+        elif local_index == 5:
+            rows[1].append(AfferenceEntry(gdl, sign_e3))
+    return rows
+
+
+def _apply_restraint_parent_afference(intf, restraint) -> None:
+    if restraint is None:
+        return
+    for slot, entries in enumerate(_restraint_interface_afference(intf, restraint)):
+        intf.aff[slot].extend(entries)
 
 
 def _assign_interface_afference(model: Model) -> None:
@@ -231,13 +287,27 @@ def _assign_interface_afference(model: Model) -> None:
         e1 = np.asarray(intf.reference_e1, dtype=np.float32)
         e2 = np.asarray(intf.reference_e2, dtype=np.float32)
         e3 = np.asarray(intf.reference_e3, dtype=np.float32)
-        points = [_v(c.nodes[k].point) for k in intf.node_keys]
+        n0 = c.nodes[intf.node_keys[0]].point
+        n1 = c.nodes[intf.node_keys[1]].point
+        points = ((n0.x, n0.y, n0.z), (n1.x, n1.y, n1.z))
         parents = [
             (intf.parent_type_element1, intf.parent_element_key1, 0),
             (intf.parent_type_element2, intf.parent_element_key2, 1),
         ]
         for typ, key, side in parents:
             if typ == "Restraint":
+                restraint = c.restraints.get(key)
+                if restraint is None:
+                    raise ModelPreparationError(
+                        f"Interface {intf.key} references missing Restraint {key}."
+                    )
+                if side != 0:
+                    raise ModelPreparationError(
+                        f"Interface {intf.key} has its Restraint as parent 2. "
+                        "Fresh Python preparation emits the native post-swap layout "
+                        "with the Restraint as parent 1."
+                    )
+                _apply_restraint_parent_afference(intf, restraint)
                 continue
             if typ != "Quad":
                 raise ModelPreparationError(
@@ -278,8 +348,9 @@ def _assign_interface_afference(model: Model) -> None:
             intf.aff[slots_e3[1]] = _point_afference(
                 model, quad, points[1], intf.node_keys[1], e3, **common
             )
-        intf.status = InterfaceState()
-        intf.status.init_from_interface(intf)
+        if intf.status is None:
+            intf.status = InterfaceState()
+            intf.status.init_from_interface(intf)
         intf._perf_aff_pairs = None
 
 

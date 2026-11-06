@@ -176,6 +176,124 @@ class SpringCoulomb03(
     def tangent_reload_c(self, value: float) -> None:
         self._tangent_reload_c = value
 
+    def __copy__(self) -> SpringCoulomb03:
+        cls = self.__class__
+        out = cls.__new__(cls)
+        out.type_of = self.type_of
+        out.extra = self.extra.copy()
+        out.key = self.key
+        out.parent_key = self.parent_key
+        out.parent_type = self.parent_type
+        out.spring_purpose = self.spring_purpose
+        out.type_name = self.type_name
+        out.area = self.area
+        out.length = self.length
+        out.k = self.k
+        out.k_tang = self.k_tang
+        out.f = self.f
+        out.u = self.u
+        out.is_on = self.is_on
+        out.phase = self.phase
+        out.t_phase = self.t_phase
+        out._histra_batch_managed = self._histra_batch_managed
+
+        out.check_contact_area = self.check_contact_area
+        out.sub_law = self.sub_law
+        out.hysteretic_type = self.hysteretic_type
+        out.cohesion = self.cohesion
+        out.mu = self.mu
+        out.plastic_strain_ratio = self.plastic_strain_ratio
+        out.plastic_stiffness_ratio = self.plastic_stiffness_ratio
+        out.max_tensile_ratio = self.max_tensile_ratio
+        out.reload_stiffness_ratio = self.reload_stiffness_ratio
+        out.bcacovic = self.bcacovic
+
+        out.mom1p = self.mom1p
+        out.rot1p = self.rot1p
+        out.mom2p = self.mom2p
+        out.rot2p = self.rot2p
+        out.mom3p = self.mom3p
+        out.rot3p = self.rot3p
+        out.mom1n = self.mom1n
+        out.rot1n = self.rot1n
+        out.mom2n = self.mom2n
+        out.rot2n = self.rot2n
+        out.mom3n = self.mom3n
+        out.rot3n = self.rot3n
+
+        out.e1p = self.e1p
+        out.e2p = self.e2p
+        out.e3p = self.e3p
+        out.e1n = self.e1n
+        out.e2n = self.e2n
+        out.e3n = self.e3n
+        out.eup = self.eup
+        out.eun = self.eun
+        out.energy_a = self.energy_a
+
+        out.fy = self.fy.copy()
+        out.ur = self.ur.copy()
+        out.umax = self.umax.copy()
+
+        out._cstress = self._cstress
+        out._cstrain = self._cstrain
+        out._cstress_normal = self._cstress_normal
+        out._cstress_normal_prev = self._cstress_normal_prev
+        out._ccontact_area = self._ccontact_area
+        out._crot_pu = self._crot_pu
+        out._crot_nu = self._crot_nu
+        out._crot_lim_pu = self._crot_lim_pu
+        out._crot_lim_nu = self._crot_lim_nu
+        out._crot_yp = self._crot_yp
+        out._crot_yn = self._crot_yn
+        out._cmom_max = self._cmom_max
+        out._cmom_min = self._cmom_min
+        out._cload_indicator = self._cload_indicator
+        out._cplastic_tension_indicator = self._cplastic_tension_indicator
+        out._cplastic_compression_indicator = self._cplastic_compression_indicator
+        out._c_phase_unload_t = self._c_phase_unload_t
+        out._c_phase_unload_c = self._c_phase_unload_c
+        out._cup = self._cup
+        out.cenergy_d = self.cenergy_d
+
+        out._tstress = self._tstress
+        out._tstrain = self._tstrain
+        out._tstress_normal = self._tstress_normal
+        out._tcontact_area = self._tcontact_area
+        out._trot_max = self._trot_max
+        out._trot_min = self._trot_min
+        out._trot_pu = self._trot_pu
+        out._trot_nu = self._trot_nu
+        out._trot_lim_pu = self._trot_lim_pu
+        out._trot_lim_nu = self._trot_lim_nu
+        out._trot_yp = self._trot_yp
+        out._trot_yn = self._trot_yn
+        out._tmom_max = self._tmom_max
+        out._tmom_min = self._tmom_min
+        out._tload_indicator = self._tload_indicator
+        out._tplastic_tension_indicator = self._tplastic_tension_indicator
+        out._tplastic_compression_indicator = self._tplastic_compression_indicator
+        out._t_phase_unload_t = self._t_phase_unload_t
+        out._t_phase_unload_c = self._t_phase_unload_c
+        out._tenergy_d = self._tenergy_d
+        out._tup = self._tup
+
+        out.dn = self.dn
+        out.area_corrente = self.area_corrente
+        out.k_tang_committed = self.k_tang_committed
+        out._tangent_reload_t = self._tangent_reload_t
+        out._tangent_reload_c = self._tangent_reload_c
+        return out
+
+    def __deepcopy__(self, memo: dict) -> SpringCoulomb03:
+        existing = memo.get(id(self))
+        if existing is not None:
+            return existing
+        out = self.__copy__()
+        out._histra_batch_managed = False
+        memo[id(self)] = out
+        return out
+
     # ===================================================================
     # XML construction
     # ===================================================================

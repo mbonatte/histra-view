@@ -40,6 +40,15 @@ class TestOriginalCSharpFibreProperties(unittest.TestCase):
                     self.assertEqual(area,ref['SpringArea'])
                     self.assertEqual(length,ref['SpringLength'])
 
+    def test_cached_face_batch_is_bit_exact_with_uncached_cells(self):
+        for case in self.cases:
+            near,far,cells,e2=self.inputs(case)
+            expected=np.asarray([_csharp_stiffness(near,far,cell,1.,e2) for cell in cells])
+            actual=np.empty_like(expected);errors=np.zeros(len(cells),dtype=np.int32)
+            _csharp_fibre_stiffness_batch_nb(near,far,cells,1.,e2,actual,errors)
+            np.testing.assert_array_equal(errors,0)
+            np.testing.assert_array_equal(actual.view(np.uint64),expected.view(np.uint64))
+
     def test_scalar_factory_against_native_csharp(self):
         scalar=getattr(_csharp_stiffness,'py_func',_csharp_stiffness)
         for case in self.cases:

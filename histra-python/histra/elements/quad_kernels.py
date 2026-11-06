@@ -12,6 +12,7 @@ the exact scalar fallback and test oracle with the identical operation order.
 """
 from __future__ import annotations
 
+import functools
 from typing import Sequence
 
 from histra._framework_math import csharp_pow
@@ -202,21 +203,31 @@ def quad_yield_search_scalar(
     return result[0], result[1]
 
 
+@functools.lru_cache(maxsize=4096)
+def _cached_quad_yield_search(
+    k: float, E: float, G: float, Fyt: float, Fyc: float, dalfa: float,
+    L0: float, L1: float, L3: float, cos0: float, cos1: float,
+    sin0: float, sin1: float, sin2: float, sin3: float,
+) -> tuple[float, float]:
+    if _quad_yield_search_kernel is not None:
+        return _quad_yield_search_kernel(
+            k, E, G, Fyt, Fyc, dalfa,
+            L0, L1, L3, cos0, cos1, sin0, sin1, sin2, sin3,
+        )
+    return quad_yield_search_scalar(
+        k, E, G, Fyt, Fyc, dalfa,
+        L0, L1, L3, cos0, cos1, sin0, sin1, sin2, sin3,
+    )
+
+
 def quad_yield_search(
     k: float, E: float, G: float, Fyt: float, Fyc: float, dalfa: float,
     L0: float, L1: float, L3: float, cos0: float, cos1: float,
     sin0: float, sin1: float, sin2: float, sin3: float,
 ) -> tuple[float, float]:
-    """Dispatch to the compiled kernel, falling back to the scalar oracle."""
-    if _quad_yield_search_kernel is not None:
-        return _quad_yield_search_kernel(
-            float(k), float(E), float(G), float(Fyt), float(Fyc),
-            float(dalfa),
-            float(L0), float(L1), float(L3),
-            float(cos0), float(cos1),
-            float(sin0), float(sin1), float(sin2), float(sin3),
-        )
-    return quad_yield_search_scalar(
-        k, E, G, Fyt, Fyc, dalfa,
-        L0, L1, L3, cos0, cos1, sin0, sin1, sin2, sin3,
+    """Dispatch to the compiled kernel with memoization, falling back to the scalar oracle."""
+    return _cached_quad_yield_search(
+        float(k), float(E), float(G), float(Fyt), float(Fyc), float(dalfa),
+        float(L0), float(L1), float(L3), float(cos0), float(cos1),
+        float(sin0), float(sin1), float(sin2), float(sin3),
     )

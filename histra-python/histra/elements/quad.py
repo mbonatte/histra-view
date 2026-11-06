@@ -72,6 +72,49 @@ class Quad(
     _perf_dn_edges: tuple[tuple[tuple[object, bool], ...], ...] | None = field(default=None, init=False, repr=False, compare=False)
     _perf_dn_areas: tuple[float, ...] | None = field(default=None, init=False, repr=False, compare=False)
 
+    def __deepcopy__(self, memo: dict) -> Quad:
+        existing = memo.get(id(self))
+        if existing is not None:
+            return existing
+        import copy
+
+        cls = self.__class__
+        dup = cls.__new__(cls)
+        memo[id(self)] = dup
+        dup.key = self.key
+        dup.node_keys = self.node_keys.copy()
+        dup.length = self.length.copy()
+        dup.sin = self.sin.copy()
+        dup.cos = self.cos.copy()
+        dup.diago = self.diago.copy()
+        dup.thickness = self.thickness.copy()
+        dup.normal = [Point(p.x, p.y, p.z) for p in self.normal]
+        dup.g = Point(self.g.x, self.g.y, self.g.z)
+        dup.material_key = self.material_key
+        dup.spring = copy.deepcopy(self.spring, memo) if self.spring is not None else None
+        dup.aff = [[AfferenceEntry(e.gdl, e.alfa) for e in row] for row in self.aff]
+        dup.interface_keys = [row.copy() for row in self.interface_keys]
+        dup.reference_e1 = self.reference_e1
+        dup.reference_e2 = self.reference_e2
+        dup.reference_e3 = self.reference_e3
+        dup.reference_origin = Point(
+            self.reference_origin.x, self.reference_origin.y, self.reference_origin.z
+        )
+        dup.status = copy.deepcopy(self.status, memo)
+        dup.name = self.name
+        dup.extra = self.extra.copy()
+        dup.parent_key = self.parent_key
+        dup.parent_type = self.parent_type
+        dup.layer_key = self.layer_key
+        dup.master_element_key = self.master_element_key
+        dup.master_element_type = self.master_element_type
+        dup.sigma_initial = self.sigma_initial
+        dup._perf_volume = self._perf_volume
+        dup._perf_aff_pairs = self._perf_aff_pairs
+        dup._perf_dn_edges = None
+        dup._perf_dn_areas = None
+        return dup
+
     def set_non_linear_properties(self, k: float, E: float, G: float,
                                    Fyt: float, Fyc: float) -> Tuple[float, float]:
         """Literal port of C# ``Quad.SetNonLinearProperties``.
@@ -196,14 +239,24 @@ class Quad(
                 )
                 if not belongs:
                     continue
-                custom_springs = any(
-                    not getattr(spring, "_histra_batch_managed", False)
-                    and (
-                        "get_force" in spring.__dict__
-                        or "get_incr_force" in spring.__dict__
+                if getattr(intf.trasv_1, "is_batch_backed", False):
+                    custom_springs = any(
+                        not getattr(spring, "_histra_batch_managed", False)
+                        and (
+                            "get_force" in spring.__dict__
+                            or "get_incr_force" in spring.__dict__
+                        )
+                        for spring in intf.trasv_1._cache.values()
                     )
-                    for spring in intf.trasv_1
-                )
+                else:
+                    custom_springs = any(
+                        not getattr(spring, "_histra_batch_managed", False)
+                        and (
+                            "get_force" in spring.__dict__
+                            or "get_incr_force" in spring.__dict__
+                        )
+                        for spring in intf.trasv_1
+                    )
                 refs.append((intf, custom_springs))
             edges.append(tuple(refs))
             areas.append(area)
@@ -375,7 +428,7 @@ class Quad(
         return e, 0.0, e
 
     @classmethod
-    def from_xml(cls, elem) -> Quad:
+    def from_xml(cls, elem, *, include_reference: bool = True) -> Quad:
         q = cls()
         q.key = int(elem.get("Key", "0"))
         q.name = elem.get("Name", "")
@@ -404,6 +457,22 @@ class Quad(
         gstr = elem.get("G", None)
         if gstr:
             q.g = Point.from_str(gstr)
+
+        # ReferenceSystem
+        rs = elem.find("ReferenceSystem")
+        if rs is not None:
+            e1 = rs.get("E1", "1;0;0")
+            e2 = rs.get("E2", "0;1;0")
+            e3 = rs.get("E3", "0;0;1")
+            q.reference_e1 = tuple(float(x) for x in e1.split(";"))
+            q.reference_e2 = tuple(float(x) for x in e2.split(";"))
+            q.reference_e3 = tuple(float(x) for x in e3.split(";"))
+            orig = rs.get("Origin", None)
+            if orig:
+                q.reference_origin = Point.from_str(orig)
+
+        if not include_reference:
+            return q
 
         # U1..U7 (post-solve state)
         for i in range(7):
@@ -436,18 +505,5 @@ class Quad(
             grp = elem.find(f"Interfaces{f+1}")
             if grp is not None:
                 q.interface_keys[f] = [int(iface.get("Value", "0")) for iface in grp.findall("Interface")]
-
-        # ReferenceSystem
-        rs = elem.find("ReferenceSystem")
-        if rs is not None:
-            e1 = rs.get("E1", "1;0;0")
-            e2 = rs.get("E2", "0;1;0")
-            e3 = rs.get("E3", "0;0;1")
-            q.reference_e1 = tuple(float(x) for x in e1.split(";"))
-            q.reference_e2 = tuple(float(x) for x in e2.split(";"))
-            q.reference_e3 = tuple(float(x) for x in e3.split(";"))
-            orig = rs.get("Origin", None)
-            if orig:
-                q.reference_origin = Point.from_str(orig)
 
         return q

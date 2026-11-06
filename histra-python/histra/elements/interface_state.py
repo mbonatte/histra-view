@@ -45,9 +45,12 @@ class InterfaceState:
         d0 = intf.dim_aff[0] if len(intf.dim_aff) > 0 else 6
         d1 = intf.dim_aff[1] if len(intf.dim_aff) > 1 else 2
         d2 = intf.dim_aff[2] if len(intf.dim_aff) > 2 else 4
-        self.k = _list2d(d0, d0)
-        self.kslid = _list2d(d1, d1)
-        self.kslid_out_plan = _list2d(d2, d2)
+        if len(self.k) != d0 or (d0 > 0 and len(self.k[0]) != d0):
+            self.k = _list2d(d0, d0)
+        if len(self.kslid) != d1 or (d1 > 0 and len(self.kslid[0]) != d1):
+            self.kslid = _list2d(d1, d1)
+        if len(self.kslid_out_plan) != d2 or (d2 > 0 and len(self.kslid_out_plan[0]) != d2):
+            self.kslid_out_plan = _list2d(d2, d2)
 
     # ── port of InterfaceState.Compute_du ───────────────────────────────────
     def compute_du(self, intf: Interface, x: np.ndarray, i: int) -> float:

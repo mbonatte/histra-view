@@ -74,8 +74,14 @@ from histra.preprocessing.spring_factory import (
 def _distance_to_interface_plane(quad: Quad, intf: Interface) -> float:
     from histra.preprocessing.quad_faces import distance_to_contact_plane
 
-    centre = np.asarray((quad.g.x, quad.g.y, quad.g.z), dtype=np.float32)
-    vertices = np.asarray([(p.x, p.y, p.z) for p in intf.vint3d], dtype=np.float32)
+    centre = getattr(quad, "_prep_g_f32", None)
+    if centre is None:
+        centre = np.asarray((quad.g.x, quad.g.y, quad.g.z), dtype=np.float32)
+        quad._prep_g_f32 = centre
+    vertices = getattr(intf, "_prep_vint3d_f32", None)
+    if vertices is None:
+        vertices = np.asarray([(p.x, p.y, p.z) for p in intf.vint3d], dtype=np.float32)
+        intf._prep_vint3d_f32 = vertices
     return distance_to_contact_plane(centre, vertices)
 
 
@@ -269,22 +275,24 @@ def _side_sliding_spring(
 def _out_of_plane_spring_areas(intf: Interface) -> tuple[float, float]:
     """C# GetAreaSpring for the two bilinear out-of-plane half patches."""
     f = np.float32
-    vertices = np.asarray([(p.x, p.y) for p in intf.vint2d], dtype=np.float32)
-    areas = []
-    for x0, x1 in [(-1., 0.), (0., 1.)]:
-        xi = np.array([x0, x1, x1, x0], dtype=np.float32)[:, None]
-        eta = np.array([-1., -1., 1., 1.], dtype=np.float32)[:, None]
-        points = (vertices[0] * (f(1)-xi) * (f(1)-eta) / f(4)
-                  + vertices[1] * (f(1)+xi) * (f(1)-eta) / f(4)
-                  + vertices[2] * (f(1)+xi) * (f(1)+eta) / f(4)
-                  + vertices[3] * (f(1)-xi) * (f(1)+eta) / f(4))
-        # Operations.Area(Vector2[]) accumulates in single precision and order.
-        total = f(0)
-        for i in range(4):
-            j = (i+1) % 4
-            total += points[i, 0]*points[j, 1] - points[j, 0]*points[i, 1]
-        areas.append(float(abs(total*f(.5))))
-    return areas[0], areas[1]
+    v = intf.vint2d
+    v0x, v0y = f(v[0].x), f(v[0].y)
+    v1x, v1y = f(v[1].x), f(v[1].y)
+    v2x, v2y = f(v[2].x), f(v[2].y)
+    v3x, v3y = f(v[3].x), f(v[3].y)
+    m01x = f((v0x + v1x) * f(0.5))
+    m01y = f((v0y + v1y) * f(0.5))
+    m32x = f((v2x + v3x) * f(0.5))
+    m32y = f((v2y + v3y) * f(0.5))
+
+    # Patch 0: v0, m01, m32, v3
+    tot0 = (v0x * m01y - m01x * v0y) + (m01x * m32y - m32x * m01y) + (m32x * v3y - v3x * m32y) + (v3x * v0y - v0x * v3y)
+    a0 = float(abs(tot0 * f(0.5)))
+
+    # Patch 1: m01, v1, v2, m32
+    tot1 = (m01x * v1y - v1x * m01y) + (v1x * v2y - v2x * v1y) + (v2x * m32y - m32x * v2y) + (m32x * m01y - m01x * m32y)
+    a1 = float(abs(tot1 * f(0.5)))
+    return a0, a1
 
 
 def _transverse_side_properties_batch(
@@ -583,8 +591,9 @@ def _create_interface_springs(
         out.length = intf.length / 2.0
         intf.slid_out_plan.append(out)
 
-    intf.status = InterfaceState()
-    intf.status.init_from_interface(intf)
+    if getattr(intf, "status", None) is None:
+        intf.status = InterfaceState()
+        intf.status.init_from_interface(intf)
     intf._perf_di = intf._perf_dj = intf._perf_ecc = None
     intf._perf_area = None
 

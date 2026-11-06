@@ -65,10 +65,13 @@ def _cached_flex_law(
 def _flex_alignment(interface_e1, quad_e1) -> tuple[float, float]:
     """ConstitutiveLawBase: Vector3.Dot in Single, then Double sqrt."""
     f = np.float32
-    a = np.asarray(interface_e1, dtype=np.float32)
-    b = np.asarray(quad_e1, dtype=np.float32)
-    dot = f(f(f(a[0] * b[0]) + f(a[1] * b[1])) + f(a[2] * b[2]))
+    dot = f(
+        f(f(f(interface_e1[0]) * f(quad_e1[0])) + f(f(interface_e1[1]) * f(quad_e1[1])))
+        + f(f(interface_e1[2]) * f(quad_e1[2]))
+    )
     c1 = min(1.0, abs(float(dot)))
+    if c1 >= 1.0:
+        return 1.0, 0.0
     return c1, math.sqrt(1.0 - c1 * c1)
 
 
@@ -80,6 +83,9 @@ def _blend_hysteretic_laws(primary: _HystereticLaw, secondary: _HystereticLaw,
     must go through the blend: rounding can determine the softening tail sign.
     The source retains the primary unloading/ductility coefficients.
     """
+    if c2 == 0.0:
+        return primary
+
     def blend(name):
         return (getattr(primary, name) * c1 * c1
                 + getattr(secondary, name) * c2 * c2)
@@ -180,6 +186,9 @@ def _blend_coulomb_laws(
     The C# method modifies only E, Fy_0, Mu and U_r.  Other envelope settings
     remain those of the primary (horizontal) law.
     """
+    if c2 == 0.0:
+        return primary
+
     def blend(name):
         return (getattr(primary, name) * c1 * c1
                 + getattr(secondary, name) * c2 * c2)

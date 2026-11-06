@@ -44,6 +44,7 @@ from histra.preprocessing.contact_geometry import (
     _norm3,
     _polygon_area_3d,
     _quad_vint,
+    _quad_vint_f32,
     _unit,
     _v,
 )
@@ -235,20 +236,27 @@ def _fiber_stiffness_batch(model: Model, quad: Quad, intf: Interface,
         return np.asarray([
             _fiber_stiffness(model, quad, intf, cell, E, face) for cell in cells
         ], dtype=float)
-    vints = _quad_vint(model, quad)
-    opposite = {0:2,1:3,2:0,3:1,4:5,5:4}[face]
+    vints = _quad_vint_f32(model, quad)
+    opposite = {0: 2, 1: 3, 2: 0, 3: 1, 4: 5, 5: 4}[face]
     far_face = vints[opposite]
     # C# Quad.GetFiberProperties reverses the opposite broad face explicitly:
     # face 4 uses VInt[5, 3..0], and face 5 uses VInt[4, 3..0].
     if face >= 4:
-        far_face = tuple(reversed(far_face))
-    output = np.zeros((len(cells),3), dtype=np.float64)
+        far_face = far_face[::-1]
+    output = np.empty((len(cells), 3), dtype=np.float64)
     errors = np.zeros(len(cells), dtype=np.int32)
+    ref_e2 = getattr(intf, "_prep_ref_e2_f32", None)
+    if ref_e2 is None:
+        ref_e2 = np.asarray(intf.reference_e2, dtype=np.float32)
+        intf._prep_ref_e2_f32 = ref_e2
     _fiber_stiffness_batch_nb(
-        np.asarray(vints[face], dtype=np.float32),
-        np.asarray(far_face, dtype=np.float32),
-        np.asarray(cells, dtype=np.float32), float(E),
-        np.asarray(intf.reference_e2, dtype=np.float32), output, errors,
+        vints[face],
+        far_face,
+        cells,
+        float(E),
+        ref_e2,
+        output,
+        errors,
     )
     if np.any(errors):
         index = int(np.flatnonzero(errors)[0])

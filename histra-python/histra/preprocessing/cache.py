@@ -23,7 +23,7 @@ from histra.preprocessing.prepare_model import PreparationReport
 
 logger = logging.getLogger(__name__)
 
-_PREPROCESSING_CACHE_VERSION = "1.1.0"
+_PREPROCESSING_CACHE_VERSION = "1.2.0"
 
 
 def is_cache_enabled(requested: bool | None = None) -> bool:

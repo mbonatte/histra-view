@@ -107,6 +107,79 @@ class Interface:
     _perf_sum_dm: float | None = field(default=None, init=False, repr=False, compare=False)
     _perf_sum_dm2: float | None = field(default=None, init=False, repr=False, compare=False)
 
+    def __deepcopy__(self, memo: dict) -> Interface:
+        existing = memo.get(id(self))
+        if existing is not None:
+            return existing
+        import copy
+
+        cls = self.__class__
+        dup = cls.__new__(cls)
+        memo[id(self)] = dup
+        dup.key = self.key
+        dup.node_keys = self.node_keys.copy()
+        dup.parent_element_key1 = self.parent_element_key1
+        dup.parent_element_key2 = self.parent_element_key2
+        dup.parent_type_element1 = self.parent_type_element1
+        dup.parent_type_element2 = self.parent_type_element2
+        dup.face1 = self.face1
+        dup.face2 = self.face2
+        dup.length = self.length
+        dup.thickness = self.thickness.copy()
+        dup.nrow = self.nrow
+        dup.ncol = self.ncol
+        dup.nspring = self.nspring
+        dup.dim_aff = self.dim_aff.copy()
+        dup.dim_aff_tot = self.dim_aff_tot
+        dup.trasv_1 = copy.deepcopy(self.trasv_1, memo)
+        dup.trasv_2 = copy.deepcopy(self.trasv_2, memo)
+        dup.slid = [copy.deepcopy(s, memo) for s in self.slid]
+        dup.slid_out_plan = [copy.deepcopy(s, memo) for s in self.slid_out_plan]
+        dup.aff = [[AfferenceEntry(e.gdl, e.alfa) for e in row] for row in self.aff]
+        dup.reference_e1 = self.reference_e1
+        dup.reference_e2 = self.reference_e2
+        dup.reference_e3 = self.reference_e3
+        dup.reference_origin = Point(
+            self.reference_origin.x, self.reference_origin.y, self.reference_origin.z
+        )
+        dup.status = copy.deepcopy(self.status, memo)
+        dup.name = self.name
+        dup.material_key = self.material_key
+        dup.layer_key = self.layer_key
+        dup.interfaccia_vincolata = self.interfaccia_vincolata
+        dup.frot = self.frot
+        dup.imax = self.imax
+        dup.csi = self.csi
+        dup.vint2d = [Point(pt.x, pt.y, pt.z) for pt in self.vint2d]
+        dup.vint3d = [Point(pt.x, pt.y, pt.z) for pt in self.vint3d]
+        dup.f = self.f.copy()
+        dup._perf_di = self._perf_di
+        dup._perf_dj = self._perf_dj
+        dup._perf_ecc = self._perf_ecc
+        dup._perf_aff_pairs = self._perf_aff_pairs
+        dup._perf_area = self._perf_area
+        dup._perf_dist = self._perf_dist
+        dup._perf_dist_for = self._perf_dist_for
+        dup._perf_local_du = (
+            [0.0] * self.dim_aff_tot if self._perf_local_du is not None else None
+        )
+        dup._perf_inv_length = self._perf_inv_length
+        dup._perf_half_length = self._perf_half_length
+        dup._perf_constrained = self._perf_constrained
+        dup._perf_d0 = self._perf_d0
+        dup._perf_d1 = self._perf_d1
+        dup._perf_custom_force_access = self._perf_custom_force_access
+        dup._perf_has_custom_force_access = self._perf_has_custom_force_access
+        dup._perf_sum_di2 = self._perf_sum_di2
+        dup._perf_sum_dj2 = self._perf_sum_dj2
+        dup._perf_sum_didj = self._perf_sum_didj
+        dup._perf_sum_ecc2 = self._perf_sum_ecc2
+        dup._perf_sum_djecc = self._perf_sum_djecc
+        dup._perf_sum_diecc = self._perf_sum_diecc
+        dup._perf_sum_dm = self._perf_sum_dm
+        dup._perf_sum_dm2 = self._perf_sum_dm2
+        return dup
+
     def area(self) -> float:
         """Return the cached C# ``Operations.Area(VInt2D)`` polygon area."""
         if self._perf_area is not None:
@@ -317,12 +390,27 @@ class Interface:
         self._perf_constrained = self.interfaccia_vincolata_computed()
         self._perf_d0 = self.dim_aff[0] if self.dim_aff else 6
         self._perf_d1 = self.dim_aff[1] if len(self.dim_aff) > 1 else 2
-        self._perf_custom_force_access = tuple(
-            False
-            if getattr(spring, "_histra_batch_managed", False)
-            else not hasattr(spring, "_tstress")
-            for spring in self.trasv_1[:count]
-        )
+        if getattr(self.trasv_1, "is_batch_backed", False):
+            cache = self.trasv_1._cache
+            if cache:
+                batch_managed = getattr(self.trasv_1, "_histra_batch_managed", False)
+                self._perf_custom_force_access = tuple(
+                    False
+                    if getattr(cache[idx], "_histra_batch_managed", batch_managed)
+                    else not hasattr(cache[idx], "_tstress")
+                    if idx in cache
+                    else False
+                    for idx in range(count)
+                )
+            else:
+                self._perf_custom_force_access = (False,) * count
+        else:
+            self._perf_custom_force_access = tuple(
+                False
+                if getattr(spring, "_histra_batch_managed", False)
+                else not hasattr(spring, "_tstress")
+                for spring in self.trasv_1[:count]
+            )
         self._perf_has_custom_force_access = any(self._perf_custom_force_access)
 
     def _local_increment(self, x: np.ndarray) -> list[float]:

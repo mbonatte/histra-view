@@ -196,6 +196,15 @@ class SpringHysteretic(Spring):
         out._tstrain = self._tstrain
         return out
 
+    def __deepcopy__(self, memo: dict) -> SpringHysteretic:
+        existing = memo.get(id(self))
+        if existing is not None:
+            return existing
+        out = self.__copy__()
+        out._histra_batch_managed = False
+        memo[id(self)] = out
+        return out
+
 
     # ===================================================================
     # XML construction

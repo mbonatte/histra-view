@@ -74,8 +74,11 @@ class TransverseFiberGroup(MutableSequence):
         alfar: tuple[float, float] = (0.0, 0.0),
     ) -> None:
         self._params = np.ascontiguousarray(params, dtype=np.float64)
+        self._params.flags.writeable = False
         self._k = np.ascontiguousarray(k, dtype=np.float64)
+        self._k.flags.writeable = False
         self._area = np.ascontiguousarray(area, dtype=np.float64)
+        self._area.flags.writeable = False
         self.tensile_curve_type = str(tensile_curve_type)
         self.compressive_curve_type = str(compressive_curve_type)
         self._tensile_curve_types = (
@@ -261,8 +264,12 @@ class TransverseFiberGroup(MutableSequence):
             raise IndexError(f"TransverseFiberGroup index out of range: {index}")
         self._cache[idx] = value
         if hasattr(value, "k"):
+            if not self._k.flags.writeable:
+                self._k = self._k.copy()
             self._k[idx] = float(value.k)
         if hasattr(value, "area"):
+            if not self._area.flags.writeable:
+                self._area = self._area.copy()
             self._area[idx] = float(value.area)
         if hasattr(value, "is_on"):
             self.is_on[idx] = bool(value.is_on)
@@ -440,3 +447,96 @@ class TransverseFiberGroup(MutableSequence):
             self._uy_corr[index] = spring.uy_corr
             self._f0[index] = spring.f0
             self._trial[index, 9] = spring.k_tang_committed
+
+    def revert_to_start(self) -> None:
+        """Reset all fibers to virgin state in dense arrays without materializing proxies."""
+        self._committed.fill(0.0)
+        self._trial[:, :9] = 0.0
+        e1p = self._params[:, 13] if self._params.shape[1] > 13 else None
+        if e1p is not None:
+            self._trial[:, 9] = np.where(e1p != 0.0, e1p, self._k)
+        else:
+            self._trial[:, 9] = self._k
+        self.is_on.fill(True)
+        if self._cache:
+            for sp in self._cache.values():
+                sp.is_on = True
+                sp.revert_to_start()
+
+    def revert_to_last_commit(self) -> None:
+        """Revert trial state to last committed state without materializing proxies."""
+        self._trial[:, :9] = self._committed[:, :9]
+        if self._cache:
+            for sp in self._cache.values():
+                sp.revert_to_last_commit()
+
+    def flush_cache_to_arrays(self) -> None:
+        """Synchronize any on-demand proxy mutations back into dense arrays."""
+        if not self._cache:
+            return
+        if not self._k.flags.writeable:
+            self._k = self._k.copy()
+        if not self._area.flags.writeable:
+            self._area = self._area.copy()
+        for idx, sp in self._cache.items():
+            self._k[idx] = float(sp.k)
+            self._area[idx] = float(sp.area)
+            self.is_on[idx] = bool(sp.is_on)
+            self._committed[idx, 0] = float(sp.umax[0])
+            self._committed[idx, 1] = float(sp.umax[1])
+            self._committed[idx, 2] = float(sp._crot_pu)
+            self._committed[idx, 3] = float(sp._crot_nu)
+            self._committed[idx, 4] = float(sp.cenergy_d)
+            self._committed[idx, 5] = float(sp._cload_indicator)
+            self._committed[idx, 6] = float(sp._cstress)
+            self._committed[idx, 7] = float(sp._cstrain)
+            self._committed[idx, 8] = float(int(sp.phase))
+            self._trial[idx, 0] = float(sp._trot_max)
+            self._trial[idx, 1] = float(sp._trot_min)
+            self._trial[idx, 2] = float(sp._trot_pu)
+            self._trial[idx, 3] = float(sp._trot_nu)
+            self._trial[idx, 4] = float(sp._tenergy_d)
+            self._trial[idx, 5] = float(sp._tload_indicator)
+            self._trial[idx, 6] = float(sp._tstress)
+            self._trial[idx, 7] = float(sp._tstrain)
+            self._trial[idx, 8] = float(int(sp.t_phase))
+            self._trial[idx, 9] = float(sp.k_tang)
+
+    def __deepcopy__(self, memo: dict[int, Any]) -> TransverseFiberGroup:
+        if self._cache:
+            self.flush_cache_to_arrays()
+        cls = self.__class__
+        dup = cls.__new__(cls)
+        memo[id(self)] = dup
+        dup._params = self._params
+        dup._k = self._k if not self._k.flags.writeable else self._k.copy()
+        dup._area = self._area if not self._area.flags.writeable else self._area.copy()
+        dup.tensile_curve_type = self.tensile_curve_type
+        dup.compressive_curve_type = self.compressive_curve_type
+        dup._tensile_curve_types = self._tensile_curve_types
+        dup._compressive_curve_types = self._compressive_curve_types
+        dup.parent_key = self.parent_key
+        dup.betap = self.betap
+        dup.betan = self.betan
+        dup._fy = self._fy.copy() if self._fy is not None else None
+        dup._uy_corr = self._uy_corr.copy() if self._uy_corr is not None else None
+        dup._f0 = self._f0.copy() if self._f0 is not None else None
+        dup._kt = self._kt.copy() if self._kt is not None else None
+        dup._ur = self._ur.copy() if self._ur is not None else None
+        dup.alfar_p = self.alfar_p
+        dup.alfar_n = self.alfar_n
+        dup._committed = self._committed.copy()
+        dup._trial = self._trial.copy()
+        dup.is_on = self.is_on.copy()
+        dup._histra_batch_managed = False
+        dup._batch_slice = None
+        if any(
+            not isinstance(sp, SpringHysteretic) or bool(getattr(sp, "__dict__", None))
+            for sp in self._cache.values()
+        ):
+            import copy
+
+            dup._cache = copy.deepcopy(self._cache, memo)
+        else:
+            dup._cache = {}
+        return dup
