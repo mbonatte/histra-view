@@ -83,7 +83,7 @@ def serialize_mesh_to_hrx(
                 "Tb": str(span.thickness_springer),
                 "Tt": str(span.thickness_crown),
                 "W": str(spec.width),
-                "Circolare": "false",
+                "Circolare": "true" if getattr(span, "circolare", False) else "false",
             },
         )
         if s_idx < len(spec.piers):
@@ -149,6 +149,61 @@ def serialize_mesh_to_hrx(
     # 3. Material Templates
     for t_dict in (templates or DEFAULT_TEMPLATES):
         etree.SubElement(root, "Template", attrib={k: str(v) for k, v in t_dict.items()})
+
+    line_loads = getattr(mesh, "line_loads", []) or []
+    if line_loads:
+        load_val = line_loads[0].load_value if line_loads else 0.01
+        t_elem = etree.SubElement(
+            root,
+            "Template",
+            attrib={
+                "TypeOf": "HiStrA.Objects.LoadTemplate",
+                "SelfWeight": "false",
+                "IdTemplateType": "-2",
+                "Schema": "0",
+                "DynamicCoefficient": "1",
+                "D1": "0",
+                "D2": "0",
+                "D3": "0",
+                "D4": "0",
+                "Key": "3",
+                "Name": "LINE_LOAD",
+                "Description": "LineLoad",
+                "PurposeType": "LineLoad",
+                "IdTexture": "0",
+                "Color": "#FF00FF00",
+            },
+        )
+        item_list = etree.SubElement(t_elem, "LoadtemplateItemList")
+        etree.SubElement(
+            item_list,
+            "LoadTemplateItem",
+            attrib={
+                "Id": "1",
+                "Key": "2",
+                "IdLoadTemplate": "3",
+                "Chiave": "1",
+                "LoadAbscissa": "0",
+                "X": "0",
+                "Y": "0",
+                "Width": "0",
+                "Length": "0",
+                "IsLoadAbscissaNormalized": "true",
+                "DirX": "0",
+                "DirY": "0",
+                "DirZ": "-1",
+                "IdTypeLoad": "Force",
+                "IdLoadDirection": "0",
+                "IdLoadCondition": "11",
+                "LoadValue": str(load_val),
+                "Name": "LINE_LOAD",
+                "IdUseDestination": "20",
+                "Psi0": "1",
+                "Psi1": "1",
+                "Psi2": "1",
+                "IsProjected": "true",
+            },
+        )
 
     # 4. Structural Nodes
     model_point_node_keys = {
@@ -370,15 +425,33 @@ def serialize_mesh_to_hrx(
             },
         )
 
-    # 9. Native load conditions, combinations and functions
+    # 9. Direct Line Load Elements
+    for ll in line_loads:
+        etree.SubElement(
+            root,
+            "LoadElement",
+            attrib={
+                "TypeOf": "HiStrA.Objects.LineLoadElement",
+                "Key": str(ll.key),
+                "ParentKey": "0",
+                "ElementKey": str(ll.element_key),
+                "ElementType": ll.element_type,
+                "IdLoadTemplate": str(ll.load_template_key),
+                "Point1": f"{ll.point1[0]:.6f};{ll.point1[1]:.6f};{ll.point1[2]:.6f}",
+                "Point2": f"{ll.point2[0]:.6f};{ll.point2[1]:.6f};{ll.point2[2]:.6f}",
+            },
+        )
+
+    # 10. Native load conditions, combinations and functions
     write_load_conditions(root)
     write_load_combinations(root)
     write_load_functions(root)
 
-    # 10. Native analyses (Vert, Modal, live-load and scour stages)
+    # 11. Native analyses (Vert, Modal, live-load and scour stages)
     write_analyses(
         root,
         model_point_keys=[mp.key for mp in mesh.monitoring_points],
+        control_model_point_key=getattr(mesh, "control_model_point_key", None),
         include_scour_analyses=include_scour_analyses,
     )
     return etree.tostring(root, xml_declaration=True, encoding="utf-8", pretty_print=pretty_print)

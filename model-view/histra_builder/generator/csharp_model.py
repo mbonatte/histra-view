@@ -103,6 +103,9 @@ class Abutment(BridgeElement):
 class Pier(BridgeElement):
     """C# ``Pier``."""
 
+    # HiStrA View extension; zero disables the rectangular transverse shoulders.
+    shoulder_height: float = 0.0
+
     spinta_passiva_sx: bool = False
     spinta_passiva_dx: bool = False
     Hsp1: float = 0.0
@@ -141,9 +144,15 @@ class Span:
     material_key: int = 18
     material_pulvino_key: int = 22
     material_reinforcement_key: int = 24
+    arch_layers: int = 1
     discr_left: int = 1
     discr_right: int = 1
+    # Native wizard flag; the C# mesher itself still uses the ellipse.
     circolare: bool = False
+    # Explicit HiStrA View extension, separate from the serialized C# flag.
+    true_circular_geometry: bool = False
+    load_position: str = "none"
+    load_value: float = 0.01
 
     # Compatibility aliases used by the existing HRX writer.
     @property
@@ -343,3 +352,16 @@ class CSharpBridgeSpec:
     @property
     def deck_clearance(self) -> float:
         return 0.0
+
+
+@dataclass(frozen=True)
+class GeneratedLineLoad:
+    """Line load assigned to a deck Quad."""
+
+    key: int
+    element_key: int
+    element_type: str = "Quad"
+    load_template_key: int = 3
+    point1: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    point2: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    load_value: float = 0.01

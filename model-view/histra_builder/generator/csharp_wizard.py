@@ -5,6 +5,7 @@ from typing import Iterable
 
 from lxml import etree
 
+from .csharp_arch import circular_springing_angle
 from .csharp_model import (
     Abutment,
     BridgeDefinition,
@@ -203,6 +204,16 @@ def _bridge_definition(spec: CSharpBridgeSpec) -> etree._Element:
 
 def _element_attributes(element: Abutment | Pier | Span) -> dict[str, str]:
     if isinstance(element, Span):
+        if element.circolare:
+            # The C# wizard derives and locks the springing angle for circular
+            # spans, so serialize the same derived value instead of a stale
+            # user-entered one.
+            springing = circular_springing_angle(
+                element.L + element.S1 + element.S2, element.f
+            )
+            asx = adx = springing
+        else:
+            asx, adx = element.Asx, element.Adx
         base = dict(SPAN_DEFAULTS)
         base.update(
             {
@@ -228,13 +239,15 @@ def _element_attributes(element: Abutment | Pier | Span) -> dict[str, str]:
                 "Tt": _s(element.Tt),
                 "LawS": "Constant",
                 "dcMax": "100",
-                "Asx": _s(element.Asx),
-                "Adx": _s(element.Adx),
+                "Asx": _s(asx),
+                "Adx": _s(adx),
                 "S1": _s(element.S1),
                 "S2": _s(element.S2),
                 "Dz": _s(element.Dz),
             }
         )
+        if element.arch_layers != 1:
+            base["HiStrAArchLayers"] = _s(element.arch_layers)
         return base
 
     base = dict(ABUTMENT_DEFAULTS if isinstance(element, Abutment) else PIER_DEFAULTS)
@@ -295,6 +308,8 @@ def _element_attributes(element: Abutment | Pier | Span) -> dict[str, str]:
             }
         )
     if isinstance(element, Pier):
+        if element.shoulder_height:
+            base['HiStrAShoulderHeight'] = _s(element.shoulder_height)
         base["PierRimpimentoCriterion"] = "IntersezioneVerticale"
         base["Tr1"] = _s(element.Tr1)
         base["Tr2"] = _s(element.Tr2)

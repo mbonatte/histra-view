@@ -56,6 +56,19 @@ def _integer(value: Any, name: str, default: int = 0) -> int:
         raise UiPayloadError(f"{name} must be an integer") from exc
 
 
+def _boolean(value: Any, name: str, default: bool = False) -> bool:
+    if value is None or value == "":
+        return default
+    if isinstance(value, bool):
+        return value
+    text = str(value).strip().lower()
+    if text in ("true", "1", "yes", "circolare", "circular"):
+        return True
+    if text in ("false", "0", "no", "ellittica", "elliptical"):
+        return False
+    raise UiPayloadError(f"{name} must be true or false")
+
+
 def default_payload() -> Dict[str, Any]:
     """A valid starter bridge for the editor."""
     return {
@@ -72,6 +85,7 @@ def default_payload() -> Dict[str, Any]:
             {
                 "L": 400.0,
                 "f": 100.0,
+                "arch_layers": 1,
                 "Tb": 30.0,
                 "Tt": 25.0,
                 "Asx": DEFAULT_SPRINGING_ANGLE,
@@ -79,10 +93,14 @@ def default_payload() -> Dict[str, Any]:
                 "S1": 0.0,
                 "S2": 0.0,
                 "Dz": 0.0,
+                "circolare": False,
+                "load_position": "none",
+                "load_value": 0.01,
             },
             {
                 "L": 400.0,
                 "f": 100.0,
+                "arch_layers": 1,
                 "Tb": 30.0,
                 "Tt": 25.0,
                 "Asx": DEFAULT_SPRINGING_ANGLE,
@@ -90,6 +108,9 @@ def default_payload() -> Dict[str, Any]:
                 "S1": 0.0,
                 "S2": 0.0,
                 "Dz": 0.0,
+                "circolare": False,
+                "load_position": "none",
+                "load_value": 0.01,
             },
         ],
         "piers": [
@@ -125,54 +146,112 @@ def default_payload() -> Dict[str, Any]:
     }
 
 
+def _bridge_element_fields(raw: Dict[str, Any], prefix: str) -> Dict[str, Any]:
+    """Read the C# BridgeElement fields shared by piers and abutments."""
+    def boolean(key: str, default: bool = False) -> bool:
+        return _boolean(raw.get(key), f"{prefix}.{key}", default)
+
+    return {
+        "b1": _number(raw.get("b1"), f"{prefix}.b1", 0.0),
+        "b2": _number(raw.get("b2"), f"{prefix}.b2", 90.0),
+        "b3": _number(raw.get("b3"), f"{prefix}.b3", 0.0),
+        "w1": _number(raw.get("w1"), f"{prefix}.w1", 0.0),
+        "w2": _number(raw.get("w2"), f"{prefix}.w2", 0.0),
+        "w3": _number(raw.get("w3"), f"{prefix}.w3", 0.0),
+        "H": _number(raw.get("H"), f"{prefix}.H", 80.0),
+        "Hf": _number(raw.get("Hf"), f"{prefix}.Hf", 50.0),
+        "B1f": _number(raw.get("B1f"), f"{prefix}.B1f", 0.0),
+        "B3f": _number(raw.get("B3f"), f"{prefix}.B3f", 0.0),
+        "W1f": _number(raw.get("W1f"), f"{prefix}.W1f", 0.0),
+        "W3f": _number(raw.get("W3f"), f"{prefix}.W3f", 0.0),
+        "material_key": _integer(raw.get("material_key"), f"{prefix}.material_key", 18),
+        "material_foundation_key": _integer(
+            raw.get("material_foundation_key"), f"{prefix}.material_foundation_key", 141
+        ),
+        "vertical_alignment": str(raw.get("vertical_alignment") or "Center"),
+        "beta1": _number(raw.get("beta1"), f"{prefix}.beta1", 0.0),
+        "beta2": _number(raw.get("beta2"), f"{prefix}.beta2", 0.0),
+        "is_reinf_left": boolean("is_reinf_left"),
+        "is_reinf_right": boolean("is_reinf_right"),
+        "TreinfTopLeft": _number(raw.get("TreinfTopLeft"), f"{prefix}.TreinfTopLeft", 0.0),
+        "TreinfBotLeft": _number(raw.get("TreinfBotLeft"), f"{prefix}.TreinfBotLeft", 0.0),
+        "TreinfTopRight": _number(raw.get("TreinfTopRight"), f"{prefix}.TreinfTopRight", 0.0),
+        "TreinfBotRight": _number(raw.get("TreinfBotRight"), f"{prefix}.TreinfBotRight", 0.0),
+        "material_reinforcement_left_key": _integer(
+            raw.get("material_reinforcement_left_key"),
+            f"{prefix}.material_reinforcement_left_key", 24,
+        ),
+        "material_reinforcement_right_key": _integer(
+            raw.get("material_reinforcement_right_key"),
+            f"{prefix}.material_reinforcement_right_key", 24,
+        ),
+        "Kx": _number(raw.get("Kx"), f"{prefix}.Kx", 0.0),
+        "Ky": _number(raw.get("Ky"), f"{prefix}.Ky", 0.0),
+        "Kz": _number(raw.get("Kz"), f"{prefix}.Kz", 0.1),
+        "Krx": _number(raw.get("Krx"), f"{prefix}.Krx", 0.0),
+        "Kry": _number(raw.get("Kry"), f"{prefix}.Kry", 0.0),
+        "Krz": _number(raw.get("Krz"), f"{prefix}.Krz", 0.0),
+        "is_fix_dir_x": boolean("is_fix_dir_x", True),
+        "is_fix_dir_y": boolean("is_fix_dir_y", True),
+        "is_fix_dir_z": boolean("is_fix_dir_z", True),
+        "is_fix_rot_dir_x": boolean("is_fix_rot_dir_x", True),
+        "is_fix_rot_dir_y": boolean("is_fix_rot_dir_y", True),
+        "is_fix_rot_dir_z": boolean("is_fix_rot_dir_z", True),
+        "material_geo1_key": _integer(raw.get("material_geo1_key"), f"{prefix}.material_geo1_key", 60),
+        "material_geo2_key": _integer(raw.get("material_geo2_key"), f"{prefix}.material_geo2_key", 60),
+        "spinta_passiva_sx": boolean("spinta_passiva_sx"),
+        "spinta_passiva_dx": boolean("spinta_passiva_dx"),
+        "Hsp1": _number(raw.get("Hsp1"), f"{prefix}.Hsp1", 0.0),
+        "Hsp2": _number(raw.get("Hsp2"), f"{prefix}.Hsp2", 0.0),
+    }
+
+
 def _abutment(raw: Dict[str, Any], kind: str) -> Abutment:
-    return Abutment(
-        b2=_number(raw.get("b2"), "abutment.b2", 90.0),
-        H=_number(raw.get("H"), "abutment.H", 80.0),
-        Hf=_number(raw.get("Hf"), "abutment.Hf", 50.0),
-        B1f=_number(raw.get("B1f"), "abutment.B1f", 0.0),
-        B3f=_number(raw.get("B3f"), "abutment.B3f", 0.0),
-        W1f=_number(raw.get("W1f"), "abutment.W1f", 0.0),
-        W3f=_number(raw.get("W3f"), "abutment.W3f", 0.0),
-        w2=_number(raw.get("w2"), "abutment.w2", 0.0),
-        material_key=_integer(raw.get("material_key"), "abutment.material_key", 18),
-        material_foundation_key=_integer(raw.get("material_foundation_key"), "abutment.material_foundation_key", 141),
-        Kz=_number(raw.get("Kz"), "abutment.Kz", 0.1),
-        kind=kind,
-    )
+    fields = _bridge_element_fields(raw, "abutment")
+    return Abutment(kind=kind, **fields)
 
 
 def _pier(raw: Dict[str, Any], width: float) -> Pier:
-    return Pier(
-        b2=_number(raw.get("b2"), "pier.b2", 70.0),
-        H=_number(raw.get("H"), "pier.H", 150.0),
-        Hf=_number(raw.get("Hf"), "pier.Hf", 60.0),
-        B1f=_number(raw.get("B1f"), "pier.B1f", 0.0),
-        B3f=_number(raw.get("B3f"), "pier.B3f", 0.0),
-        W1f=_number(raw.get("W1f"), "pier.W1f", 0.0),
-        W3f=_number(raw.get("W3f"), "pier.W3f", 0.0),
-        w2=width,
-        material_key=_integer(raw.get("material_key"), "pier.material_key", 18),
-        material_foundation_key=_integer(raw.get("material_foundation_key"), "pier.material_foundation_key", 141),
-        Kz=_number(raw.get("Kz"), "pier.Kz", 0.1),
+    fields = _bridge_element_fields(raw, "pier")
+    fields.update(
+        w2=_number(raw.get("w2"), "pier.w2", width),
+        shoulder_height=_number(raw.get("shoulder_height"), "pier.shoulder_height", 0.0),
+        Tr1=_number(raw.get("Tr1"), "pier.Tr1", 0.0),
+        Tr2=_number(raw.get("Tr2"), "pier.Tr2", 0.0),
     )
+    return Pier(**fields)
 
 
 def _span(raw: Dict[str, Any], width: float) -> Span:
+    load_pos = str(raw.get("load_position") or "none").strip().lower()
+    layers = raw.get("arch_layers", 1)
+    if isinstance(layers, bool) or str(layers) not in ("1", "2", "3", "4"):
+        raise UiPayloadError("Arch thickness divisions must be an integer from 1 to 4.")
     return Span(
+        arch_layers=int(layers),
         L=_number(raw.get("L"), "span.L", 400.0),
-        W=width,
+        W=_number(raw.get("W"), "span.W", width),
         f=_number(raw.get("f"), "span.f", 100.0),
         Tb=_number(raw.get("Tb"), "span.Tb", 30.0),
         Tt=_number(raw.get("Tt"), "span.Tt", 25.0),
+        Tb1=_number(raw.get("Tb1"), "span.Tb1", 0.0),
+        Tb2=_number(raw.get("Tb2"), "span.Tb2", 100.0),
+        Treinf=_number(raw.get("Treinf"), "span.Treinf", 0.0),
         Asx=_number(raw.get("Asx"), "span.Asx", DEFAULT_SPRINGING_ANGLE),
         Adx=_number(raw.get("Adx"), "span.Adx", DEFAULT_SPRINGING_ANGLE),
         S1=_number(raw.get("S1"), "span.S1", 0.0),
         S2=_number(raw.get("S2"), "span.S2", 0.0),
         Dz=_number(raw.get("Dz"), "span.Dz", 0.0),
+        L1=_number(raw.get("L1"), "span.L1", 0.0),
+        f2=_number(raw.get("f2"), "span.f2", 0.0),
+        thickness_riempimento=_number(raw.get("thickness_riempimento"), "span.thickness_riempimento", 0.0),
+        circolare=_boolean(raw.get("circolare"), "span.circolare", False),
+        true_circular_geometry=_boolean(raw.get("circolare"), "span.circolare", False),
         material_key=_integer(raw.get("material_key"), "span.material_key", 18),
         material_pulvino_key=_integer(raw.get("material_pulvino_key"), "span.material_pulvino_key", 22),
         material_reinforcement_key=_integer(raw.get("material_reinforcement_key"), "span.material_reinforcement_key", 24),
+        load_position=load_pos,
+        load_value=_number(raw.get("load_value"), "span.load_value", 0.01),
     )
 
 
@@ -216,10 +295,14 @@ def build_spec(payload: Dict[str, Any]) -> CSharpBridgeSpec:
 
     left_raw = payload.get("left_abutment")
     right_raw = payload.get("right_abutment")
-    left = _abutment(left_raw if isinstance(left_raw, dict) else {}, "Sinistra")
-    right = _abutment(right_raw if isinstance(right_raw, dict) else {}, "Destra")
-    left.w2 = width
-    right.w2 = width
+    left_raw = left_raw if isinstance(left_raw, dict) else {}
+    right_raw = right_raw if isinstance(right_raw, dict) else {}
+    left = _abutment(left_raw, "Sinistra")
+    right = _abutment(right_raw, "Destra")
+    if not left_raw.get("w2"):
+        left.w2 = width
+    if not right_raw.get("w2"):
+        right.w2 = width
     elevation_raw = payload.get("elevation")
     if not isinstance(elevation_raw, dict):
         elevation_raw = {}
@@ -293,8 +376,21 @@ def build_preview(payload: Dict[str, Any]) -> Dict[str, Any]:
             "quads": len(mesh.quads),
             "geometry_line_restraints": len(mesh.geometry_line_restraints),
             "restraints": len(mesh.restraints),
+            "line_loads": len(getattr(mesh, "line_loads", [])),
+            "control_model_point_key": getattr(mesh, "control_model_point_key", None),
             "bounds": _bounds(mesh.nodes),
         },
+        "line_loads": [
+            {
+                "key": ll.key,
+                "element_key": ll.element_key,
+                "point1": [round(c, 6) for c in ll.point1],
+                "point2": [round(c, 6) for c in ll.point2],
+                "load_value": ll.load_value,
+            }
+            for ll in getattr(mesh, "line_loads", [])
+        ],
+        "control_model_point_key": getattr(mesh, "control_model_point_key", None),
         "nodes": [
             [key, round(point.x, 6), round(point.y, 6), round(point.z, 6)]
             for key, point in sorted(mesh.nodes.items())

@@ -74,18 +74,20 @@ ANALYSIS_OVERRIDES: Dict[str, Dict[str, str]] = {
         "InitialAnalysisKey": "1",
         "LoadCombinationKey": "15",
         "LoadFunctionKey": "22",
-        "ConvergenceTolerance": "0.000500000023748726",
+        "ConvergenceTolerance": "0.01",
         "MaxIterations": "10000",
-        "ForceControl": "false",
-        "TargetDisplacement": "0.0500000007450581",
+        "ForceControl": "true",
+        "Mult": "1",
+        "TargetDisplacement": "0.24",
         "Method": "StandardInitialInterpolatedLineSearch",
-        "Dr2": "1",
+        "Dr2": "0.02",
         "DesiredIterations": "200",
         "CheckSecantStiffness": "false",
-        "MaxArcLengthRay": "25",
-        "ArcLengthProcedure": "OnlyModelPointsSelected",
-        "IntegrationMethod": "ArcLength",
-        "maxU": "1",
+        "MaxArcLengthRay": "10",
+        "ArcLengthProcedure": "OnlyControlPoint",
+        "IntegrationMethod": "LoadControl",
+        "UpdateDr2": "true",
+        "maxU": "10",
     },
     "scour_1": {
         "Key": "23",
@@ -259,9 +261,6 @@ SCOUR_ANALYSES: Tuple[str, ...] = (
     "Modal_1",
     "LiveLoad_4",
 )
-# The three stages executed by histra-job-runner.  They keep the strict
-# ForceMoment equilibrium criterion required by the pipeline.
-STRICT_EQUILIBRIUM_ANALYSES = frozenset({"Vert", "scour_1", "scour_2"})
 
 # Native ``LoadCondition`` rows.
 LOAD_CONDITIONS: Tuple[Dict[str, str], ...] = (
@@ -325,7 +324,7 @@ LOAD_COMBINATIONS: Tuple[Tuple[str, str, str, Sequence[Sequence[Tuple[str, str]]
 _LOAD_FUNCTION_DISCRETISATION: Tuple[str, ...] = (
     "0.2", "0.2", "0.2", "0.2", "0.2", "0.2", "0.2", "0.2",
     "0.01", "0.01", "0.05", "0.05", "0.1", "0.2", "0.2", "0.2",
-    "0.2", "0.01", "0.01", "0.05", "0.05", "0.2", "0.2", "0.2",
+    "0.2", "0.01", "0.01", "0.05", "0.05", "0.05", "0.2", "0.2",
     "0.2", "0.2", "0.2", "0.2", "0.2", "0.1", "0.1", "0.2",
 )
 
@@ -341,10 +340,11 @@ def analysis_specs(
     include_scour_analyses: bool = True,
     *,
     model_point_keys: Iterable[int] = (),
+    control_model_point_key: int | None = None,
 ) -> List[Dict[str, Any]]:
     """Return the native analysis attributes for the generated model."""
     points = [str(key) for key in model_point_keys]
-    master = points[0] if points else "1"
+    master = str(control_model_point_key) if control_model_point_key is not None else (points[0] if points else "1")
     specs: List[Dict[str, Any]] = []
     names = _analysis_names(include_scour_analyses)
     modal_key = next(
@@ -356,8 +356,6 @@ def analysis_specs(
         attributes.update(ANALYSIS_OVERRIDES[name])
         attributes["MasterPoint"] = master
         attributes["PushModal_ModalAnalysisKey"] = modal_key
-        if name in STRICT_EQUILIBRIUM_ANALYSES:
-            attributes["AdapticConvergenceCriteria"] = "ForceMoment"
         specs.append({"name": name, "attributes": attributes})
     return specs
 
@@ -424,10 +422,14 @@ def write_load_functions(root: etree._Element) -> None:
 
 
 def build_analysis(
-    spec: Dict[str, Any], *, model_point_keys: Iterable[int] = ()
+    spec: Dict[str, Any],
+    *,
+    model_point_keys: Iterable[int] = (),
+    control_model_point_key: int | None = None,
 ) -> etree._Element:
     """Build one analysis element with its native child containers."""
     points = [str(key) for key in model_point_keys]
+    control_point = str(control_model_point_key) if control_model_point_key is not None else (points[0] if points else "1")
     analysis = etree.Element("Analysis", attrib=dict(spec["attributes"]))
     key = analysis.get("Key", "0")
 
@@ -463,7 +465,7 @@ def build_analysis(
             ParentKey=key,
             Phase="Force",
             PhaseName="Force",
-            ModelPointKey=points[0],
+            ModelPointKey=control_point,
             ModelPointName="-",
             Direction="z",
             DirectionName="-",
@@ -480,10 +482,19 @@ def write_analyses(
     root: etree._Element,
     *,
     model_point_keys: Iterable[int] = (),
+    control_model_point_key: int | None = None,
     include_scour_analyses: bool = True,
 ) -> None:
     points = [str(key) for key in model_point_keys]
     for spec in analysis_specs(
-        include_scour_analyses, model_point_keys=points
+        include_scour_analyses,
+        model_point_keys=points,
+        control_model_point_key=control_model_point_key,
     ):
-        root.append(build_analysis(spec, model_point_keys=points))
+        root.append(
+            build_analysis(
+                spec,
+                model_point_keys=points,
+                control_model_point_key=control_model_point_key,
+            )
+        )

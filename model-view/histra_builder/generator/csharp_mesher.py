@@ -7,6 +7,9 @@ This is the first verified slice of ``BridgeMesher.AddBridge1``:
 * ``AddMeshArco1`` arch ring and springing pulvino
 * ``AddSpallePile`` pier shaft generation for ``Hf = 0``
 
+The native C# mesher always builds the elliptical arch.  The separate
+``Span.true_circular_geometry`` option selects the viewer's circular extension.
+
 It intentionally works with :class:`CSharpBridgeSpec` instead of the previous
 generic ``BridgeSpec`` so every C# dimension has a real home.  Later tasks add
 foundation/GLR generation, multi-layer elevations, inclination/slope/curvature
@@ -14,15 +17,18 @@ and the native HRX writer.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 import math
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 from .csharp_arch import (
-    EllipseParams,
-    get_intradosso_arch_ellipse,
-    get_points_in_ellipse_equi_spaced,
+    ArchParams,
+    arch_extrados_springing,
+    arch_intrados_point,
+    arch_offset_inward,
+    get_points_in_arch_equi_spaced,
     half_arch_params,
+    half_arch_params_circular,
 )
 from .geometry import Point3D, compute_quad_kinematics, signed_area_xz
 from .mesher import GeneratedQuad, MonitoringPoint, PierMetadata
@@ -38,6 +44,7 @@ from .csharp_model import (
     BridgeDefinition,
     CSharpBridgeSpec,
     Elevations,
+    GeneratedLineLoad,
     Pier,
     Span,
 )
@@ -134,13 +141,19 @@ class CSharpBridgeMesh:
     piers: List[PierMetadata]
     deck_z: float
     total_length: float
+    line_loads: List[GeneratedLineLoad] = field(default_factory=list)
+    control_model_point_key: Optional[int] = None
 
 
 class CSharpMesher:
     """Port of the straight ``BridgeMesher.AddBridge1`` path."""
 
-    def __init__(self, spec: CSharpBridgeSpec) -> None:
+    def __init__(self, spec: CSharpBridgeSpec, *, legacy_backfill: bool = False,
+                 previous_backfill: bool = False) -> None:
         self.spec = spec
+        # Used only to recognize files generated before backfill clipping was fixed.
+        self._legacy_backfill = legacy_backfill
+        self._previous_backfill = previous_backfill
         self.nodes: Dict[int, Point3D] = {}
         self._node_index: Dict[Tuple[float, float, float], int] = {}
         self.quads: Dict[int, GeneratedQuad] = {}
@@ -158,6 +171,11 @@ class CSharpMesher:
         self._node_cs: List[GeneratedNodeC] = []
         self._piers: List[PierMetadata] = []
         self._monitoring_points: List[MonitoringPoint] = []
+        self._line_loads: List[GeneratedLineLoad] = []
+        self._control_model_point_key: Optional[int] = None
+        # Optional (top Y, bottom Y, top Z, bottom Z, top width, bottom width).
+        self._strip_transform = None
+        self._quad_transforms = {}
 
     # -- geometric primitives -------------------------------------------------
 
@@ -194,6 +212,8 @@ class CSharpMesher:
             group=group,
         )
         self.quads[key] = quad
+        if self._strip_transform is not None:
+            self._quad_transforms[key] = self._strip_transform
         return quad
 
     # -- C# WizardBridge geometry -------------------------------------------
@@ -350,7 +370,7 @@ class CSharpMesher:
     def _add_semi_arch(
         self,
         span: Span,
-        params: EllipseParams,
+        params: ArchParams,
         x1: float,
         x2: float,
         y: float,
@@ -363,33 +383,60 @@ class CSharpMesher:
         z1 = self.spec.elevations.get_z(x1, 1, hmuro)
         z2 = self.spec.elevations.get_z(x2, 1, hmuro)
 
-        if is_right:
-            extrados = Point3D(
-                params.center[0] + params.rx * math.cos(params.theta0),
-                y,
-                params.center[2] + params.rz * math.sin(params.theta0),
-            )
-            edge_x = x2
-            ext_edge = Point3D(edge_x, y, extrados.z)
-        else:
-            extrados = Point3D(
-                params.center[0] + params.rx * math.cos(math.pi - params.theta0),
-                y,
-                params.center[2] + params.rz * math.sin(math.pi - params.theta0),
-            )
-            edge_x = x1
-            ext_edge = Point3D(edge_x, y, extrados.z)
+        springing = arch_extrados_springing(params, is_right)
+        extrados = Point3D(springing[0], y, springing[2])
+        edge_x = x2 if is_right else x1
+        ext_edge = Point3D(edge_x, y, extrados.z)
 
         crown = Point3D(params.crown_point[0], y, params.crown_point[2])
-        extrados_points = get_points_in_ellipse_equi_spaced(
+        extrados_points = get_points_in_arch_equi_spaced(
             (extrados.x, extrados.y, extrados.z),
             (crown.x, crown.y, crown.z),
-            params.rx,
-            params.rz,
-            params.center,
+            params,
             self.spec.definition.nl,
         )
         extrados_points = [Point3D(p[0], y, p[2]) for p in extrados_points]
+
+        if not self._legacy_backfill and any(point.z > self.spec.elevations.get_z(point.x, 1, hmuro) + 1e-6 for point in extrados_points):
+            if (not self._previous_backfill and not params.circular and len(self.spec.elevations.elevations) == 1
+                    and self.spec.elevations.get_z(edge_x, 1, hmuro) > extrados.z + 1e-6
+                    and self.spec.elevations.get_z(edge_x, 2, hmuro) >= crown.z + 1e-6):
+                return self._add_single_crossing_backfill(
+                    params, extrados, crown, edge_x, heights, strip_width, hmuro,
+                    fill_material_override, is_right)
+            if any(self.spec.elevations.generates_layer(layer) for layer in range(1, heights + 1)):
+                self._add_clipped_backfill(extrados_points, edge_x, heights, strip_width, hmuro, fill_material_override)
+            if self._previous_backfill:
+                return extrados_points, 1
+            # AddMesh1's M is the transverse subdivision of the first
+            # Colonne; the adjacent support reuses it. Intersect the native
+            # ellipse with the first active elevation rather than guessing
+            # from the discretized polyline.
+            if not params.circular:
+                for layer in range(1, heights + 1):
+                    z_edge = self.spec.elevations.get_z(edge_x, layer, hmuro)
+                    if z_edge <= extrados.z + 1e-6:
+                        continue
+                    z_crown = self.spec.elevations.get_z(crown.x, layer, hmuro)
+                    if z_crown >= crown.z - 1e-6:
+                        break
+                    slope = (z_crown - z_edge) / (crown.x - edge_x)
+                    cx, _, cz = params.center
+                    offset = z_edge + slope * (cx - edge_x) - cz
+                    a = 1 / params.rx**2 + slope**2 / params.rz**2
+                    b = 2 * slope * offset / params.rz**2
+                    c = offset**2 / params.rz**2 - 1
+                    disc = b*b - 4*a*c
+                    if disc < 0:
+                        break
+                    roots = [cx + (-b + sign * math.sqrt(disc)) / (2*a) for sign in (-1, 1)]
+                    candidates = [x for x in roots if min(edge_x, crown.x)-1e-6 <= x <= max(edge_x, crown.x)+1e-6]
+                    if not candidates:
+                        break
+                    intersection = min(candidates, key=lambda x: abs(x - extrados.x))
+                    distance = max(abs(extrados.x - edge_x), abs(intersection - edge_x))
+                    return extrados_points, max(1, _arrotonda(distance / self.spec.definition.nl))
+            return extrados_points, 1
 
         fill_material, fill_material2, row_index = self.spec.elevations.get_material_key(1)
         if fill_material_override > 0:
@@ -466,7 +513,7 @@ class CSharpMesher:
                 subdivisions = n_side if is_side else 1
                 self._add_mesh3(
                     points,
-                    1,
+                    1 if self._legacy_backfill else max(1, _arrotonda(max(top_left-bottom_left, top_right-bottom_right) / self.spec.definition.nl)),
                     subdivisions,
                     layer_material,
                     strip_width,
@@ -480,12 +527,158 @@ class CSharpMesher:
         # non-curved AddMesh4 branch each colonna is created with N=1.
         return extrados_points, 1
 
+    def _add_single_crossing_backfill(self, params, spring, crown, edge_x, heights,
+                                      width, hmuro, override, is_right):
+        """C# AddSemiArco1 case: first layer crosses, second clears the arch."""
+        elevations = self.spec.elevations
+        z1 = elevations.get_z(edge_x, 1, hmuro)
+        ratio = (z1 - params.center[2]) / params.rz
+        if not -1 < ratio < 1:
+            raise ValueError('Invalid layer intersection with arch ellipse')
+        direction = 1 if spring.x > params.center[0] else -1
+        cross = Point3D(params.center[0] + direction * params.rx * math.sqrt(1 - ratio**2), spring.y, z1)
+        def arc(a, b):
+            return [Point3D(*p) for p in get_points_in_arch_equi_spaced(
+                _xyz(a), _xyz(b), params, self.spec.definition.nl)]
+        first_arc, second_arc = arc(spring, cross), arc(cross, crown)
+        side_start, side_end = Point3D(edge_x, spring.y, spring.z), Point3D(edge_x, spring.y, z1)
+        subdivisions = max(1, _arrotonda(max(_dist(spring, side_start), _dist(cross, side_end)) / self.spec.definition.nl))
+        first, second, row_index = elevations.get_material_key(1)
+        if override > 0:
+            first = second = override
+        if elevations.generates_layer(1):
+            dz = cross.z - spring.z
+            for index, (a, b) in enumerate(zip(first_arc, first_arc[1:])):
+                side_a = _lerp(side_start, side_end, (a.z - spring.z) / dz)
+                side_b = _lerp(side_start, side_end, (b.z - spring.z) / dz)
+                points = [a, side_a, side_b, b] if is_right else [side_a, a, b, side_b]
+                material = first if index < row_index else second
+                self._add_mesh3(points, 1, subdivisions, material, width, is_right)
+        first, second, row_index = elevations.get_material_key(2)
+        if override > 0:
+            first = second = override
+        upper = [Point3D(cross.x, spring.y, elevations.get_z(cross.x, 2, hmuro)),
+                 Point3D(crown.x, spring.y, elevations.get_z(crown.x, 2, hmuro))]
+        _, rows = self._add_mesh4(second_arc, upper, first, width, is_right,
+                                  elevations.generates_layer(2), second, row_index)
+        if elevations.generates_layer(2):
+            left, right = sorted((edge_x, cross.x))
+            points = [Point3D(left, spring.y, z1), Point3D(right, spring.y, z1),
+                      Point3D(right, spring.y, elevations.get_z(right, 2, hmuro)),
+                      Point3D(left, spring.y, elevations.get_z(left, 2, hmuro))]
+            self._add_mesh3(points, rows, subdivisions, first, width, is_right,
+                            material_key2=second, row_index_material=row_index)
+        columns = [(edge_x, cross.x, subdivisions)] + [(a.x, b.x, 1) for a, b in zip(second_arc, second_arc[1:])]
+        for layer in range(3, heights + 1):
+            if not elevations.generates_layer(layer):
+                continue
+            if elevations.get_z(edge_x, layer, hmuro) <= elevations.get_z(edge_x, layer-1, hmuro) + 1e-6:
+                continue
+            first, second, row_index = elevations.get_material_key(layer)
+            if override > 0:
+                first = second = override
+            rows = max(1, _arrotonda((elevations.get_z(edge_x, layer, hmuro) -
+                                      elevations.get_z(edge_x, layer-1, hmuro)) / self.spec.definition.nl))
+            for a, b, count in columns:
+                left, right = sorted((a, b))
+                points = [Point3D(left, spring.y, elevations.get_z(left, layer-1, hmuro)),
+                          Point3D(right, spring.y, elevations.get_z(right, layer-1, hmuro)),
+                          Point3D(right, spring.y, elevations.get_z(right, layer, hmuro)),
+                          Point3D(left, spring.y, elevations.get_z(left, layer, hmuro))]
+                self._add_mesh3(points, rows, count, first, width, is_right,
+                                material_key2=second, row_index_material=row_index)
+        return first_arc + second_arc[1:], subdivisions
+
+    def _add_clipped_backfill(self, extrados, edge_x, heights, strip_width, hmuro, material_override):
+        """Mesh horizontal bands above the piecewise-linear arch extrados.
+
+        This quad-only transition differs from the C# mesher's Vertex-based
+        transitions. Extra quad edges are allowed to terminate on arch faces;
+        contact preparation matches their geometric overlap.
+        """
+        elevations = self.spec.elevations
+        if self.spec.definition.nl <= 0:
+            raise ValueError('Mesh length must be positive')
+        if len(elevations.elevations) != 1:
+            raise NotImplementedError('Backfill crossing an arch with variable elevations is not yet supported')
+        dx = [b.x-a.x for a, b in zip(extrados, extrados[1:])]
+        if any(value > 1e-6 for value in dx) and any(value < -1e-6 for value in dx):
+            raise NotImplementedError('Backfill around an overhanging arch is not yet supported')
+        section = elevations.elevations[0]
+        if min(section.H1, section.H2, section.H3) < 0:
+            raise ValueError('Backfill layer heights must not be negative')
+        profile = list(extrados)
+        if abs(edge_x - extrados[0].x) > 1e-6:
+            profile.append(Point3D(edge_x, extrados[0].y, extrados[0].z))
+        profile.sort(key=lambda point: point.x)
+        levels = [elevations.get_z(0, layer, hmuro) for layer in range(1, heights + 1)]
+        for left, right in zip(profile, profile[1:]):
+            if right.x - left.x < 1e-6:
+                continue
+            cuts = [0.0, 1.0]
+            if abs(right.z - left.z) > 1e-9:
+                for level in levels:
+                    t = (level - left.z) / (right.z - left.z)
+                    if 1e-7 < t < 1.0 - 1e-7:
+                        cuts.append(t)
+            cuts = sorted(set(cuts))
+            for start, end in zip(cuts, cuts[1:]):
+                a, b = _lerp(left, right, start), _lerp(left, right, end)
+                self._add_clipped_column(a, b, levels, strip_width, material_override)
+
+    def _add_clipped_column(self, left, right, levels, strip_width, material_override):
+        lower = 0.0
+        for layer, upper in enumerate(levels, start=1):
+            if upper < lower - 1e-8:
+                raise ValueError('Backfill layer heights must not be negative')
+            bottom_left, bottom_right = max(left.z, lower), max(right.z, lower)
+            gap_left, gap_right = max(0.0, upper - bottom_left), max(0.0, upper - bottom_right)
+            if max(gap_left, gap_right) > 1e-5 and self.spec.elevations.generates_layer(layer):
+                first, second, row_index = self.spec.elevations.get_material_key(layer)
+                if material_override > 0:
+                    first = second = material_override
+                rows = max(1, _arrotonda(max(gap_left, gap_right) / self.spec.definition.nl))
+                for row in range(rows):
+                    lo, hi = row / rows, (row + 1) / rows
+                    points = [
+                        Point3D(left.x, left.y, bottom_left + gap_left*lo),
+                        Point3D(right.x, right.y, bottom_right + gap_right*lo),
+                        Point3D(right.x, right.y, bottom_right + gap_right*hi),
+                        Point3D(left.x, left.y, bottom_left + gap_left*hi),
+                    ]
+                    material = second if row >= row_index else first
+                    self._add_transition_quad(points, material, strip_width)
+            lower = upper
+
+    def _add_transition_quad(self, points, material, thickness):
+        """Split a triangular transition into three non-degenerate quads."""
+        def emit(quad):
+            rounded = [(round(p.x, 4), round(p.y, 4), round(p.z, 4)) for p in quad]
+            if len(set(rounded)) != 4:
+                raise ValueError('Backfill transition is too small for the mesh coordinate precision')
+            self._quad(quad, material, thickness, 'CSharp_Fill')
+        vertices = []
+        for point in points:
+            if not vertices or _dist(point, vertices[-1]) > 1e-5:
+                vertices.append(point)
+        if len(vertices) > 1 and _dist(vertices[0], vertices[-1]) <= 1e-5:
+            vertices.pop()
+        if len(vertices) == 4:
+            emit(vertices)
+        elif len(vertices) == 3:
+            centre = Point3D(sum(p.x for p in vertices)/3, vertices[0].y, sum(p.z for p in vertices)/3)
+            mid = [_lerp(vertices[i], vertices[(i+1) % 3], .5) for i in range(3)]
+            for i in range(3):
+                emit([vertices[i], mid[i], centre, mid[(i-1) % 3]])
+        elif len(vertices) > 0:
+            raise ValueError('Backfill transition produces a degenerate element')
+
     # -- AddMeshArco1 --------------------------------------------------------
 
     def _add_arch_ring(
         self,
         span: Span,
-        params: EllipseParams,
+        params: ArchParams,
         extrados_points: Sequence[Point3D],
         x1: float,
         x2: float,
@@ -495,27 +688,16 @@ class CSharpMesher:
         foundation_owner: Optional[int] = None,
     ) -> None:
         lintradosso = span.L + span.S1 + span.S2
+        springing_angle = (
+            params.theta0
+            if params.circular
+            else math.radians(span.Adx)
+        )
         for index in range(len(extrados_points) - 1):
             ext0 = extrados_points[index]
             ext1 = extrados_points[index + 1]
-            int0 = get_intradosso_arch_ellipse(
-                (ext0.x, ext0.y, ext0.z),
-                params.center,
-                params.rx,
-                params.rz,
-                span.Tb,
-                span.Tt,
-                params.theta0,
-            )
-            int1 = get_intradosso_arch_ellipse(
-                (ext1.x, ext1.y, ext1.z),
-                params.center,
-                params.rx,
-                params.rz,
-                span.Tb,
-                span.Tt,
-                params.theta0,
-            )
+            int0 = arch_intrados_point(params, (ext0.x, ext0.y, ext0.z))
+            int1 = arch_intrados_point(params, (ext1.x, ext1.y, ext1.z))
             int0 = Point3D(int0[0], y, int0[2])
             int1 = Point3D(int1[0], y, int1[2])
             if index == 0:
@@ -524,21 +706,20 @@ class CSharpMesher:
                 else:
                     int0 = Point3D(params.center[0] - lintradosso / 2.0, y, 0.0)
 
-            if is_right:
-                points = [int0, ext0, ext1, int1]
-            else:
-                points = [ext0, int0, int1, ext1]
-            self._quad(points, span.material_key, strip_width, "CSharp_Arch")
+            if type(span.arch_layers) is not int or not 1 <= span.arch_layers <= 4:
+                raise ValueError("Arch thickness divisions must be an integer from 1 to 4.")
+            for layer in range(span.arch_layers):
+                inner0 = int0 if layer == 0 else _lerp(int0, ext0, layer / span.arch_layers)
+                inner1 = int1 if layer == 0 else _lerp(int1, ext1, layer / span.arch_layers)
+                outer0 = ext0 if layer + 1 == span.arch_layers else _lerp(int0, ext0, (layer + 1) / span.arch_layers)
+                outer1 = ext1 if layer + 1 == span.arch_layers else _lerp(int1, ext1, (layer + 1) / span.arch_layers)
+                points = ([inner0, outer0, outer1, inner1] if is_right else
+                          [outer0, inner0, inner1, outer1])
+                self._quad(points, span.material_key, strip_width, "CSharp_Arch")
 
             if span.Treinf > 0.0:
-                inner0 = get_intradosso_arch_ellipse(
-                    (int0.x, int0.y, int0.z), params.center, params.rx, params.rz,
-                    span.Treinf, span.Treinf, params.theta0,
-                )
-                inner1 = get_intradosso_arch_ellipse(
-                    (int1.x, int1.y, int1.z), params.center, params.rx, params.rz,
-                    span.Treinf, span.Treinf, params.theta0,
-                )
+                inner0 = arch_offset_inward(params, (int0.x, int0.y, int0.z), span.Treinf)
+                inner1 = arch_offset_inward(params, (int1.x, int1.y, int1.z), span.Treinf)
                 inner0 = Point3D(inner0[0], y, inner0[2])
                 inner1 = Point3D(inner1[0], y, inner1[2])
                 reinforcement = ([inner0, int0, int1, inner1] if is_right else
@@ -546,7 +727,7 @@ class CSharpMesher:
                 self._quad(reinforcement, span.material_reinforcement_key,
                            strip_width, "CSharp_ArchReinforcement")
 
-            if index == 0 and math.radians(span.Adx) > 1.0e-4:
+            if index == 0 and springing_angle > 1.0e-4:
                 # The native pulvino is constructed from the last arch quad,
                 # which is the reinforcement quad when one is present.
                 if span.Treinf > 0.0:
@@ -614,25 +795,32 @@ class CSharpMesher:
             x2 = abscissa[index + 1]
             is_right = bool(index % 2)
             vector_x = x1 if is_right else x2
-            params = half_arch_params(
-                vector_x,
-                span.f,
-                span.L,
-                span.Tb,
-                span.Tt,
-                span.Adx,
-                span.S1,
-                span.S2,
-                span.Dz,
-            )
-            params = EllipseParams(
+            if span.true_circular_geometry:
+                params = half_arch_params_circular(
+                    vector_x,
+                    span.f,
+                    span.L,
+                    span.Tb,
+                    span.Tt,
+                    span.S1,
+                    span.S2,
+                    span.Dz,
+                )
+            else:
+                params = half_arch_params(
+                    vector_x,
+                    span.f,
+                    span.L,
+                    span.Tb,
+                    span.Tt,
+                    span.Adx,
+                    span.S1,
+                    span.S2,
+                    span.Dz,
+                )
+            params = replace(
+                params,
                 center=(params.center[0], y, params.center[2]),
-                rx=params.rx,
-                rz=params.rz,
-                theta0=params.theta0,
-                intrados_rx=params.intrados_rx,
-                intrados_rz=params.intrados_rz,
-                springing_drop=params.springing_drop,
                 crown_point=(params.crown_point[0], y, params.crown_point[2]),
             )
             extrados_points, columns = self._add_semi_arch(
@@ -668,8 +856,8 @@ class CSharpMesher:
             if not isinstance(element, (Abutment, Pier)):
                 continue
             centre = self._element_origin(element)
-            for corsia, y in zip(self.spec.definition.corsias, centres):
-                thickness = corsia.width
+            for y, thickness, transform in self._support_rows(element, centres):
+                self._strip_transform = transform
                 top = [centre + value for value in discretize_top_pileb2(self.spec.elements, owner_index)]
                 bottom = [centre + value for value in discretize_bottom_pileb2(self.spec.elements, owner_index)]
                 columns = len(top) - 1
@@ -788,12 +976,125 @@ class CSharpMesher:
                                 thickness,
                             )
 
+            self._strip_transform = None
+            cap_half = self.spec.definition.width_top_pile / 2
+            if element.vertical_alignment == 'Top':
+                left_edge, right_edge = cap_half, cap_half + element.w2 - 2 * cap_half
+            elif element.vertical_alignment == 'Bottom':
+                left_edge, right_edge = cap_half + element.w2 - 2 * cap_half, cap_half
+            else:
+                left_edge = right_edge = element.w2 / 2
             if element.W1f > 0.0:
-                wing_y = element.w1 + element.w2 / 2.0 + element.W1f / 2.0
+                wing_y = element.w1 + left_edge + element.W1f / 2.0
                 self._add_foundation_wing(element, owner_index, wing_y, element.W1f)
             if element.W3f > 0.0:
-                wing_y = -element.w3 - element.w2 / 2.0 - element.W3f / 2.0
+                wing_y = -element.w3 - right_edge - element.W3f / 2.0
                 self._add_foundation_wing(element, owner_index, wing_y, element.W3f)
+            if isinstance(element, Pier) and element.shoulder_height:
+                self._add_pier_shoulders(element, owner_index, centres)
+
+    def _add_pier_shoulders(self, pier: Pier, owner_index: int, centres: Sequence[float]) -> None:
+        """Rectangular masonry approximation on the two transverse pier extensions."""
+        height = pier.shoulder_height
+        definition = self.spec.definition
+        if not math.isfinite(height) or height < 0:
+            raise ValueError('Rectangular shoulder height must be nonnegative and finite')
+        if (pier.vertical_alignment != 'Center' or pier.w1 or pier.w3 or
+                abs(definition.width_top_pile - definition.width) > 1e-6 or
+                definition.inclination_angle or definition.slope):
+            raise NotImplementedError('Rectangular shoulders currently require a straight, level bridge and a centered, untapered pier')
+        if pier.w2 <= definition.width + 1e-6:
+            raise ValueError('Rectangular shoulders require the pier to be wider than the bridge')
+        if height > self._deck_z + 1e-6:
+            raise ValueError('Rectangular shoulder height cannot exceed the deck height')
+        rows = max(1, _arrotonda(height / definition.nl))
+        centre = self._element_origin(pier)
+        points_x = [centre + x for x in discretize_top_pileb2(self.spec.elements, owner_index)]
+        edge = definition.width / 2
+        for y, width in self._support_strips(pier, centres):
+            if abs(y) - width / 2 < edge - 1e-6:
+                continue
+            for left, right in zip(points_x, points_x[1:]):
+                columns = max(1, _arrotonda((right-left) / definition.nl))
+                self._add_mesh3([Point3D(left, y, 0), Point3D(right, y, 0),
+                                 Point3D(right, y, height), Point3D(left, y, height)],
+                                rows, columns, pier.material_key, width, False,
+                                'CSharp_PierShoulder')
+
+    def _support_rows(self, element, centres):
+        """C# AddSpallePile strip locations, before the skew transform."""
+        definition = self.spec.definition
+        special = (abs(definition.width_top_pile - definition.width) > 1e-6
+                   or element.w1 or element.w3 or element.vertical_alignment != 'Center')
+        if not special:
+            return [(y, width, None) for y, width in self._support_strips(element, centres)]
+        widths = [strip.width for strip in definition.corsias]
+        if not widths:
+            return []
+        cap_width = definition.width_top_pile
+        cap = list(widths)
+        cap[0] += (cap_width - definition.width) / 2
+        cap[-1] += (cap_width - definition.width) / 2
+        delta = element.w2 - cap_width
+        if element.vertical_alignment == 'Center':
+            plus = minus = delta / 2
+            top_edge = element.w2 / 2
+        elif element.vertical_alignment == 'Top':
+            plus, minus = 0, delta
+            top_edge = cap_width / 2
+        elif element.vertical_alignment == 'Bottom':
+            plus, minus = delta, 0
+            top_edge = cap_width / 2 + delta
+        else:
+            raise NotImplementedError('Unsupported support vertical alignment')
+        bottom_edge = top_edge + element.w1
+        if element.H <= 0 and (element.w1 or element.w3):
+            raise NotImplementedError('Transversely tapered supports require positive height')
+        rows = []
+        for index, base in enumerate(cap):
+            top_width = base + (plus if index == 0 else 0) + (minus if index == len(cap)-1 else 0)
+            bottom_width = top_width + (element.w1 if index == 0 else 0) + (element.w3 if index == len(cap)-1 else 0)
+            if top_width <= 0 or bottom_width <= 0:
+                raise ValueError('Support strip width must be positive')
+            top_y = top_edge - top_width / 2
+            bottom_y = bottom_edge - bottom_width / 2
+            rows.append((bottom_y, bottom_width,
+                         (top_y, bottom_y, 0.0, -element.H, top_width, bottom_width)))
+            top_edge -= top_width
+            bottom_edge -= bottom_width
+        return rows
+
+    def _support_strips(self, element: Abutment | Pier, centres: Sequence[float]) -> list[tuple[float, float]]:
+        """Keep deck strips and subdivide any centered transverse extension."""
+        widths = [corsia.width for corsia in self.spec.definition.corsias]
+        difference = element.w2 - sum(widths)
+        if abs(difference) <= 1e-6:
+            return list(zip(centres, widths))
+        if element.vertical_alignment != 'Center' or element.w1 or element.w3:
+            raise NotImplementedError('Non-centered or transversely tapered support widths are not yet supported')
+        if difference > 0:
+            if self.spec.definition.nl <= 0:
+                raise ValueError('Mesh length must be positive')
+            extension = difference / 2.0
+            count = max(1, math.ceil(extension / self.spec.definition.nl))
+            thickness = extension / count
+            edge = sum(widths) / 2.0
+            positive = [(edge + (i + 0.5) * thickness, thickness) for i in reversed(range(count))]
+            negative = [(-edge - (i + 0.5) * thickness, thickness) for i in range(count)]
+            return positive + list(zip(centres, widths)) + negative
+        if len(widths) == 1:
+            if element.w2 <= 0:
+                raise ValueError('Support transverse width must be positive')
+            return [(centres[0], element.w2)]
+        adjustment = difference / 2.0
+        widths[0] += adjustment
+        widths[-1] += adjustment
+        if min(widths) <= 0:
+            raise NotImplementedError('Support width is too narrow for the current deck strips')
+        shifted = list(centres)
+        shifted[0] += adjustment / 2.0
+        shifted[-1] -= adjustment / 2.0
+        return list(zip(shifted, widths))
 
     def _add_foundation_wing(
         self,
@@ -880,6 +1181,218 @@ class CSharpMesher:
             )
         )
 
+    # -- structural monitoring points ----------------------------------------
+
+    def _select_structural_points(
+        self,
+        abscissa: Sequence[float],
+        centres: Sequence[float],
+    ) -> List[Tuple[int, str]]:
+        """Pick arch-crown and pier top/bottom nodes on the outer/central strips.
+
+        Returns ``(node_key, label)`` pairs in a stable order:
+
+        * for every span: the arch-crown intrados node on the -Y, central and
+          +Y strips;
+        * for every pier: the shaft top (Z=0) and shaft base (Z=-H) nodes on
+          the -Y and +Y strips.
+
+        Quads lie in XZ planes at their strip centre, so "-Y"/"+Y" are the
+        outermost strips and "0Y" is the strip whose centre is closest to
+        Y=0 (with an even strip count no strip lies exactly on Y=0).
+        """
+        if not centres:
+            return []
+        tol = 1.0e-6
+        y_neg = min(centres)
+        y_pos = max(centres)
+        y_mid = min(centres, key=lambda value: (abs(value), value))
+
+        def group_nodes(groups: Tuple[str, ...]) -> Dict[int, Point3D]:
+            keys = {
+                key
+                for quad in self.quads.values()
+                if quad.group in groups
+                for key in quad.node_keys
+            }
+            return {key: self.nodes[key] for key in keys}
+
+        def pick(candidates: Dict[int, Point3D], *, y: float, x: float,
+                 z: Optional[float] = None, lowest: bool = False) -> Optional[int]:
+            pool = [
+                (key, point) for key, point in candidates.items()
+                if abs(point.y - y) <= tol
+                and (z is None or abs(point.z - z) <= 1.0e-4)
+            ]
+            if not pool:
+                return None
+            dx_min = min(abs(point.x - x) for _, point in pool)
+            pool = [(key, point) for key, point in pool if abs(abs(point.x - x) - dx_min) <= 1.0e-4]
+            if lowest:
+                return min(pool, key=lambda item: (item[1].z, item[1].x))[0]
+            return min(pool, key=lambda item: item[1].x)[0]
+
+        selected: List[Tuple[int, str]] = []
+        arch_nodes = group_nodes(("CSharp_Arch", "CSharp_ArchReinforcement"))
+        span_centres: List[float] = []
+        for element, x_value in zip(self.spec.elements, abscissa):
+            if isinstance(element, Span):
+                span_centres.append(x_value)
+        for span_index, x_crown in enumerate(span_centres, start=1):
+            for label, y in (("-Y", y_neg), ("0Y", y_mid), ("+Y", y_pos)):
+                key = pick(arch_nodes, y=y, x=x_crown, lowest=True)
+                if key is not None:
+                    selected.append((key, f"Span {span_index} arch crown {label}"))
+
+        pier_nodes = group_nodes(("CSharp_Pier",))
+        for pier_index, pier in enumerate(self.spec.piers, start=1):
+            if pier.H <= 0.0:
+                continue
+            x_pier = self._element_origin(pier)
+            for level, z in (("top", 0.0), ("bottom", -pier.H)):
+                for label, y in (("-Y", y_neg), ("+Y", y_pos)):
+                    key = pick(pier_nodes, y=y, x=x_pier, z=z)
+                    if key is not None:
+                        selected.append((key, f"Pier {pier_index} {level} {label}"))
+        # Avoid duplicate node keys (e.g. single-strip models where -Y = +Y).
+        unique: List[Tuple[int, str]] = []
+        seen: set[int] = set()
+        for key, label in selected:
+            if key not in seen:
+                seen.add(key)
+                unique.append((key, label))
+        return unique
+
+    def _add_structural_model_points(self, points: Sequence[Tuple[int, str]]) -> None:
+        existing = {mp.element_key for mp in self._monitoring_points}
+        next_key = max((mp.key for mp in self._monitoring_points), default=0) + 1
+        for node_key, label in points:
+            if node_key in existing:
+                continue
+            point = self.nodes[node_key]
+            self._monitoring_points.append(
+                MonitoringPoint(
+                    key=next_key,
+                    element_key=node_key,
+                    element_type="Node",
+                    id_vertex=0,
+                    description=f"{label} · Point in ({{X:{point.x:g} Y:{point.y:g} Z:{point.z:g}}})",
+                    point=point,
+                )
+            )
+            existing.add(node_key)
+            next_key += 1
+
+    def _parse_fraction(self, pos: object) -> Optional[float]:
+        if isinstance(pos, (int, float)):
+            f = float(pos)
+            return f if 0.0 < f < 1.0 else None
+        text = str(pos or "").strip().lower()
+        if text in ("none", "false", "", "0"):
+            return None
+        if text in ("1/4", "0.25", "25%"):
+            return 0.25
+        if text in ("1/2", "0.5", "0.50", "50%"):
+            return 0.50
+        if text in ("3/4", "0.75", "75%"):
+            return 0.75
+        try:
+            val = float(text)
+            if 0.0 < val < 1.0:
+                return val
+        except ValueError:
+            pass
+        return None
+
+    def _build_span_loads_and_control_points(self) -> None:
+        """Place line loads on the road surface and attach control model points on the arch intrados."""
+        cursor = 0.0
+        span_idx = 0
+        w_half = self.spec.width / 2.0
+        deck_z = self._deck_z
+
+        for element in self.spec.elements:
+            if isinstance(element, Span):
+                span_idx += 1
+                span_start = cursor
+                span_len = element.L
+                cursor += span_len
+                fraction = self._parse_fraction(getattr(element, "load_position", "none"))
+                if fraction is None:
+                    continue
+                x_target = span_start + fraction * span_len
+
+                # 1. Find deck quad covering x_target at deck_z
+                deck_quad = None
+                for q in self.quads.values():
+                    pts = [self.nodes[k] for k in q.node_keys]
+                    top_pts = [p for p in pts if abs(p.z - deck_z) <= 1.0e-3]
+                    if len(top_pts) >= 2:
+                        x_min = min(p.x for p in top_pts)
+                        x_max = max(p.x for p in top_pts)
+                        if x_min - 1.0e-4 <= x_target <= x_max + 1.0e-4:
+                            deck_quad = q
+                            break
+
+                # 2. Find arch intrados node closest to x_target
+                arch_quads = [
+                    q for q in self.quads.values()
+                    if q.group in ("CSharp_Arch", "CSharp_ArchReinforcement")
+                ]
+                arch_nodes = {k: self.nodes[k] for q in arch_quads for k in q.node_keys}
+                candidates = [
+                    (k, p) for k, p in arch_nodes.items()
+                    if span_start - 1.0 <= p.x <= (span_start + span_len + 1.0)
+                ]
+                if candidates:
+                    dx_min = min(abs(p.x - x_target) for _, p in candidates)
+                    near_nodes = [
+                        (k, p) for k, p in candidates
+                        if abs(abs(p.x - x_target) - dx_min) <= 1.0e-3
+                    ]
+                    best_key, best_pt = min(near_nodes, key=lambda item: (item[1].z, item[1].x))
+
+                    pos_label = getattr(element, "load_position", f"{fraction:.2f}")
+                    existing_mp = next(
+                        (mp for mp in self._monitoring_points if mp.element_key == best_key),
+                        None,
+                    )
+                    if existing_mp is None:
+                        mp_key = max((mp.key for mp in self._monitoring_points), default=0) + 1
+                        mp = MonitoringPoint(
+                            key=mp_key,
+                            element_key=best_key,
+                            element_type="Node",
+                            id_vertex=0,
+                            description=f"Span {span_idx} {pos_label} arch control point · Point in ({{X:{best_pt.x:g} Y:{best_pt.y:g} Z:{best_pt.z:g}}})",
+                            point=best_pt,
+                        )
+                        self._monitoring_points.append(mp)
+                        control_key = mp_key
+                    else:
+                        control_key = existing_mp.key
+
+                    if self._control_model_point_key is None:
+                        self._control_model_point_key = control_key
+
+                # 3. Create LineLoadElement if deck_quad found
+                if deck_quad is not None:
+                    load_val = float(getattr(element, "load_value", 0.01) or 0.01)
+                    ll_key = len(self._line_loads) + 1
+                    self._line_loads.append(
+                        GeneratedLineLoad(
+                            key=ll_key,
+                            element_key=deck_quad.key,
+                            element_type="Quad",
+                            load_template_key=3,
+                            point1=(round(x_target, 4), -w_half, round(deck_z, 4)),
+                            point2=(round(x_target, 4), w_half, round(deck_z, 4)),
+                            load_value=load_val,
+                        )
+                    )
+            elif isinstance(element, (Pier, Abutment)):
+                cursor += element.b2
+
     # -- foundation edge / GLR / Restraint generation -----------------------
 
     def _record_foundation_edge(
@@ -956,6 +1469,18 @@ class CSharpMesher:
                     edge_left, edge_right = edge_right, edge_left
                 nc_left = self._node_c(edge_left_key)
                 nc_right = self._node_c(edge_right_key)
+                # C# ``BridgeMesher`` writes the full GLR footprint stiffness
+                # (Kz * B * L_edges) on the geometry object.  RestraintMesher
+                # splits that GLR at every Quad face but copies the full K
+                # array, which double-counts the subgrade reaction whenever one
+                # GLR spans several Quad columns.  The serialized HRX is the
+                # authoritative solver input, so write each child restraint with
+                # its own tributary area: Kz * B * L_quad.  The children then
+                # sum exactly to the parent GLR stiffness.
+                restraint_stiffness = list(stiffness)
+                if not owner.is_fix_dir_z:
+                    tributary_length = _dist(edge_left, edge_right)
+                    restraint_stiffness[1] = owner.Kz * strip_width * tributary_length
                 half = strip_width / 2.0
                 angle = math.radians(self.spec.definition.inclination_angle)
                 dx, dy = half * math.sin(angle), half * math.cos(angle)
@@ -976,7 +1501,7 @@ class CSharpMesher:
                     material_key=0,
                     parent_key=glr_key,
                     parent_type_element="GeometryLineRestraint",
-                    k=stiffness_tuple,
+                    k=tuple(restraint_stiffness),
                     behaviours=behaviours,
                     g=Point3D((edge_left.x + edge_right.x) / 2.0, strip_y,
                               (edge_left.z + edge_right.z) / 2.0),
@@ -1018,16 +1543,6 @@ class CSharpMesher:
         if any((item.spinta_passiva_sx or item.spinta_passiva_dx)
                for item in self.spec.elements if isinstance(item, (Abutment, Pier))):
             raise NotImplementedError("Passive earth-pressure surface restraints are not yet supported")
-        if self.spec.definition.inclination_angle:
-            definition = self.spec.definition
-            supports = [item for item in self.spec.elements if isinstance(item, (Abutment, Pier))]
-            if (abs(definition.width_top_pile - definition.width) > 1.0e-6 or
-                any(abs(item.w1) > 1.0e-6 or abs(item.w3) > 1.0e-6 or
-                    abs(item.w2 - definition.width) > 1.0e-6 or
-                    item.vertical_alignment != "Center" for item in supports)):
-                raise NotImplementedError(
-                    "Inclined bridges with tapered or offset supports are not yet supported"
-                )
         abscissa = self._abscissa()
         if not abscissa:
             raise ValueError("bridge abscissa is empty")
@@ -1039,7 +1554,17 @@ class CSharpMesher:
         templates = {int(template["Key"]): template for template in DEFAULT_TEMPLATES}
         templates.update({int(template["Key"]): template for template in self.spec.material_templates})
         centres = self._strip_centres()
-        for corsia, y in zip(self.spec.definition.corsias, centres):
+        strips = self.spec.definition.corsias
+        for index, (corsia, y) in enumerate(zip(strips, centres)):
+            widening = (self.spec.definition.width_top_pile - self.spec.definition.width) / 2
+            if index == 0 or index == len(strips) - 1:
+                # With one strip both edges widen symmetrically.
+                side = 0 if len(strips) == 1 else (1 if index == 0 else -1)
+                bottom_width = corsia.width + widening * (2 if len(strips) == 1 else 1)
+                self._strip_transform = (y, y + side * widening / 2, self._deck_z, 0.0,
+                                         corsia.width, bottom_width)
+            else:
+                self._strip_transform = None
             heights = 4 if corsia.height > 0.0 else 3
             material = templates.get(corsia.material_key, {})
             fill_override = (corsia.material_key
@@ -1053,8 +1578,12 @@ class CSharpMesher:
                 corsia.height,
                 fill_override,
             )
+        self._strip_transform = None
         # C# AddSpallePile runs once after all transverse rows have been built.
         self._add_spalle_pile(centres)
+        # Select the structural monitoring nodes on the undeformed, unskewed
+        # strip geometry; their final coordinates are read after the transform.
+        structural_points = self._select_structural_points(abscissa, centres)
         # The native straight-strip transform shifts X by Y*tan(angle), then
         # applies the longitudinal grade. C# measures strip widths along its
         # skew normal, hence the 1/cos(angle) thickness multiplier.
@@ -1062,25 +1591,49 @@ class CSharpMesher:
         angle = math.radians(self.spec.definition.inclination_angle)
         if abs(math.cos(angle)) < 1.0e-9:
             raise ValueError("inclination angle cannot make the strip width infinite")
-        if slope or angle:
+        if slope or angle or self._quad_transforms:
             scale = 1.0 / math.cos(angle)
-            for key, point in self.nodes.items():
-                x = point.x + point.y * math.tan(angle)
-                self.nodes[key] = Point3D(round(x, 4), point.y, round(point.z + x * slope, 4))
+            original = dict(self.nodes)
+            node_targets = {}
+            widths = {}
+            for quad in self.quads.values():
+                transform = self._quad_transforms.get(quad.key)
+                for key in quad.node_keys:
+                    point = original[key]
+                    y, width = point.y, quad.thickness
+                    if transform:
+                        yt, yb, zt, zb, wt, wb = transform
+                        t = min(1.0, max(0.0, (point.z - zb) / (zt - zb))) if zt > zb else 0.0
+                        y = yb + t * (yt - yb)
+                        width = wb + t * (wt - wb)
+                    x = point.x + y * math.tan(angle)
+                    target = Point3D(round(x, 4), round(y, 4), round(point.z + x * slope, 4))
+                    if key in node_targets and _dist(node_targets[key], target) > 0.001:
+                        raise NotImplementedError('Conflicting transverse strip transformations at a shared node')
+                    node_targets[key] = target
+                    widths[(quad.key, key)] = width * scale
+            for key, point in original.items():
+                if key not in node_targets:
+                    x = point.x + point.y * math.tan(angle)
+                    node_targets[key] = Point3D(round(x, 4), point.y, round(point.z + x * slope, 4))
+            self.nodes.update(node_targets)
             for quad in self.quads.values():
                 quad.thickness *= scale
                 quad.kinematics = compute_quad_kinematics(
                     [self.nodes[key] for key in quad.node_keys],
                     thickness=quad.thickness,
                     out_of_plane_normal=(math.sin(angle), math.cos(angle), 0.0),
-                    allow_skew_normal=bool(angle),
+                    allow_skew_normal=bool(angle or quad.key in self._quad_transforms),
                 )
+                quad.kinematics.thicknesses = [widths[(quad.key, key)] for key in quad.node_keys]
             self._foundation_edges = [
                 (owner, y, sub, quads, left, right, width * scale)
                 for owner, y, sub, quads, left, right, width in self._foundation_edges
             ]
         self._build_foundation_supports()
         self._default_model_point()
+        self._add_structural_model_points(structural_points)
+        self._build_span_loads_and_control_points()
         for index, element in enumerate(self.spec.piers, start=1):
             centre = self._element_origin(element)
             self._piers.append(
@@ -1104,6 +1657,8 @@ class CSharpMesher:
             piers=self._piers,
             deck_z=self._deck_z,
             total_length=self._total_length,
+            line_loads=self._line_loads,
+            control_model_point_key=self._control_model_point_key,
         )
 
 

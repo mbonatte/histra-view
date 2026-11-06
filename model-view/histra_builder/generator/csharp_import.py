@@ -87,6 +87,7 @@ def _abutment(raw: dict) -> Abutment:
 
 def _pier(raw: dict) -> Pier:
     return Pier(
+        shoulder_height=_f(raw, 'HiStrAShoulderHeight'),
         b1=_f(raw, "b1"),
         b2=_f(raw, "b2"),
         b3=_f(raw, "b3"),
@@ -136,7 +137,11 @@ def _pier(raw: dict) -> Pier:
 
 
 def _span(raw: dict) -> Span:
+    layers = raw.get("HiStrAArchLayers", "1")
+    if str(layers) not in ("1", "2", "3", "4"):
+        raise ValueError("Arch thickness divisions must be an integer from 1 to 4.")
     return Span(
+        arch_layers=int(layers),
         L=_f(raw, "L"),
         W=_f(raw, "W"),
         f=_f(raw, "f"),
