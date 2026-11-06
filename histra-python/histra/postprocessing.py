@@ -127,13 +127,25 @@ def _average_node_displacements(contributions) -> np.ndarray:
     return total.astype(float)
 
 
-def compute_node_displacements(model: Model, global_u: Iterable[float]) -> list[NodeDisplacement]:
+def compute_node_displacements(
+    model: Model,
+    global_u: Iterable[float],
+    *,
+    only_quad_nodes: bool | None = None,
+) -> list[NodeDisplacement]:
     """Return global X/Y/Z translations for every node supported by Quads.
 
     If a node belongs to multiple Quads, the connected-element predictions are
-    averaged exactly as in the C# response operation. Nodes with no supported
-    Quad contribution raise an explicit ``NotImplementedError`` rather than
-    being silently exported as zero displacement.
+    averaged exactly as in the C# response operation.
+
+    When ``only_quad_nodes`` is ``None`` (default), nodes created purely as
+    2-node interface edge endpoints during ``ModelManager.prepare_model`` are
+    skipped automatically (matching C# ``NodeOperations.GetDisplacements``
+    which iterates ``node.QuadConnected``), while standalone non-interface
+    nodes with no supported Quad contribution still raise an explicit
+    ``NotImplementedError``. Setting ``only_quad_nodes=True`` filters strictly
+    to nodes connected to at least one Quad; ``only_quad_nodes=False`` enforces
+    that every node in ``model.collections.nodes`` is connected to a Quad.
     """
 
     u = np.asarray(global_u, dtype=float)
@@ -149,10 +161,24 @@ def compute_node_displacements(model: Model, global_u: Iterable[float]) -> list[
             if node_key in connected:
                 connected[node_key].append((quad, index))
 
-    unsupported = [
-        int(node_key) for node_key, contributions in connected.items()
-        if not contributions
-    ]
+    if only_quad_nodes is True:
+        unsupported = []
+    elif only_quad_nodes is False:
+        unsupported = [
+            int(node_key) for node_key, contributions in connected.items()
+            if not contributions
+        ]
+    else:
+        interface_node_keys = {
+            int(nk)
+            for intf in model.collections.interfaces.values()
+            for nk in getattr(intf, "node_keys", ())
+        }
+        unsupported = [
+            int(node_key) for node_key, contributions in connected.items()
+            if not contributions and int(node_key) not in interface_node_keys
+        ]
+
     if unsupported:
         preview = ", ".join(str(key) for key in unsupported[:10])
         suffix = "..." if len(unsupported) > 10 else ""
@@ -164,6 +190,8 @@ def compute_node_displacements(model: Model, global_u: Iterable[float]) -> list[
 
     rows: list[NodeDisplacement] = []
     for node_key, node in sorted(model.collections.nodes.items()):
+        if not connected[node_key]:
+            continue
         contributions = [
             quad_node_displacement(quad, node.point, index, u)
             for quad, index in connected[node_key]
@@ -185,14 +213,121 @@ def compute_node_displacements(model: Model, global_u: Iterable[float]) -> list[
     return rows
 
 
+def _spring_area_centroid_local_xy(interface, spring_index: int) -> tuple[np.float32, np.float32]:
+    """Compute the C# ``CalcolaRisultanti`` 4-corner averaged local (X, Y) centroid for a transverse spring."""
+    f32 = np.float32
+    ncol = max(int(interface.ncol), 1)
+    nrow = max(int(interface.nrow), 1)
+    id_row = spring_index // ncol + 1
+    id_spring = spring_index + 1 - (id_row - 1) * ncol
+
+    f_ncol = f32(ncol)
+    f_nrow = f32(nrow)
+    x0 = f32(f32(f32(f32(id_spring) - f32(1.0)) * f32(2.0)) / f_ncol - f32(1.0))
+    y0 = f32(f32(f32(id_row - 1) * f32(2.0)) / f_nrow - f32(1.0))
+    x1 = f32(f32(f32(id_spring) * f32(2.0)) / f_ncol - f32(1.0))
+    y1 = f32(f32(f32(f32(id_row) - f32(1.0)) * f32(2.0)) / f_nrow - f32(1.0))
+    x2 = x1
+    y2 = f32(f32(f32(id_row) * f32(2.0)) / f_nrow - f32(1.0))
+    x3 = x0
+    y3 = y2
+    corners = ((x0, y0), (x1, y1), (x2, y2), (x3, y3))
+
+    v = interface.vint2d
+    v0x, v0y = f32(v[0].x), f32(v[0].y)
+    v1x, v1y = f32(v[1].x), f32(v[1].y)
+    v2x, v2y = f32(v[2].x), f32(v[2].y)
+    v3x, v3y = f32(v[3].x), f32(v[3].y)
+    origin_x = f32(f32(interface.length) / f32(2.0))
+
+    vec_x = f32(0.0)
+    vec_y = f32(0.0)
+    for vx, vy in corners:
+        one_m_x = f32(f32(1.0) - vx)
+        one_p_x = f32(f32(1.0) + vx)
+        one_m_y = f32(f32(1.0) - vy)
+        one_p_y = f32(f32(1.0) + vy)
+        c0x = f32(f32(f32(v0x * one_m_x) * one_m_y) / f32(4.0))
+        c0y = f32(f32(f32(v0y * one_m_x) * one_m_y) / f32(4.0))
+        c1x = f32(f32(f32(v1x * one_p_x) * one_m_y) / f32(4.0))
+        c1y = f32(f32(f32(v1y * one_p_x) * one_m_y) / f32(4.0))
+        c2x = f32(f32(f32(v2x * one_p_x) * one_p_y) / f32(4.0))
+        c2y = f32(f32(f32(v2y * one_p_x) * one_p_y) / f32(4.0))
+        c3x = f32(f32(f32(v3x * one_m_x) * one_p_y) / f32(4.0))
+        c3y = f32(f32(f32(v3y * one_m_x) * one_p_y) / f32(4.0))
+        coord_x = f32(f32(f32(c0x + c1x) + c2x) + c3x)
+        coord_y = f32(f32(f32(c0y + c1y) + c2y) + c3y)
+        vec_x = f32(vec_x + f32(coord_x - origin_x))
+        vec_y = f32(vec_y + coord_y)
+
+    return f32(vec_x / f32(4.0)), f32(vec_y / f32(4.0))
+
+
+def _interface_local_resultants(interface) -> tuple[np.ndarray, np.ndarray]:
+    """Port of C# ``Interface.CalcolaRisultanti(out Vector3 Forze, out Vector3 Momenti)``."""
+    f32 = np.float32
+    force_x = f32(0.0)
+    force_y = f32(0.0)
+    force_z = f32(0.0)
+    moment_x = f32(0.0)
+    moment_y = f32(0.0)
+    moment_z = f32(0.0)
+
+    if getattr(interface.trasv_1, "is_batch_backed", False) and not interface.trasv_1._cache:
+        for i, raw_force in enumerate(interface.trasv_1._trial[:, 6]):
+            vec_x, vec_y = _spring_area_centroid_local_xy(interface, i)
+            num2 = f32(raw_force)
+            force_y = f32(force_y + num2)
+            moment_z = f32(moment_z + f32(num2 * vec_x))
+            moment_x = f32(moment_x + f32(num2 * vec_y))
+    else:
+        for i, spring in enumerate(interface.trasv_1):
+            vec_x, vec_y = _spring_area_centroid_local_xy(interface, i)
+            num2 = f32(spring.get_force())
+            force_y = f32(force_y + num2)
+            moment_z = f32(moment_z + f32(num2 * vec_x))
+            moment_x = f32(moment_x + f32(num2 * vec_y))
+
+    for i, spring in enumerate(interface.trasv_2):
+        vec_x, vec_y = _spring_area_centroid_local_xy(interface, i)
+        num2 = f32(spring.get_force())
+        force_y = f32(force_y + num2)
+        moment_z = f32(moment_z + f32(num2 * vec_x))
+        moment_x = f32(moment_x + f32(num2 * vec_y))
+
+    for spring in interface.slid:
+        num2 = f32(-f32(spring.get_force()))
+        force_x = f32(force_x + num2)
+
+    half_len_pos = f32(f32(interface.length) / f32(2.0))
+    half_len_neg = f32(f32(interface.length) / f32(-2.0))
+    vec_x_oop = f32(0.0)
+    for i, spring in enumerate(interface.slid_out_plan):
+        if i == 0:
+            vec_x_oop = half_len_pos
+        if i == 1:
+            vec_x_oop = half_len_neg
+        num2 = f32(-f32(spring.get_force()))
+        force_z = f32(force_z + num2)
+        moment_y = f32(moment_y + f32(num2 * vec_x_oop))
+
+    forces = np.asarray((force_x, force_y, force_z), dtype=np.float32)
+    moments = np.asarray((moment_x, moment_y, moment_z), dtype=np.float32)
+    return forces, moments
+
+
 def _interface_local_resultant(interface) -> np.ndarray:
     """Supported force part of C# ``Interface.CalcolaRisultanti``."""
     f32 = np.float32
     force_x = f32(0.0)
     force_y = f32(0.0)
     force_z = f32(0.0)
-    for spring in interface.trasv_1:
-        force_y = f32(force_y + f32(spring.get_force()))
+    if getattr(interface.trasv_1, "is_batch_backed", False) and not interface.trasv_1._cache:
+        for raw_force in interface.trasv_1._trial[:, 6]:
+            force_y = f32(force_y + f32(raw_force))
+    else:
+        for spring in interface.trasv_1:
+            force_y = f32(force_y + f32(spring.get_force()))
     for spring in interface.trasv_2:
         force_y = f32(force_y + f32(spring.get_force()))
     for spring in interface.slid:

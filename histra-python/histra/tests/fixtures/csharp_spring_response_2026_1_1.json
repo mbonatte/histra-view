@@ -1,0 +1,618 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-26T12:12:32.239317+00:00",
+  "source_commit": "712c93a47fc5e1ea9fbf0af4ee588deaddb8d370",
+  "generator": "tools/benchmarks/export_csharp_spring_response_reference.py",
+  "generator_sha256": "2547c02a990960063f831eeb07cef96272d595a2e191e8bd21ced95ea7e43216",
+  "harness_sha256": "471eedc1c83b3ddc7d9b5b6f4587eeb78f69b39f3cc894fd5c9a3d3098276ea9",
+  "dotnet_sdk": "8.0.426",
+  "benchmark_id": "csharp-spring-response-getters-2026.1.1",
+  "scope": "Verbatim response getters with controlled fields; not a constitutive or full-solver oracle",
+  "source_sha256": {
+    "ModelLibrary/Objects/Spring.cs": "590e84e3030a984bc12afe796a1f418722425cc94983e36584410ebf6c7ebed8",
+    "ModelLibrary/Objects/SpringHysteretic.cs": "95b113a9ea9ee55ca09d9abd1b8be649679a9c985a0e5c4c4d67c2c4953f48b5",
+    "ModelLibrary/Objects/SpringCoulomb03.cs": "6d49047dd7e343c3603af9d9760b47a613ac4d0f478c07b9883ea652d7253cd9"
+  },
+  "cases": [
+    {
+      "name": "elastic",
+      "kind": 1,
+      "phase": 0,
+      "u": 1.0,
+      "f": 2.0,
+      "k": 10.0,
+      "fy": [
+        4.0,
+        -6.0
+      ],
+      "ur": [
+        2.0,
+        -3.0
+      ],
+      "length": 2.0,
+      "expected_bits": {
+        "name": "elastic",
+        "strain": "3f000000",
+        "plastic_displacement": "0000000000000000",
+        "plastic_strain": "00000000",
+        "plastic_ratio": "00000000"
+      }
+    },
+    {
+      "name": "elastic_zero_length",
+      "kind": 1,
+      "phase": 1,
+      "u": 1.0,
+      "f": 2.0,
+      "k": 10.0,
+      "fy": [
+        4.0,
+        -6.0
+      ],
+      "ur": [
+        2.0,
+        -3.0
+      ],
+      "length": 0.0,
+      "expected_bits": {
+        "name": "elastic_zero_length",
+        "strain": "7f800000",
+        "plastic_displacement": "0000000000000000",
+        "plastic_strain": "00000000",
+        "plastic_ratio": "00000000"
+      }
+    },
+    {
+      "name": "hysteretic_positive",
+      "kind": 8,
+      "phase": 2,
+      "u": 1.0,
+      "f": 2.0,
+      "k": 10.0,
+      "fy": [
+        4.0,
+        -6.0
+      ],
+      "ur": [
+        2.0,
+        -3.0
+      ],
+      "length": 2.0,
+      "expected_bits": {
+        "name": "hysteretic_positive",
+        "strain": "3f000000",
+        "plastic_displacement": "3fe3333333333333",
+        "plastic_strain": "3e99999a",
+        "plastic_ratio": "3e99999a"
+      }
+    },
+    {
+      "name": "hysteretic_negative",
+      "kind": 8,
+      "phase": 3,
+      "u": -1.0,
+      "f": 2.0,
+      "k": 10.0,
+      "fy": [
+        4.0,
+        -6.0
+      ],
+      "ur": [
+        2.0,
+        -3.0
+      ],
+      "length": 2.0,
+      "expected_bits": {
+        "name": "hysteretic_negative",
+        "strain": "bf000000",
+        "plastic_displacement": "3fd999999999999a",
+        "plastic_strain": "3e4ccccd",
+        "plastic_ratio": "3e088889"
+      }
+    },
+    {
+      "name": "hysteretic_inside_yield",
+      "kind": 8,
+      "phase": 4,
+      "u": 0.1,
+      "f": 2.0,
+      "k": 10.0,
+      "fy": [
+        4.0,
+        -6.0
+      ],
+      "ur": [
+        2.0,
+        -3.0
+      ],
+      "length": 2.0,
+      "expected_bits": {
+        "name": "hysteretic_inside_yield",
+        "strain": "3d4ccccd",
+        "plastic_displacement": "0000000000000000",
+        "plastic_strain": "00000000",
+        "plastic_ratio": "00000000"
+      }
+    },
+    {
+      "name": "hysteretic_at_yield",
+      "kind": 8,
+      "phase": 5,
+      "u": 0.4,
+      "f": 2.0,
+      "k": 10.0,
+      "fy": [
+        4.0,
+        -6.0
+      ],
+      "ur": [
+        2.0,
+        -3.0
+      ],
+      "length": 2.0,
+      "expected_bits": {
+        "name": "hysteretic_at_yield",
+        "strain": "3e4ccccd",
+        "plastic_displacement": "0000000000000000",
+        "plastic_strain": "00000000",
+        "plastic_ratio": "00000000"
+      }
+    },
+    {
+      "name": "hysteretic_unloading",
+      "kind": 8,
+      "phase": 6,
+      "u": 0.1,
+      "f": -12.0,
+      "k": 10.0,
+      "fy": [
+        4.0,
+        -6.0
+      ],
+      "ur": [
+        2.0,
+        -3.0
+      ],
+      "length": 2.0,
+      "expected_bits": {
+        "name": "hysteretic_unloading",
+        "strain": "3d4ccccd",
+        "plastic_displacement": "0000000000000000",
+        "plastic_strain": "00000000",
+        "plastic_ratio": "00000000"
+      }
+    },
+    {
+      "name": "hysteretic_zero_ur",
+      "kind": 8,
+      "phase": 7,
+      "u": 1.0,
+      "f": 2.0,
+      "k": 10.0,
+      "fy": [
+        4.0,
+        -6.0
+      ],
+      "ur": [
+        0.0,
+        0.0
+      ],
+      "length": 2.0,
+      "expected_bits": {
+        "name": "hysteretic_zero_ur",
+        "strain": "3f000000",
+        "plastic_displacement": "3fe3333333333333",
+        "plastic_strain": "3e99999a",
+        "plastic_ratio": "7f800000"
+      }
+    },
+    {
+      "name": "hysteretic_unlimited_tension",
+      "kind": 8,
+      "phase": 8,
+      "u": 1.0,
+      "f": 2.0,
+      "k": 10.0,
+      "fy": [
+        4.0,
+        -6.0
+      ],
+      "ur": [
+        100000.0,
+        -3.0
+      ],
+      "length": 2.0,
+      "expected_bits": {
+        "name": "hysteretic_unlimited_tension",
+        "strain": "3f000000",
+        "plastic_displacement": "3fe3333333333333",
+        "plastic_strain": "3e99999a",
+        "plastic_ratio": "3f19999a"
+      }
+    },
+    {
+      "name": "hysteretic_unlimited_compression",
+      "kind": 8,
+      "phase": 9,
+      "u": -1.0,
+      "f": 2.0,
+      "k": 10.0,
+      "fy": [
+        4.0,
+        -6.0
+      ],
+      "ur": [
+        2.0,
+        -100000.0
+      ],
+      "length": 2.0,
+      "expected_bits": {
+        "name": "hysteretic_unlimited_compression",
+        "strain": "bf000000",
+        "plastic_displacement": "3fd999999999999a",
+        "plastic_strain": "3e4ccccd",
+        "plastic_ratio": "3ecccccd"
+      }
+    },
+    {
+      "name": "hysteretic_below_unlimited",
+      "kind": 8,
+      "phase": 10,
+      "u": 1.0,
+      "f": 2.0,
+      "k": 10.0,
+      "fy": [
+        4.0,
+        -6.0
+      ],
+      "ur": [
+        99999.999,
+        -3.0
+      ],
+      "length": 2.0,
+      "expected_bits": {
+        "name": "hysteretic_below_unlimited",
+        "strain": "3f000000",
+        "plastic_displacement": "3fe3333333333333",
+        "plastic_strain": "3e99999a",
+        "plastic_ratio": "36c9539c"
+      }
+    },
+    {
+      "name": "hysteretic_zero_length_initial",
+      "kind": 8,
+      "phase": 0,
+      "u": 0.0,
+      "f": 0.0,
+      "k": 10.0,
+      "fy": [
+        4.0,
+        -6.0
+      ],
+      "ur": [
+        2.0,
+        -3.0
+      ],
+      "length": 0.0,
+      "expected_bits": {
+        "name": "hysteretic_zero_length_initial",
+        "strain": "ffc00000",
+        "plastic_displacement": "0000000000000000",
+        "plastic_strain": "ffc00000",
+        "plastic_ratio": "00000000"
+      }
+    },
+    {
+      "name": "hysteretic_zero_length_loaded",
+      "kind": 8,
+      "phase": 1,
+      "u": 1.0,
+      "f": 2.0,
+      "k": 10.0,
+      "fy": [
+        4.0,
+        -6.0
+      ],
+      "ur": [
+        2.0,
+        -3.0
+      ],
+      "length": 0.0,
+      "expected_bits": {
+        "name": "hysteretic_zero_length_loaded",
+        "strain": "7f800000",
+        "plastic_displacement": "3fe3333333333333",
+        "plastic_strain": "7f800000",
+        "plastic_ratio": "3e99999a"
+      }
+    },
+    {
+      "name": "hysteretic_zero_k",
+      "kind": 8,
+      "phase": 2,
+      "u": 1.0,
+      "f": 2.0,
+      "k": 0.0,
+      "fy": [
+        4.0,
+        -6.0
+      ],
+      "ur": [
+        2.0,
+        -3.0
+      ],
+      "length": 2.0,
+      "expected_bits": {
+        "name": "hysteretic_zero_k",
+        "strain": "3f000000",
+        "plastic_displacement": "0000000000000000",
+        "plastic_strain": "00000000",
+        "plastic_ratio": "00000000"
+      }
+    },
+    {
+      "name": "coulomb_positive",
+      "kind": 12,
+      "phase": 3,
+      "u": 1.0,
+      "f": 2.0,
+      "k": 10.0,
+      "fy": [
+        4.0,
+        -6.0
+      ],
+      "ur": [
+        2.0,
+        -3.0
+      ],
+      "length": 2.0,
+      "expected_bits": {
+        "name": "coulomb_positive",
+        "strain": "3f000000",
+        "plastic_displacement": "3fe999999999999a",
+        "plastic_strain": "3ecccccd",
+        "plastic_ratio": "3ecccccd"
+      }
+    },
+    {
+      "name": "coulomb_negative",
+      "kind": 12,
+      "phase": 4,
+      "u": -1.0,
+      "f": -2.0,
+      "k": 10.0,
+      "fy": [
+        4.0,
+        -6.0
+      ],
+      "ur": [
+        2.0,
+        -3.0
+      ],
+      "length": 2.0,
+      "expected_bits": {
+        "name": "coulomb_negative",
+        "strain": "bf000000",
+        "plastic_displacement": "bfe999999999999a",
+        "plastic_strain": "becccccd",
+        "plastic_ratio": "3e888889"
+      }
+    },
+    {
+      "name": "coulomb_opposite_sign_up",
+      "kind": 12,
+      "phase": 5,
+      "u": 0.1,
+      "f": 3.0,
+      "k": 10.0,
+      "fy": [
+        4.0,
+        -6.0
+      ],
+      "ur": [
+        2.0,
+        -3.0
+      ],
+      "length": 2.0,
+      "expected_bits": {
+        "name": "coulomb_opposite_sign_up",
+        "strain": "3d4ccccd",
+        "plastic_displacement": "bfc9999999999999",
+        "plastic_strain": "bdcccccd",
+        "plastic_ratio": "bdcccccd"
+      }
+    },
+    {
+      "name": "coulomb_threshold_inside",
+      "kind": 12,
+      "phase": 6,
+      "u": 0.200001,
+      "f": 2.0,
+      "k": 10.0,
+      "fy": [
+        4.0,
+        -6.0
+      ],
+      "ur": [
+        2.0,
+        -3.0
+      ],
+      "length": 2.0,
+      "expected_bits": {
+        "name": "coulomb_threshold_inside",
+        "strain": "3dcccd10",
+        "plastic_displacement": "0000000000000000",
+        "plastic_strain": "00000000",
+        "plastic_ratio": "00000000"
+      }
+    },
+    {
+      "name": "coulomb_threshold_outside",
+      "kind": 12,
+      "phase": 7,
+      "u": 0.20001,
+      "f": 2.0,
+      "k": 10.0,
+      "fy": [
+        4.0,
+        -6.0
+      ],
+      "ur": [
+        2.0,
+        -3.0
+      ],
+      "length": 2.0,
+      "expected_bits": {
+        "name": "coulomb_threshold_outside",
+        "strain": "3dcccf6c",
+        "plastic_displacement": "3ee4f8b588e34000",
+        "plastic_strain": "36a7c5ac",
+        "plastic_ratio": "36a7c5ac"
+      }
+    },
+    {
+      "name": "coulomb_zero_ur",
+      "kind": 12,
+      "phase": 8,
+      "u": 1.0,
+      "f": 2.0,
+      "k": 10.0,
+      "fy": [
+        4.0,
+        -6.0
+      ],
+      "ur": [
+        0.0,
+        0.0
+      ],
+      "length": 2.0,
+      "expected_bits": {
+        "name": "coulomb_zero_ur",
+        "strain": "3f000000",
+        "plastic_displacement": "3fe999999999999a",
+        "plastic_strain": "3ecccccd",
+        "plastic_ratio": "7f800000"
+      }
+    },
+    {
+      "name": "coulomb_zero_k",
+      "kind": 12,
+      "phase": 9,
+      "u": 1.0,
+      "f": 0.0,
+      "k": 0.0,
+      "fy": [
+        4.0,
+        -6.0
+      ],
+      "ur": [
+        2.0,
+        -3.0
+      ],
+      "length": 2.0,
+      "expected_bits": {
+        "name": "coulomb_zero_k",
+        "strain": "3f000000",
+        "plastic_displacement": "fff8000000000000",
+        "plastic_strain": "ffc00000",
+        "plastic_ratio": "ffc00000"
+      }
+    },
+    {
+      "name": "coulomb_zero_length",
+      "kind": 12,
+      "phase": 10,
+      "u": 1.0,
+      "f": 2.0,
+      "k": 10.0,
+      "fy": [
+        4.0,
+        -6.0
+      ],
+      "ur": [
+        2.0,
+        -3.0
+      ],
+      "length": 0.0,
+      "expected_bits": {
+        "name": "coulomb_zero_length",
+        "strain": "7f800000",
+        "plastic_displacement": "3fe999999999999a",
+        "plastic_strain": "7f800000",
+        "plastic_ratio": "3ecccccd"
+      }
+    },
+    {
+      "name": "negative_zero",
+      "kind": 12,
+      "phase": 0,
+      "u": -0.0,
+      "f": 0.0,
+      "k": 10.0,
+      "fy": [
+        4.0,
+        -6.0
+      ],
+      "ur": [
+        2.0,
+        -3.0
+      ],
+      "length": 2.0,
+      "expected_bits": {
+        "name": "negative_zero",
+        "strain": "80000000",
+        "plastic_displacement": "0000000000000000",
+        "plastic_strain": "00000000",
+        "plastic_ratio": "00000000"
+      }
+    },
+    {
+      "name": "single_overflow",
+      "kind": 8,
+      "phase": 1,
+      "u": 1e+100,
+      "f": 1e+100,
+      "k": 10.0,
+      "fy": [
+        4.0,
+        -6.0
+      ],
+      "ur": [
+        2.0,
+        -3.0
+      ],
+      "length": 2.0,
+      "expected_bits": {
+        "name": "single_overflow",
+        "strain": "7f800000",
+        "plastic_displacement": "54b249ad2594c37d",
+        "plastic_strain": "7f800000",
+        "plastic_ratio": "7f800000"
+      }
+    },
+    {
+      "name": "single_rounding",
+      "kind": 8,
+      "phase": 2,
+      "u": 1.23456789012345,
+      "f": 2.0,
+      "k": 10.0,
+      "fy": [
+        4.0,
+        -6.0
+      ],
+      "ur": [
+        2.0,
+        -3.0
+      ],
+      "length": 3.141592653589793,
+      "expected_bits": {
+        "name": "single_rounding",
+        "strain": "3ec9340a",
+        "plastic_displacement": "3feab4c7b84be6ed",
+        "plastic_strain": "3e88036f",
+        "plastic_ratio": "3ed5a63e"
+      }
+    }
+  ]
+}

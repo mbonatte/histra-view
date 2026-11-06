@@ -1,8 +1,12 @@
-# Supplied model and result files
+# Supplied output-projection reference
 
-- `model.hrx`: model definition plus serialized application/element state.
-- `model.Results`: SQLite database containing C# result states. This is the authoritative numerical reference used by the audit.
-- `results.json`: historical parser/assembly snapshot. It is **not** an independent nonlinear-solver result and contains stale metadata (`n_interfaces` and `K_nnz`).
+- `model.hrx`: source HRX, including reference-only serialized C# state.
+- `model.Results`: authoritative C# SQLite output used by regression tests.
 
-The Python test `histra/tests/test_benchmark_alignment.py` compares the first analysis-1 load step with `QuadStates` in `model.Results`.
-- `audit_metrics.json`: machine-readable inventory, test count, C# database row counts, and measured first-step comparison from the final audit.
+Fresh Python preparation regenerates the computational model before solving.
+`histra/tests/test_benchmark_alignment.py` compares the first analysis-1 load step
+with `QuadStates`; output-projection and native-results tests also use this pair.
+
+Historical parser/assembly snapshots and old audit metrics are not current files
+in this directory. A redundant `model.zip` was removed: its two members matched
+the distinct retained `histra/model-live/` reference pair byte for byte.

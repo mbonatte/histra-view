@@ -1,6 +1,11 @@
 """HiStrA-Python: structural analysis solver port."""
 from importlib.metadata import PackageNotFoundError, version
-from histra.io.hr_loader import load_model
+from histra.io.hr_loader import load_model, load_solver_model
+from histra.io.results_reader import SimulationResults
+from histra.io.results_writer import ResultsWriter
+from histra.io.bundle_conversion import pack_results_directory
+from histra.io.bundle import verify_bundle
+from histra.io.csharp_results_writer import compare_csharp_results
 from histra.solver.backend_api import (
     ConcreteInterfaceMutation,
     PythonAnalysisRequest,
@@ -73,7 +78,12 @@ except PackageNotFoundError:  # Source tree used without installation.
 
 __all__ = [
     "__version__",
-    "load_model",
+    "load_model", "load_solver_model",
+    "ResultsWriter",
+    "pack_results_directory",
+    "verify_bundle",
+    "compare_csharp_results",
+    "SimulationResults",
     "AnalysisSession",
     "AnalysisSessionError",
     "solve_modal_analysis",
@@ -125,3 +135,14 @@ __all__ = [
     "run_python_solver_job",
     "warmup_compiled_backends",
 ]
+
+from histra.solver.parallel_jobs import (
+    PythonSolverJob, PythonSolverJobOutcome, run_parallel_solver_jobs,
+)
+
+__all__ += ["PythonSolverJob", "PythonSolverJobOutcome", "run_parallel_solver_jobs"]
+
+from histra.solver.resources import SolverResources
+from histra.solver.parallel_jobs import run_large_solver_job
+
+__all__ += ["SolverResources", "run_large_solver_job"]

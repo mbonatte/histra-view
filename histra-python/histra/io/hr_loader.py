@@ -182,6 +182,8 @@ def _parse_model_point(elem: ET.Element) -> ModelPoint:
         element_key=_safe_int(_attr(elem, "ElementKey", "IdElement", default="0")),
         element_type=_attr(elem, "ElementType", default=""),
         id_vertex=_safe_int(_attr(elem, "IdVertex", default="0")),
+        name=_attr(elem, "Name", default=""),
+        description=_attr(elem, "Description", default=""),
     )
 
 
@@ -278,7 +280,7 @@ def _parse_analysis(elem: ET.Element) -> Analysis:
     )
 
 
-def load_model(path: Union[str, Path]) -> Model:
+def load_model(path: Union[str, Path], *, for_solving: bool = False) -> Model:
     """Load a HiStrA ``.hrx`` model file into an in-process Python ``Model``.
 
     Parses XML geometry, materials, analyses, load functions, and boundary conditions.
@@ -290,6 +292,8 @@ def load_model(path: Union[str, Path]) -> Model:
     ----------
     path : str or Path
         Filesystem path to the input ``.hrx`` XML model file.
+    for_solving : bool, default=False
+        Skip saved computational state that fresh preparation replaces.
 
     Returns
     -------
@@ -335,7 +339,7 @@ def load_model(path: Union[str, Path]) -> Model:
             elem.clear()
 
         elif tag == "Quad":
-            quad = Quad.from_xml(elem)
+            quad = Quad.from_xml(elem, include_reference=not for_solving)
             collections.quads[quad.key] = quad
             elem.clear()
 
@@ -343,6 +347,9 @@ def load_model(path: Union[str, Path]) -> Model:
             # Nested references inside a Quad have no Key and must stay attached
             # until the parent Quad is parsed.
             if elem.get("Key") is None:
+                continue
+            if for_solving:
+                elem.clear()
                 continue
             interface = Interface.from_xml(elem)
             collections.interfaces[interface.key] = interface
@@ -501,3 +508,12 @@ def _safe_int(value: str, default: int = 0) -> int:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def load_solver_model(path: Union[str, Path]) -> Model:
+    """Load structural inputs without saved C# computational state.
+
+    Fresh preparation remains mandatory. Use ``load_model`` when inspecting saved
+    springs, afference matrices or displacements for differential auditing.
+    """
+    return load_model(path, for_solving=True)
