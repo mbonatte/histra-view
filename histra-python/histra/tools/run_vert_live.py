@@ -24,7 +24,7 @@ from typing import Any, Iterable
 
 import numpy as np
 
-from histra.io.hr_loader import load_model
+from histra.io.hr_loader import load_solver_model as load_model
 from histra.postprocessing import compute_node_displacements
 from histra.solver.solve import solve_static_nonlinear
 from histra.solver.model_manager import ModelManager
@@ -339,7 +339,7 @@ STEPS
 
 PERFORMANCE
 - run_summary.json records the active backend and the number of batched springs.
-- numba_compiled_batch is the accelerated path installed by requirements.txt.
+- numba_compiled_batch is the required production path installed with the package.
 - The first process may spend a few seconds compiling kernels; later processes
   load them from Numba's cache.
 - Set HISTRA_DISABLE_COMPILED_SPRINGS=1 only for scalar-path diagnostics.

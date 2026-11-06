@@ -5,8 +5,8 @@ The C# baseline is the ``random_NNN_copy_1.Results`` file created by the
 desktop workflow.  The upstream-scour selection intentionally reproduces the
 geometry recorded in the supplied C# log for pier_1:
 
-* x = 502.0 mm, foundation length = 139.8 mm;
-* y = 0.0 mm, foundation width = 342.4 mm;
+* x = 502.0 cm, foundation length = 139.8 cm;
+* y = 0.0 cm, foundation width = 342.4 cm;
 * delta = 0.2 before ``scour_1`` and 0.4 before ``scour_2``.
 
 It writes a compact JSON report containing final displacement-vector and

@@ -447,7 +447,11 @@ def test_article_workbook_export_is_a_first_class_original_data_source(tmp_path)
             for fields in columns:
                 row.extend(float(value + index + 1) for index in range(len(fields)))
             writer.writerow(row)
-    (tmp_path / "Graphs_HISTRA.ipynb").write_text("{}", encoding="utf-8")
+    (tmp_path / "article_plot_sources.json").write_text(json.dumps({
+        "schema_version": 1,
+        "source_cells": {str(spec["cell"]): "original plotting source"
+                         for specs in ARTICLE_SOURCE_SERIES.values() for spec in specs},
+    }), encoding="utf-8")
     article_pdf = tmp_path / "article.pdf"
     article_pdf.write_bytes(b"PDF source placeholder")
 
@@ -460,3 +464,11 @@ def test_article_workbook_export_is_a_first_class_original_data_source(tmp_path)
     radial = report["figures"]["22"]["series_provenance"]["Bridge_2_Numerical_Arch"]
     assert radial["displacement_formula"] == {"z": 0.916516, "x": 0.399998}
     assert report["table_1"]["sha256"]
+
+    sources_path = tmp_path / "article_plot_sources.json"
+    sources = json.loads(sources_path.read_text())
+    del sources["source_cells"]["9"]
+    sources_path.write_text(json.dumps(sources))
+    invalid = validate_article_source_data(tmp_path, article_pdf_path=article_pdf)
+    assert not invalid["valid"]
+    assert any("missing plotting source cell 9" in issue for issue in invalid["issues"])

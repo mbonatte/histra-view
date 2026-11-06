@@ -80,13 +80,13 @@ ARTICLE_TABLE_1_CAPACITIES_KN = {
 }
 
 # The user-supplied ``Original_article_data.csv`` is an export of the
-# ``Results`` workbook used by ``Graphs_HISTRA.ipynb``.  It has a two-row
+# ``Results`` workbook used by the original plotting notebook.  It has a two-row
 # header beginning on CSV row 3: every named series starts a variable-width
 # group of x/y (or z/x/f) columns.  Keeping this mapping in the harness makes
 # the published-figure selection reviewable without duplicating or rounding
 # the original data into nine hand-maintained CSV files.
 ARTICLE_WORKBOOK_EXPORT = "Original_article_data.csv"
-ARTICLE_GRAPH_NOTEBOOK = "Graphs_HISTRA.ipynb"
+ARTICLE_PLOT_SOURCES = "article_plot_sources.json"
 ARTICLE_SOURCE_SERIES: Mapping[int, tuple[Mapping[str, Any], ...]] = {
     9: (
         {"source": "3.1_Experimental", "cell": 9},
@@ -337,28 +337,40 @@ def _workbook_curve(
     return curve, invalid
 
 
+def _validate_article_plot_sources(path: Path, issues: list[str]) -> None:
+    """Retain auditable figure selections without requiring notebook outputs."""
+    if not path.is_file():
+        issues.append(f"missing plotting source: {path}")
+        return
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if payload.get("schema_version") != 1:
+            raise ValueError("unsupported plotting source schema")
+        cells = payload["source_cells"]
+        required = {str(spec["cell"]) for specs in ARTICLE_SOURCE_SERIES.values() for spec in specs}
+        for cell in sorted(required):
+            if not isinstance(cells.get(cell), str) or not cells[cell].strip():
+                raise ValueError(f"missing plotting source cell {cell}")
+    except (OSError, UnicodeError, ValueError, KeyError, AttributeError, TypeError) as exc:
+        issues.append(f"unable to read plotting source: {exc}")
+
+
 def _validate_workbook_source_data(
     directory: Path,
     issues: list[str],
 ) -> tuple[dict[str, Any], dict[str, Any]]:
-    """Validate the user's original workbook export and notebook selection."""
+    """Validate the user's original workbook export and retained plotting source."""
     export_path = directory / ARTICLE_WORKBOOK_EXPORT
-    notebook_path = directory / ARTICLE_GRAPH_NOTEBOOK
+    plot_source_path = directory / ARTICLE_PLOT_SOURCES
     raw_sources: dict[str, Any] = {}
-    for label, path in (("workbook_export", export_path), ("plot_notebook", notebook_path)):
+    for label, path in (("workbook_export", export_path), ("plot_sources", plot_source_path)):
         raw_sources[label] = {"path": str(path), "available": path.is_file()}
         if path.is_file():
             raw_sources[label].update({"bytes": path.stat().st_size, "sha256": _file_sha256(path)})
     if not export_path.is_file():
         issues.append(f"missing workbook export: {export_path}")
         return {}, raw_sources
-    if not notebook_path.is_file():
-        issues.append(f"missing plotting notebook: {notebook_path}")
-    else:
-        try:
-            json.loads(notebook_path.read_text(encoding="utf-8"))
-        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
-            issues.append(f"unable to read plotting notebook: {exc}")
+    _validate_article_plot_sources(plot_source_path, issues)
     try:
         workbook = _read_article_workbook_export(export_path)
     except (OSError, UnicodeError, csv.Error, ValueError) as exc:
@@ -386,7 +398,7 @@ def _validate_workbook_source_data(
                 continue
             record: dict[str, Any] = {
                 "rows": len(curve),
-                "provenance": f"{ARTICLE_WORKBOOK_EXPORT}:{source}; {ARTICLE_GRAPH_NOTEBOOK}:cell-{spec['cell']}",
+                "provenance": f"{ARTICLE_WORKBOOK_EXPORT}:{source}; {ARTICLE_PLOT_SOURCES}:cell-{spec['cell']}",
             }
             if "location" in spec:
                 record["location"] = spec["location"]
