@@ -1,3 +1,5 @@
+import { viewSettings, viewSettingsMarkup, bindViewSettings, applyViewerSettings } from './view-settings.js';
+import { resultFieldStepIndex } from './result-field-policy.js';
 import * as THREE from 'three';
 import { QuadViewer } from './mesh-viewer.js';
 import { decodeQuadDisplacements, deformedPoints, deformedQuadPoints, computeDisplacementContours, computeScalarContours, csharpStressColormap, displacementColormap, grayColormap, turboColormap, viridisColormap, coolwarmColormap } from './deformation.js';
@@ -82,6 +84,10 @@ export class ResultsPage {
     this.thrustSliderInitialized = false;
     this.thrustMaxForce = 0;
     this.importedData = null;
+    this.hiddenMaterials = new Set();
+    this.analysisCache = new Map();
+    this.activeChainAnalyses = null;
+    this.chainedAnalysis = null;
     root.innerHTML = `
       <aside class="results-sidebar">
         <div class="panel-title">ANALYSIS RESULTS <span class="count">DEFORMATION</span></div>
@@ -131,8 +137,7 @@ export class ResultsPage {
             </div>
           </label>
           <div class="toggle-row"><label for="resultGhost">Undeformed outline</label><input id="resultGhost" type="checkbox" checked></div>
-          <div class="toggle-row"><label for="resultEdges">Element edges</label><input id="resultEdges" type="checkbox" checked></div>
-          <div class="toggle-row"><label for="resultExtrude">Physical thickness</label><input id="resultExtrude" type="checkbox" checked></div>
+          <details class="result-shared-settings"><summary>Global view settings</summary><div id="resultSharedViewSettings">${viewSettingsMarkup('result', { result: true })}</div></details>
           <div class="toggle-row"><label for="resultThrust">Line of thrust <span class="thrust-badge">●</span></label><input id="resultThrust" type="checkbox"></div>
           <div class="toggle-row hidden" id="thrustCentroidRow"><label for="resultThrustCentroid">Width centroid line</label><input id="resultThrustCentroid" type="checkbox" checked></div>
           <div class="toggle-row hidden" id="thrustHingesRow"><label for="resultHinges">Plastic hinges <span class="hinge-badge">●</span></label><input id="resultHinges" type="checkbox" checked></div>
@@ -143,6 +148,13 @@ export class ResultsPage {
               <output id="resultThrustMinForceValue" for="resultThrustMinForce">0 / 0 kN</output>
             </div>
           </label>
+          <div class="result-materials-group" id="resultMaterialsGroup">
+            <div class="entity-heading"><span id="resultMaterialsTitle">ASSIGNED MATERIALS</span><span id="resultMaterialsCount" class="count">0</span></div>
+            <p class="muted result-materials-help">Toggle visibility of material elements.</p>
+            <input id="resultMaterialSearch" class="search hidden" type="search" placeholder="Find material…" aria-label="Search materials">
+            <div id="resultMaterialsList" class="entity-list"></div>
+            <button id="resultResetMaterials" type="button" class="secondary hidden result-reset-materials-btn">↺ Show all materials</button>
+          </div>
           </div>
           <dl class="properties result-properties">
             <div id="resultScourRow" class="hidden"><dt>Scour stage</dt><dd id="resultScour">—</dd></div>
@@ -195,8 +207,12 @@ export class ResultsPage {
       </dialog>`;
     this.$ = id => root.querySelector(`#${id}`);
     root.querySelector('.results-viewport').append(this.$('resultMiniChart'));
-    this.curves = new ResponseCurves(this.$('responseCurves'), index => { this.$('resultStep').value = index; this.draw(); });
-    this.interfaces = new InterfaceResults(this.$('interfaceResults'), index => { this.$('resultStep').value = index; this.draw(); });
+    this.curves = new ResponseCurves(this.$('responseCurves'), (index, analysisName, stageStep) => {
+      this.navigateToStep(index, analysisName, stageStep);
+    });
+    this.interfaces = new InterfaceResults(this.$('interfaceResults'), (stepNumber, analysisName) => {
+      this.navigateToStep(stepNumber, analysisName);
+    });
     this.$('sidebarImportResult').onclick = () => document.getElementById('resultFileInput')?.click();
     for (const button of root.querySelectorAll('[data-result-section]')) button.onclick = () => this.showSection(button.dataset.resultSection);
     this.$('resultDataset').onchange = () => {
@@ -232,13 +248,13 @@ export class ResultsPage {
     this.$('resultPlay').onclick = () => this.timer ? this.pause() : this.play();
     this.$('resultSpeed').onchange = () => { if (this.timer) { this.pause(); this.play(); } };
     this.$('resultGhost').onchange = () => { if (this.ghost) { this.ghost.visible = this.$('resultGhost').checked; this.viewer.needsRender = true; } };
-    this.$('resultEdges').onchange = () => this.viewer?.setOptions({ edges: this.$('resultEdges').checked }, { rebuild: false });
-    this.$('resultExtrude').onchange = () => {
+    bindViewSettings(this.$('resultSharedViewSettings'), 'result');
+    viewSettings.subscribe((settings, changed) => {
       if (!this.viewer) return;
-      this.viewer.setOptions({ extrude: this.$('resultExtrude').checked }, { rebuild: false });
-      this.ghost.geometry = this.ghostGeometries[String(this.$('resultExtrude').checked)];
-      this.draw();
-    };
+      applyViewerSettings(this.viewer, settings, { rebuild: false });
+      if ('extrude' in changed && this.ghost && this.ghostGeometries) this.ghost.geometry = this.ghostGeometries[String(settings.extrude)];
+      if ('extrude' in changed || 'colorBy' in changed) this.draw();
+    });
     this.$('resultThrust').onchange = () => {
       const active = this.$('resultThrust').checked;
       this.$('thrustCentroidRow').classList.toggle('hidden', !active);
@@ -251,6 +267,8 @@ export class ResultsPage {
     this.$('resultHinges').onchange = () => this.draw();
     this.$('thrustFilter').onchange = () => this.draw();
     this.$('resultThrustMinForce').oninput = () => this.draw();
+    this.$('resultResetMaterials').onclick = () => this.resetMaterials();
+    this.$('resultMaterialSearch').oninput = () => this.renderMaterialsList();
     this.$('resultFit').onclick = () => this.viewer?.fit();
     this.$('resultExport').onclick = () => this.openExportDialog();
     this.$('exportScale').onchange = () => this.updateExportSize();
@@ -273,7 +291,16 @@ export class ResultsPage {
   }
 
   async activate() {
-    if (this.data) { this.viewer.resize(); this.summary(); return; }
+    if (this.data) {
+      this.viewer?.resize();
+      if (this.needsViewportFit) {
+        this.needsViewportFit = false;
+        this.viewer?.setView('iso');
+      }
+      this.draw();
+      this.summary();
+      return;
+    }
     if (this.loading) return;
     this.loading = true;
     this.deactivate();
@@ -337,29 +364,34 @@ export class ResultsPage {
         this.$('thrustFilterField').classList.toggle('hidden', !this.$('resultThrust').checked || this.$('thrustFilter').options.length <= 1);
         this.$('thrustMinForceField').classList.toggle('hidden', !this.$('resultThrust').checked);
       }
-      this.viewer.setOptions({ extrude: true, edges: this.$('resultEdges').checked }, { rebuild: false });
+      applyViewerSettings(this.viewer, viewSettings.get(), { rebuild: false });
       this.viewer.modelGroup.visible = true;
-      this.viewer.loadPreview(data.mesh, { name: data.name });
+      this.hiddenMaterials.clear();
+      this.viewer.visibleQuad = q => !this.hiddenMaterials.has(String(q.material));
+      this.viewer.loadPreview(data.mesh, { name: data.name, modelPoints: data.modelPoints || data.mesh?.modelPoints });
       this.baseNormals = this.viewer.state.quads.map(q => ({ normal: q.normal.clone(), normals: q.normals?.map(n => n.clone()) }));
       this.baseNodes = new Map([...this.viewer.state.nodes].map(([key, p]) => [key, p.clone()]));
       this.baseQuadPoints = this.viewer.state.quads.map(q => q.nodeKeys.map(k => {
         const p = this.baseNodes.get(k);
         return [p.x, p.y, p.z];
       }));
-      this.ghostGeometries = { true: this.viewer.state.edgeLines.geometry.clone() };
-      this.viewer.setOptions({ extrude: false });
-      this.ghostGeometries.false = this.viewer.state.edgeLines.geometry.clone();
-      this.viewer.setOptions({ extrude: true });
+      this.buildGhostGeometries();
       this.ghost = new THREE.LineSegments(this.ghostGeometries.true, new THREE.LineBasicMaterial({ color: 0xffca7d, transparent: true, opacity: 0.55, depthWrite: false }));
       this.viewer.scene.add(this.ghost);
       this.ghost.visible = this.$('resultGhost').checked;
-      this.viewer.setOptions({ extrude: this.$('resultExtrude').checked });
+      applyViewerSettings(this.viewer, viewSettings.get());
       this.ghost.geometry = this.ghostGeometries[String(this.$('resultExtrude').checked)];
+      this.renderMaterialsList();
+      this.analysisCache.clear();
+      for (const a of (data.analyses || [])) this.analysisCache.set(a.name, a);
+      this.activeChainAnalyses = null;
+      this.chainedAnalysis = null;
       this.$('resultAnalysis').replaceChildren(); this.$('modalAnalysis').replaceChildren(); this.$('modalMode').replaceChildren();
       const analysisOptions = data.analysisCatalog?.length
         ? data.analysisCatalog
         : data.analyses.map(analysis => ({ name: analysis.name, label: analysis.name }));
       for (const analysis of analysisOptions) this.$('resultAnalysis').add(new Option(analysis.label || analysis.name, analysis.name));
+      if (analysisOptions.length > 1) this.$('resultAnalysis').add(new Option('⭐ Whole history (all stages)', '__all__'));
       const analysisNames = analysisOptions.map(analysis => analysis.name);
       this.$('resultAnalysis').value = data.defaultAnalysis
         || (analysisNames.includes('LiveLoad_0') ? 'LiveLoad_0' : analysisNames.includes('LiveLoad_1') ? 'LiveLoad_1' : analysisNames.at(-1));
@@ -390,8 +422,40 @@ export class ResultsPage {
     this.deactivate();
     this.importedData = data;
     this.data = data;
+    this.nodeKeyToIndex = null;
+    this.slotMap = null;
+    this.stepFields = null;
+    this.stepFieldCache.clear();
+    this.prefetchAttempted.clear();
+    this.modalShapeCache.clear();
+    this.autoScaled = true;
+    this.needsViewportFit = this.root.classList.contains('hidden');
     this.$('resultDiagnostics').classList.add('hidden');
     this.$('resultMessage').classList.add('hidden');
+
+    this.interfaces.destroy();
+    this.interfaces = new InterfaceResults(this.$('interfaceResults'), (stepNumber, analysisName) => {
+      this.navigateToStep(stepNumber, analysisName);
+    });
+
+    if (this.$('thrustFilter') && data.mesh) {
+      this.$('thrustFilter').replaceChildren(new Option('All blocks', 'all'));
+      if (data.mesh.thrustPairs?.length) {
+        const matsInPairs = new Set(data.mesh.thrustPairs.map(p => String(p[3])));
+        const hasBackfill = (data.mesh.materials || []).some(m => matsInPairs.has(String(m.key)) && /backfill|soil/i.test(m.name));
+        if (hasBackfill) {
+          this.$('thrustFilter').add(new Option('Arches, piers & foundations', 'structural'));
+        }
+        for (const mat of data.mesh.materials || []) {
+          if (matsInPairs.has(String(mat.key))) {
+            this.$('thrustFilter').add(new Option(mat.name, mat.key));
+          }
+        }
+        if (hasBackfill) this.$('thrustFilter').value = 'structural';
+      }
+      this.$('thrustFilterField')?.classList.toggle('hidden', !this.$('resultThrust')?.checked || this.$('thrustFilter').options.length <= 1);
+      this.$('thrustMinForceField')?.classList.toggle('hidden', !this.$('resultThrust')?.checked);
+    }
 
     for (const button of this.root.querySelectorAll('[data-result-section]')) button.disabled = false;
     const modalButton = this.root.querySelector('[data-result-section=modes]');
@@ -400,10 +464,18 @@ export class ResultsPage {
       modalButton.title = data.modal?.length ? 'View saved modal results' : 'This source contains no saved modal results';
     }
 
+    this.analysisCache.clear();
+    for (const a of (data.analyses || [])) this.analysisCache.set(a.name, a);
+    this.activeChainAnalyses = null;
+    this.chainedAnalysis = null;
+
     this.$('resultAnalysis').replaceChildren();
     const analysisOptions = data.analysisCatalog?.length ? data.analysisCatalog : (data.analyses || []);
     for (const analysis of analysisOptions) {
       this.$('resultAnalysis').add(new Option(analysis.label || analysis.name, analysis.name));
+    }
+    if (analysisOptions.length > 1) {
+      this.$('resultAnalysis').add(new Option('⭐ Whole history (all stages)', '__all__'));
     }
     this.$('resultAnalysis').value = data.defaultAnalysis
       || data.analyses?.[0]?.name
@@ -413,6 +485,9 @@ export class ResultsPage {
     this.$('resultSource').textContent = label;
 
     const sourceId = data.sourceId || 'imported';
+    if (this.catalog?.sources && !this.catalog.sources.some(s => s.id === sourceId)) {
+      this.catalog.sources.unshift({ id: sourceId, label });
+    }
     let option = Array.from(this.$('resultDataset').options).find(o => o.value === sourceId);
     if (!option) {
       option = new Option(`📁 ${label}`, sourceId);
@@ -426,7 +501,8 @@ export class ResultsPage {
     this.$('modalAnalysis').replaceChildren();
     this.$('modalMode').replaceChildren();
     for (const analysis of data.modal || []) this.$('modalAnalysis').add(new Option(analysis.name, analysis.name));
-    this.$('modalAnalysis').value = data.modal?.[0]?.name || '';
+    const defaultModal = (data.modal || []).find(m => m.name === data.defaultAnalysis)?.name || data.modal?.[0]?.name || '';
+    this.$('modalAnalysis').value = defaultModal;
     this.selectModal();
 
     if (data.mesh && data.mesh.nodes?.length) {
@@ -440,33 +516,52 @@ export class ResultsPage {
       if (this.hingeMesh) { this.viewer.scene.remove(this.hingeMesh); this.hingeMesh.geometry.dispose(); this.hingeMesh.material.dispose(); this.hingeMesh = null; }
       Object.values(this.ghostGeometries || {}).forEach(geometry => geometry.dispose());
 
+      applyViewerSettings(this.viewer, viewSettings.get(), { rebuild: false });
       this.viewer.modelGroup.visible = true;
-      this.viewer.loadPreview(data.mesh, { name: data.name || label });
+      this.hiddenMaterials.clear();
+      this.viewer.visibleQuad = q => !this.hiddenMaterials.has(String(q.material));
+      this.viewer.loadPreview(data.mesh, { name: data.name || label, modelPoints: data.modelPoints || data.mesh?.modelPoints });
       this.baseNormals = this.viewer.state.quads.map(q => ({ normal: q.normal.clone(), normals: q.normals?.map(n => n.clone()) }));
       this.baseNodes = new Map([...this.viewer.state.nodes].map(([key, p]) => [key, p.clone()]));
       this.baseQuadPoints = this.viewer.state.quads.map(q => q.nodeKeys.map(k => {
         const p = this.baseNodes.get(k);
         return p ? [p.x, p.y, p.z] : [0, 0, 0];
       }));
-      this.ghostGeometries = { true: this.viewer.state.edgeLines.geometry.clone() };
-      this.viewer.setOptions({ extrude: false });
-      this.ghostGeometries.false = this.viewer.state.edgeLines.geometry.clone();
-      this.viewer.setOptions({ extrude: true });
+      this.buildGhostGeometries();
       this.ghost = new THREE.LineSegments(this.ghostGeometries.true, new THREE.LineBasicMaterial({ color: 0xffca7d, transparent: true, opacity: 0.55, depthWrite: false }));
       this.viewer.scene.add(this.ghost);
       this.ghost.visible = this.$('resultGhost').checked;
-      this.viewer.setView('iso');
+      applyViewerSettings(this.viewer, viewSettings.get());
+      this.ghost.geometry = this.ghostGeometries[String(this.$('resultExtrude').checked)];
+      this.renderMaterialsList();
+      if (!this.needsViewportFit) {
+        this.viewer.resize();
+        this.viewer.setView('iso');
+      }
     }
 
     if (data.analyses?.length) {
       this.selectAnalysis();
     }
-    this.showSection(this.section || 'shape');
+    const isModalTarget = Boolean(
+      data.modal?.length
+      && data.modal.some(m => m.name === this.$('resultAnalysis').value)
+      && (!this.analysis?.steps || this.analysis.steps.length <= 1)
+    );
+    this.showSection(isModalTarget ? 'modes' : (this.section === 'modes' && !data.modal?.length ? 'shape' : (this.section || 'shape')));
     this.summary();
   }
 
   deactivate() { this.pause(); this.interfaces.pause(); }
-  get analysis() { return this.data?.analyses.find(a => a.name === this.$('resultAnalysis').value); }
+  get analysis() {
+    if (this.$('resultAnalysis')?.value === '__all__' && this.chainedAnalysis) {
+      return this.chainedAnalysis;
+    }
+    const current = this.$('resultAnalysis')?.value;
+    return this.data?.analyses?.find(a => a.name === current)
+      || this.analysisCache?.get(current)
+      || this.data?.analyses?.[0];
+  }
   get step() { return this.analysis?.steps[Number(this.$('resultStep').value)]; }
   get modal() { return this.data?.modal.find(m => m.name === this.$('modalAnalysis').value); }
   get mode() { return this.modal?.modes[Number(this.$('modalMode').value)]; }
@@ -574,24 +669,204 @@ export class ResultsPage {
     }
   }
 
+  resolveAnalysisChain(targetName) {
+    const catalog = this.data?.analysisCatalog || [];
+    if (!catalog.length) return targetName && targetName !== '__all__' ? [targetName] : [];
+    if (!targetName || targetName === '__all__') {
+      return catalog.filter(item => !String(item.name || '').toLowerCase().startsWith('modal')).map(item => item.name);
+    }
+    const byKey = new Map();
+    const byName = new Map();
+    for (const item of catalog) {
+      if (item.key != null) byKey.set(String(item.key), item);
+      byName.set(item.name, item);
+    }
+    const targetItem = byName.get(targetName);
+    if (!targetItem) return [targetName];
+    const chain = [];
+    const seen = new Set();
+    let current = targetItem;
+    while (current) {
+      const k = String(current.key ?? current.name);
+      if (seen.has(k)) break;
+      seen.add(k);
+      chain.push(current.name);
+      const initKey = String(current.initialAnalysisKey ?? '-100');
+      if (!initKey || Number(initKey) < 0) break;
+      current = byKey.get(initKey) || null;
+    }
+    return chain.reverse();
+  }
+
+  async loadAnalysisData(name) {
+    if (!name || name === '__all__') return null;
+    if (this.analysisCache.has(name)) return this.analysisCache.get(name);
+    const found = this.data?.analyses?.find(a => a.name === name);
+    if (found) {
+      this.analysisCache.set(name, found);
+      return found;
+    }
+    const sourceId = this.$('resultDataset')?.value || this.data?.sourceId;
+    if (!sourceId) return null;
+    const response = await fetch(`/api/results/${encodeURIComponent(sourceId)}?analysis=${encodeURIComponent(name)}`);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || `Unable to read analysis ${name}.`);
+    const analysis = data.analyses?.[0];
+    if (analysis) {
+      this.analysisCache.set(analysis.name, analysis);
+    }
+    return analysis;
+  }
+
+  async getAnalysisChain(targetName) {
+    const names = this.resolveAnalysisChain(targetName);
+    if (!names.length) return [];
+    const analyses = await Promise.all(names.map(name => this.loadAnalysisData(name)));
+    return analyses.filter(Boolean);
+  }
+
+  buildChainedAnalysis(analyses) {
+    if (!analyses?.length) return null;
+    if (analyses.length === 1) return analyses[0];
+    const latest = analyses.at(-1);
+    const first = analyses[0];
+    const chainStages = [];
+    const allSteps = [];
+    let cumulativeStep = 0;
+    for (let si = 0; si < analyses.length; si++) {
+      const a = analyses[si];
+      const startIdx = cumulativeStep;
+      for (let i = 0; i < a.steps.length; i++) {
+        const s = a.steps[i];
+        allSteps.push({
+          ...s,
+          analysisName: a.name,
+          stageLabel: a.name,
+          stageStep: s.step,
+          stageIndex: si,
+          cumulativeStep: cumulativeStep++,
+          isStageStart: i === 0,
+        });
+      }
+      chainStages.push({
+        name: a.name,
+        key: a.key,
+        stepCount: a.steps.length,
+        startIndex: startIdx,
+        endIndex: cumulativeStep - 1,
+      });
+    }
+
+    let mergedModelPoints = null;
+    const mpPoints = latest.modelPoints?.points || first.modelPoints?.points;
+    if (mpPoints?.length) {
+      const mergedPoints = mpPoints.map(p => {
+        const ux = [], uy = [], uz = [];
+        let anyAvail = false;
+        for (const a of analyses) {
+          const matchPoint = a.modelPoints?.points?.find(mp => String(mp.key) === String(p.key));
+          if (matchPoint?.available && matchPoint.displacement_cm) {
+            anyAvail = true;
+            ux.push(...(matchPoint.displacement_cm.ux || []));
+            uy.push(...(matchPoint.displacement_cm.uy || []));
+            uz.push(...(matchPoint.displacement_cm.uz || []));
+          } else {
+            const zeroes = new Array(a.steps.length).fill(0);
+            ux.push(...zeroes);
+            uy.push(...zeroes);
+            uz.push(...zeroes);
+          }
+        }
+        return {
+          ...p,
+          available: anyAvail,
+          displacement_cm: { ux, uy, uz },
+        };
+      });
+      mergedModelPoints = {
+        step: allSteps.map(s => s.cumulativeStep),
+        points: mergedPoints,
+      };
+    }
+
+    return {
+      name: `Whole history (${analyses.map(a => a.name).join(' → ')})`,
+      shortName: 'Whole history',
+      isChain: true,
+      chainStages,
+      steps: allSteps,
+      interfaces: latest.interfaces,
+      interfaceOrder: latest.interfaceOrder,
+      modelPoints: mergedModelPoints,
+      finalStress: latest.finalStress,
+      stressFields: latest.stressFields,
+      outcome: `Whole history · ${analyses.length} stages · ${allSteps.length} saved steps`,
+      diagnostics: latest.diagnostics,
+      curveOnly: false,
+    };
+  }
+
+  async navigateToStep(indexOrStep, analysisName, stageStep) {
+    this.pause();
+    if (this.$('resultAnalysis').value === '__all__') {
+      const idx = typeof indexOrStep === 'number' ? indexOrStep : Number(indexOrStep);
+      this.$('resultStep').value = Math.min(Math.max(0, idx), this.analysis.steps.length - 1);
+      this.draw();
+      return;
+    }
+    if (analysisName && analysisName !== this.analysis?.name) {
+      this.$('resultAnalysis').value = analysisName;
+      await this.loadAnalysis();
+      const stepIdx = this.analysis?.steps?.findIndex(s => s.step === (stageStep ?? indexOrStep));
+      this.$('resultStep').value = stepIdx >= 0 ? stepIdx : Math.min(Number(indexOrStep), this.analysis.steps.length - 1);
+      this.draw();
+      return;
+    }
+    const stepIdx = typeof indexOrStep === 'number' && indexOrStep < this.analysis?.steps?.length
+      ? indexOrStep
+      : this.analysis?.steps?.findIndex(s => s.step === (stageStep ?? indexOrStep));
+    this.$('resultStep').value = stepIdx >= 0 ? stepIdx : 0;
+    this.draw();
+  }
+
   async loadAnalysis() {
     const name = this.$('resultAnalysis').value;
     if (!name || this.analysisLoading) return;
-    if (this.data?.analyses?.some(analysis => analysis.name === name)) { this.selectAnalysis(); return; }
-    this.analysisLoading = true;
     const select = this.$('resultAnalysis');
-    const previous = this.data?.analyses?.[0]?.name;
     select.disabled = true;
     if (this.$('resultExport')) this.$('resultExport').disabled = true;
+    this.analysisLoading = true;
     const message = this.$('resultMessage');
-    message.textContent = 'Reading saved displacement history…';
-    message.classList.remove('hidden', 'error');
+    const previous = this.data?.analyses?.[0]?.name;
     try {
+      if (name === '__all__') {
+        message.textContent = 'Reading whole history across all stages…';
+        message.classList.remove('hidden', 'error');
+        const chain = await this.getAnalysisChain('__all__');
+        this.activeChainAnalyses = chain;
+        this.chainedAnalysis = this.buildChainedAnalysis(chain);
+        message.classList.add('hidden');
+        await this.selectAnalysis();
+        return;
+      }
+      this.chainedAnalysis = null;
+      if (this.analysisCache.has(name)) {
+        const cached = this.analysisCache.get(name);
+        this.data.analyses = [cached];
+        message.classList.add('hidden');
+        await this.selectAnalysis();
+        return;
+      }
+      message.textContent = 'Reading saved displacement history…';
+      message.classList.remove('hidden', 'error');
       const sourceId = this.$('resultDataset').value;
       const response = await fetch(`/api/results/${encodeURIComponent(sourceId)}?analysis=${encodeURIComponent(name)}`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Unable to read saved results.');
       this.data.analyses = data.analyses;
+      if (data.analyses?.[0]) {
+        this.analysisCache.set(data.analyses[0].name, data.analyses[0]);
+      }
       this.data.modal = data.modal;
       this.data.analysisCatalog = data.analysisCatalog || this.data.analysisCatalog;
       this.data.defaultAnalysis = data.defaultAnalysis;
@@ -605,7 +880,7 @@ export class ResultsPage {
       this.data.name = data.name;
       this.$('resultSource').textContent = data.name;
       message.classList.add('hidden');
-      this.selectAnalysis();
+      await this.selectAnalysis();
     } catch (error) {
       if (previous) select.value = previous;
       message.textContent = error.message || String(error);
@@ -644,7 +919,8 @@ export class ResultsPage {
 
   stepFieldKey() {
     const record = this.step;
-    return record ? `${this.analysis?.name || ''}|${record.step}` : null;
+    const aName = record?.analysisName || this.analysis?.name || '';
+    return record ? `${aName}|${record.stageStep ?? record.step}` : null;
   }
 
   async loadStepFields({ quiet = false } = {}) {
@@ -652,15 +928,17 @@ export class ResultsPage {
     const key = this.stepFieldKey();
     if (!key || this.stepFieldCache.has(key) || this.pendingStepField) return;
     this.pendingStepField = key;
+    const aName = this.step?.analysisName || this.analysis?.name;
+    const stepNum = this.step?.stageStep ?? this.step?.step;
     const message = this.$('resultMessage');
     if (!quiet) {
-      message.textContent = `Reading step ${this.step.step} stress fields…`;
+      message.textContent = `Reading step ${stepNum} stress fields…`;
       message.classList.remove('hidden', 'error');
     }
     try {
       const response = await fetch(
-        `/api/results/${encodeURIComponent(this.data.sourceId)}/fields?analysis=${encodeURIComponent(this.analysis.name)}` +
-        `&step=${encodeURIComponent(this.step.step)}`
+        `/api/results/${encodeURIComponent(this.data.sourceId)}/fields?analysis=${encodeURIComponent(aName)}` +
+        `&step=${encodeURIComponent(stepNum)}`
       );
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || 'Unable to read step stress fields.');
@@ -778,7 +1056,7 @@ export class ResultsPage {
     }
   }
 
-  selectAnalysis() {
+  async selectAnalysis() {
     this.pause();
     clearTimeout(this.prefetchTimer);
     this.colorRangeCustom = null;
@@ -790,7 +1068,12 @@ export class ResultsPage {
     this.buildColorOptions();
     this.$('resultStep').max = this.analysis.steps.length - 1;
     this.$('resultStep').value = this.analysis.steps.length - 1;
-    this.$('resultOutcome').textContent = this.analysis.outcome;
+    const target = this.analysis.lambdaTarget;
+    this.$('resultOutcome').textContent = (this.analysis.outcome || '') + (target
+      ? target.reached
+        ? ` · λ target ${target.target} crossed at step ${target.step} (λ = ${target.achieved})`
+        : ` · λ target ${target.target} not reached`
+      : '');
     if (this.data?.scourStage) {
       this.$('resultScourRow')?.classList.remove('hidden');
       this.$('resultScour').textContent = this.data.scourStage.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -806,11 +1089,38 @@ export class ResultsPage {
     const diagnostics = this.analysis.diagnostics, note = this.$('resultDiagnostics');
     note.classList.toggle('hidden', !diagnostics?.equilibriumFailedSteps);
     note.textContent = diagnostics?.equilibriumFailedSteps ? `Saved diagnostics: equilibrium checks failed at ${diagnostics.equilibriumFailedSteps} of ${diagnostics.equilibriumCheckedSteps} checked steps. Results are displayed as exported.` : '';
-    this.$('resultFinalLabel').textContent = `Step ${this.analysis.steps.at(-1).step}`;
+    this.$('resultFinalLabel').textContent = `Step ${this.analysis.steps.at(-1).stageStep ?? this.analysis.steps.at(-1).step}`;
     this.syncColorMode();
     if (this.autoScaled) this.autoScale();
     else this.draw();
     this.scheduleFieldPrefetch();
+
+    const currentName = this.$('resultAnalysis')?.value;
+    if (currentName && currentName !== '__all__') {
+      try {
+        const chain = await this.getAnalysisChain(currentName);
+        if (this.$('resultAnalysis')?.value === currentName && chain.length > 1) {
+          this.activeChainAnalyses = chain;
+          this.chainedAnalysis = this.buildChainedAnalysis(chain);
+          if (this.section === 'curves') {
+            this.curves.update(this.analysis, Number(this.$('resultStep').value), {
+              chainAnalysis: this.chainedAnalysis,
+              mesh: this.data.mesh,
+            });
+          }
+          if (this.section === 'interfaces' && this.analysis.interfaces?.length) {
+            this.interfaces.update(
+              this.analysis,
+              this.data.mesh,
+              Number(this.$('resultStep').value),
+              this.data.modelSha256,
+              this.data.sourceId,
+              { chainAnalyses: chain }
+            );
+          }
+        }
+      } catch (_) {}
+    }
   }
 
   syncThrustMinForce(maxForce) {
@@ -850,6 +1160,12 @@ export class ResultsPage {
     const lazyFields = Boolean(this.data?.lazyFields);
     const requestedField = this.fieldById(requestedColor);
     const scalarRequested = !modal && Boolean(requestedField?.available);
+    // Python and bridge snapshots contain spring fields only at the final step.
+    // Select that step before looking up or requesting lazy fields: the server
+    // returns the final snapshot even when asked for an earlier step.
+    this.$('resultStep').value = resultFieldStepIndex(
+      Number(this.$('resultStep').value), this.analysis.steps.length, scalarRequested, nativeCsharp
+    );
     const atFinalStep = Number(this.$('resultStep').value) === this.analysis.steps.length - 1;
     const needsFieldValues = scalarRequested && (nativeCsharp || lazyFields)
       && (!atFinalStep || !this.fieldHasValues(requestedField));
@@ -870,9 +1186,6 @@ export class ResultsPage {
     }
     const activeField = this.fieldById(requestedColor);
     const scalarMap = !modal && Boolean(activeField?.available);
-    if (scalarMap && !nativeCsharp && !atFinalStep) {
-      this.$('resultStep').value = this.analysis.steps.length - 1;
-    }
     if ((this.section === 'shape' || modal) && this.data.mesh?.nodes?.length && (!modal || this.mode)) {
       const values = modal ? this.mode.displacements.map(v => v.map(u => u * (this.modePhase ?? 1))) : this.step.displacements;
       if (values && values.length === this.data.mesh.nodes.length) {
@@ -880,8 +1193,6 @@ export class ResultsPage {
         const bounds = new THREE.Box3();
         points.forEach((point, i) => {
           this.viewer.state.nodes.get(Number(this.data.mesh.nodes[i].key)).set(...point);
-          bounds.expandByPoint(new THREE.Vector3(...point));
-          bounds.expandByPoint(new THREE.Vector3(...this.data.mesh.nodes[i].point));
         });
         const record = modal ? this.mode : this.step;
         if (record.quadDisplacements) {
@@ -891,7 +1202,6 @@ export class ResultsPage {
             if (!quad.points) quad.points = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
             for (let c = 0; c < 4; c++) {
               quad.points[c].set(...quadPts[i][c]);
-              bounds.expandByPoint(quad.points[c]);
             }
           });
         } else {
@@ -905,7 +1215,23 @@ export class ResultsPage {
           quad.normal.copy(this.baseNormals[i].normal).applyQuaternion(rotation);
           quad.normals = this.baseNormals[i].normals?.map(n => n.clone().applyQuaternion(rotation));
         });
+        const visibleQuads = this.viewer.state.quads.filter(quad => this.viewer.visibleQuad(quad));
+        if (visibleQuads.length > 0) {
+          const visibleNodeKeys = new Set(visibleQuads.flatMap(q => q.nodeKeys));
+          this.data.mesh.nodes.forEach((node, i) => {
+            if (visibleNodeKeys.has(Number(node.key))) {
+              bounds.expandByPoint(new THREE.Vector3(...points[i]));
+              bounds.expandByPoint(new THREE.Vector3(...node.point));
+            }
+          });
+          visibleQuads.forEach(quad => {
+            if (quad.points) {
+              for (let c = 0; c < 4; c++) bounds.expandByPoint(quad.points[c]);
+            }
+          });
+        }
         this.viewer.state.bounds.copy(bounds);
+        this.viewer.updateModelPoints?.();
         const requestedMode = this.$('resultColorBy')?.value || 'magnitude';
         const colorMode = ['magnitude', 'x', 'y', 'z', 'none'].includes(requestedMode) ? requestedMode : 'magnitude';
         if (scalarMap) {
@@ -1001,12 +1327,21 @@ export class ResultsPage {
           this.$('dispLegend')?.classList.add('hidden');
         }
         this.viewer.rebuild();
-        this.viewer.state.bounds.union(this.viewer.state.mesh.geometry.boundingBox);
+        if (this.viewer.state.mesh?.geometry?.boundingBox && !this.viewer.state.mesh.geometry.boundingBox.isEmpty()) {
+          this.viewer.state.bounds.union(this.viewer.state.mesh.geometry.boundingBox);
+        }
       }
     }
     const step = this.step;
-    this.$('resultStepValue').textContent = `${step.step} / ${this.analysis.steps.at(-1).step}`;
-    this.$('resultStepLabel').textContent = `Step ${step.step} · ${step.status === 'INITIAL' ? 'Initial' : 'Committed'}`;
+    const isChain = Boolean(this.analysis?.isChain);
+    const stepNumber = step.stageStep ?? step.step;
+    const finalStepNumber = this.analysis.steps.at(-1).stageStep ?? this.analysis.steps.at(-1).step;
+    this.$('resultStepValue').textContent = isChain
+      ? `${step.analysisName}: step ${stepNumber} (${Number(this.$('resultStep').value) + 1} / ${this.analysis.steps.length})`
+      : `${stepNumber} / ${finalStepNumber}`;
+    this.$('resultStepLabel').textContent = isChain
+      ? `${step.analysisName} · Step ${stepNumber} · ${step.status === 'INITIAL' ? 'Initial' : 'Committed'}`
+      : `Step ${stepNumber} · ${step.status === 'INITIAL' ? 'Initial' : 'Committed'}`;
     this.$('resultLambda').textContent = number(step.loadFactor);
     this.$('resultControl').textContent = `${number(step.controlDisplacement)} cm`;
     this.$('resultMaximum').textContent = `${number(step.maxDisplacement)} cm`;
@@ -1019,7 +1354,7 @@ export class ResultsPage {
       this.$('resultPierRow')?.classList.add('hidden');
     }
     this.$('resultScaleBadge').textContent = `${number(scale)}× deformation${scale === 1 ? ' · actual size' : ''}`;
-    this.$('resultStageLabel').textContent = `${this.analysis.name} · step ${step.step}`;
+    this.$('resultStageLabel').textContent = `${step.analysisName || this.analysis.name} · step ${stepNumber}`;
     if (modal) {
       this.$('modalFrequency').textContent = `${number(this.mode.frequency)} Hz`;
       this.$('modalPeriod').textContent = `${number(this.mode.period)} s`;
@@ -1029,11 +1364,22 @@ export class ResultsPage {
       this.$('resultStepLabel').textContent = `${number(this.mode.frequency)} Hz · ${number(this.mode.period)} s`;
     } else {
       const select = i => { this.pause(); this.$('resultStep').value = i; this.draw(); };
-      if (this.section === 'shape') this.$('resultMiniChart').replaceChildren(responseChart(this.analysis, 'force', 'displacement', Number(this.$('resultStep').value), select, true));
-      if (this.section === 'curves') this.curves.update(this.analysis, Number(this.$('resultStep').value));
+      if (this.section === 'shape') {
+        const presentation = this.analysis?.chainStages ? { stages: this.analysis.chainStages } : undefined;
+        this.$('resultMiniChart').replaceChildren(responseChart(this.analysis, 'force', 'displacement', Number(this.$('resultStep').value), select, true, presentation));
+      }
+      if (this.section === 'curves') {
+        this.curves.update(this.analysis, Number(this.$('resultStep').value), {
+          chainAnalysis: this.chainedAnalysis,
+          mesh: this.data.mesh,
+        });
+      }
       if (this.section === 'interfaces') {
         if (this.analysis.interfaces?.length) {
-          this.interfaces.update(this.analysis, this.data.mesh, Number(this.$('resultStep').value), this.data.modelSha256, this.data.sourceId);
+          const chainList = this.activeChainAnalyses || (this.chainedAnalysis?.chainStages ? this.activeChainAnalyses : [this.analysis]);
+          this.interfaces.update(this.analysis, this.data.mesh, Number(this.$('resultStep').value), this.data.modelSha256, this.data.sourceId, {
+            chainAnalyses: chainList,
+          });
         } else {
           this.$('interfaceResults').innerHTML = '<div class="result-empty-message">No interface stress data saved in this results file.</div>';
         }
@@ -1086,8 +1432,22 @@ export class ResultsPage {
 
     const nodeMap = key => this.viewer.state.nodes.get(Number(key));
     let materialFilter = this.$('thrustFilter')?.value || 'all';
+    let allowedMaterials = null;
     if (materialFilter === 'structural') {
-      materialFilter = new Set(mesh.materials.filter(m => !/backfill|soil/i.test(m.name)).map(m => String(m.key)));
+      allowedMaterials = new Set(mesh.materials.filter(m => !/backfill|soil/i.test(m.name)).map(m => String(m.key)));
+    } else if (materialFilter !== 'all') {
+      allowedMaterials = new Set([String(materialFilter)]);
+    }
+    if (this.hiddenMaterials?.size > 0) {
+      if (!allowedMaterials) {
+        allowedMaterials = new Set(mesh.materials.map(m => String(m.key)));
+      }
+      for (const hiddenKey of this.hiddenMaterials) {
+        allowedMaterials.delete(String(hiddenKey));
+      }
+    }
+    if (allowedMaterials) {
+      materialFilter = allowedMaterials;
     }
     const showHinges = Boolean(this.$('resultHinges')?.checked);
     const combineWidth = Boolean(this.$('resultThrustCentroid')?.checked);
@@ -1293,9 +1653,206 @@ export class ResultsPage {
     this.$('resultPlay').setAttribute('aria-label', 'Play deformation');
   }
 
+  buildGhostGeometries() {
+    if (!this.viewer?.state?.quads || !this.baseNodes) return;
+    Object.values(this.ghostGeometries || {}).forEach(g => g?.dispose?.());
+    const buildEdges = extrude => {
+      const edgePositions = [];
+      const addSegment = (a, b) => edgePositions.push(a.x, a.y, a.z, b.x, b.y, b.z);
+      const thicknessScale = Number(this.viewer.options.thicknessScale) || 1;
+      this.viewer.state.quads.forEach((quad, i) => {
+        if (!this.viewer.visibleQuad(quad)) return;
+        const base = quad.nodeKeys.map(k => this.baseNodes.get(k));
+        if (base.some(p => !p)) return;
+        if (!extrude) {
+          for (let index = 0; index < 4; index += 1) {
+            addSegment(base[index], base[(index + 1) % 4]);
+          }
+          return;
+        }
+        const normal = this.baseNormals?.[i]?.normal?.lengthSq() > 1e-18
+          ? this.baseNormals[i].normal.clone().normalize()
+          : (pts => pts[1].clone().sub(pts[0]).cross(pts[3].clone().sub(pts[0])).normalize())(base);
+        const top = base.map((point, index) =>
+          point.clone().addScaledVector(this.baseNormals?.[i]?.normals?.[index] ?? normal, (quad.thicknesses?.[index] ?? 0) * thicknessScale * 0.5)
+        );
+        const bottom = base.map((point, index) =>
+          point.clone().addScaledVector(this.baseNormals?.[i]?.normals?.[index] ?? normal, -(quad.thicknesses?.[index] ?? 0) * thicknessScale * 0.5)
+        );
+        for (let index = 0; index < 4; index += 1) {
+          addSegment(top[index], top[(index + 1) % 4]);
+          addSegment(bottom[index], bottom[(index + 1) % 4]);
+          addSegment(top[index], bottom[index]);
+        }
+      });
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(edgePositions, 3));
+      return geo;
+    };
+    this.ghostGeometries = {
+      true: buildEdges(true),
+      false: buildEdges(false),
+    };
+    if (this.ghost) {
+      this.ghost.geometry = this.ghostGeometries[String(this.$('resultExtrude').checked)];
+    }
+  }
+
+  getMaterialsList() {
+    if (!this.data?.mesh) return [];
+    const quads = this.viewer?.state?.quads || this.data.mesh.quads || [];
+    const quadCounts = new Map();
+    for (const q of quads) {
+      const matKey = String(q.material ?? q.materialKey ?? '');
+      quadCounts.set(matKey, (quadCounts.get(matKey) || 0) + 1);
+    }
+    const materials = this.data.mesh.materials || [];
+    const knownKeys = new Set();
+    const list = [];
+    for (const m of materials) {
+      const key = String(m.key);
+      knownKeys.add(key);
+      list.push({
+        key,
+        name: m.name || `Material ${key}`,
+        color: m.color || '#6fb7ff',
+        quadCount: quadCounts.get(key) || 0,
+      });
+    }
+    for (const [key, count] of quadCounts.entries()) {
+      if (key && !knownKeys.has(key)) {
+        list.push({
+          key,
+          name: `Material ${key}`,
+          color: '#6fb7ff',
+          quadCount: count,
+        });
+      }
+    }
+    return list;
+  }
+
+  toggleMaterial(key, isAlt = false) {
+    const materials = this.getMaterialsList();
+    const keyStr = String(key);
+    if (isAlt) {
+      const allOtherHidden = materials.length > 1 &&
+        materials.every(m => String(m.key) === keyStr ? !this.hiddenMaterials.has(String(m.key)) : this.hiddenMaterials.has(String(m.key)));
+      if (allOtherHidden) {
+        this.hiddenMaterials.clear();
+      } else {
+        this.hiddenMaterials.clear();
+        for (const m of materials) {
+          if (String(m.key) !== keyStr) this.hiddenMaterials.add(String(m.key));
+        }
+      }
+    } else {
+      if (this.hiddenMaterials.has(keyStr)) {
+        this.hiddenMaterials.delete(keyStr);
+      } else {
+        this.hiddenMaterials.add(keyStr);
+      }
+    }
+    if (this.viewer) {
+      this.viewer.visibleQuad = q => !this.hiddenMaterials.has(String(q.material));
+    }
+    this.renderMaterialsList();
+    this.buildGhostGeometries();
+    this.draw();
+  }
+
+  resetMaterials() {
+    this.hiddenMaterials.clear();
+    if (this.viewer) {
+      this.viewer.visibleQuad = q => !this.hiddenMaterials.has(String(q.material));
+    }
+    this.renderMaterialsList();
+    this.buildGhostGeometries();
+    this.draw();
+  }
+
+  renderMaterialsList() {
+    const listEl = this.$('resultMaterialsList');
+    if (!listEl) return;
+    const materials = this.getMaterialsList();
+    if (!materials.length) {
+      this.$('resultMaterialsGroup')?.classList.add('hidden');
+      return;
+    }
+    this.$('resultMaterialsGroup')?.classList.remove('hidden');
+    const query = (this.$('resultMaterialSearch')?.value || '').trim().toLowerCase();
+    this.$('resultMaterialSearch')?.classList.toggle('hidden', materials.length <= 5 && !query);
+
+    const visibleMaterials = query
+      ? materials.filter(m => `${m.name} ${m.key}`.toLowerCase().includes(query))
+      : materials;
+
+    const visibleCount = materials.filter(m => !this.hiddenMaterials.has(String(m.key))).length;
+    this.$('resultMaterialsCount').textContent = visibleCount === materials.length
+      ? String(materials.length)
+      : `${visibleCount}/${materials.length}`;
+
+    this.$('resultResetMaterials')?.classList.toggle('hidden', this.hiddenMaterials.size === 0);
+
+    listEl.replaceChildren();
+    for (const record of visibleMaterials) {
+      const keyStr = String(record.key);
+      const hidden = this.hiddenMaterials.has(keyStr);
+
+      const row = document.createElement('div');
+      row.className = 'entity';
+      if (hidden) row.classList.add('hidden-entity');
+
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'inspect-button';
+      button.title = `${record.name} (Key #${keyStr}) · Click to toggle, Alt-click to isolate`;
+      button.onclick = (e) => this.toggleMaterial(record.key, e.altKey);
+
+      const swatch = document.createElement('span');
+      swatch.className = 'swatch';
+      swatch.style.background = record.color || '#6fb7ff';
+
+      const info = document.createElement('span');
+      info.className = 'entity-info';
+
+      const nameEl = document.createElement('span');
+      nameEl.className = 'entity-name';
+      nameEl.textContent = record.name;
+
+      const metaEl = document.createElement('span');
+      metaEl.className = 'entity-meta';
+      metaEl.textContent = `${record.quadCount.toLocaleString()} quads · #${keyStr}`;
+
+      info.append(nameEl, metaEl);
+      button.append(swatch, info);
+      row.append(button);
+
+      const visibility = document.createElement('button');
+      visibility.type = 'button';
+      visibility.className = 'visibility';
+      visibility.textContent = hidden ? '○' : '◉';
+      visibility.setAttribute('aria-label', `${hidden ? 'Show' : 'Hide'} ${record.name}`);
+      visibility.setAttribute('aria-pressed', String(!hidden));
+      visibility.title = `${hidden ? 'Show' : 'Hide'} ${record.name}`;
+      visibility.onclick = (e) => {
+        e.stopPropagation();
+        this.toggleMaterial(record.key, e.altKey);
+      };
+      row.append(visibility);
+
+      listEl.append(row);
+    }
+  }
+
   summary() {
-    if (!this.root.classList.contains('hidden') && this.data) this.onSummary(this.data,
-      this.section === 'modes' ? this.modal : this.analysis,
-      this.section === 'modes' ? { step: this.mode.number, label: `mode ${this.mode.number}` } : this.step);
+    if (!this.root.classList.contains('hidden') && this.data) {
+      const quads = this.viewer?.state?.quads || this.data.mesh?.quads || [];
+      const visible = this.viewer ? quads.filter(q => this.viewer.visibleQuad(q)).length : quads.length;
+      this.onSummary(this.data,
+        this.section === 'modes' ? this.modal : this.analysis,
+        this.section === 'modes' ? { step: this.mode.number, label: `mode ${this.mode.number}` } : this.step,
+        { visibleQuads: visible, totalQuads: quads.length });
+    }
   }
 }

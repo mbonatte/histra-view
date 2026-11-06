@@ -57,6 +57,16 @@
 .disp-legend-title{font-weight:600;color:var(--wb-text-3,#747f89);letter-spacing:.04em;margin-right:2px}
 .disp-gradient{width:80px;height:7px;display:inline-block;background:linear-gradient(90deg,rgb(25,51,217),rgb(25,191,217),rgb(51,217,76),rgb(242,217,25),rgb(230,38,25));border-radius:1px;border:1px solid var(--wb-line-strong,#343c45)}
 
+/* Materials visibility section in Results sidebar */
+.result-materials-group{margin-top:22px;padding-top:18px;border-top:1px solid var(--border)}
+.result-materials-help{margin:6px 0 10px 0;padding:0}
+.result-materials-group .entity{min-height:46px;margin-bottom:4px}
+.result-materials-group .entity .inspect-button{padding:7px 10px;cursor:pointer}
+.result-materials-group .entity .swatch{height:20px;width:10px}
+.result-materials-group .search{padding:7px 9px;font-size:11px;margin-bottom:8px}
+.result-reset-materials-btn{width:100%;margin-top:8px;font-size:11px;padding:7px}
+
+
 
 
 

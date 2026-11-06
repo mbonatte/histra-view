@@ -16,3 +16,11 @@ test('reaction signs are preserved and missing energies do not become zeros', ()
   assert.deepEqual(curveSeries(analysis, 'energy')[0].points.map(p => p.y), [-2,-3]);
   assert.deepEqual(curveSeries(analysis, 'energy')[1].points.map(p => p.index), [1,2]);
 });
+
+test('model point curves use saved point histories and align them to saved steps', async () => {
+  const { modelPointSeries } = await import('../static/result-charts.js');
+  const a = { ...analysis, modelPoints: { step: [0, 2, 9], points: [{key: 7, available: true, displacement_cm: {ux:[0,1,9], uy:[2,3,9], uz:[4,5,9]}}] } };
+  assert.deepEqual(modelPointSeries(a, 7)[0].points.map(p => [p.x,p.y,p.index]), [[0,0,0],[2,1,2]]);
+  assert.deepEqual(modelPointSeries(a, 7, 'displacement')[1].points.map(p => [p.x,p.y]), [[1,2],[1.5,3]]);
+  assert.deepEqual(modelPointSeries(a, 8), []);
+});

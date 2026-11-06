@@ -48,12 +48,16 @@ export class InterfaceResults {
     this.clearThrustMarker(); this.stressView.destroy();
   }
 
-  update(analysis, mesh, stepIndex, modelSha256, sourceId) {
+  update(analysis, mesh, stepIndex, modelSha256, sourceId, options = {}) {
     const changed = this.analysis !== analysis;
     this.sourceId = sourceId; this.mesh = mesh; this.modelSha256 = modelSha256; this.stepIndex = stepIndex;
+    this.chainAnalyses = options.chainAnalyses || [analysis];
     this.stepSlider.max = analysis.steps.length - 1; this.stepSlider.value = stepIndex;
     this.stepLabel.textContent = `Step ${analysis.steps[stepIndex].step} / ${analysis.steps.at(-1).step} · ${analysis.steps[stepIndex].status} · 5 steps/s`;
     this.analysis = analysis;
+    if (this.scopeLabel) {
+      this.scopeLabel.hidden = !(this.chainAnalyses && this.chainAnalyses.length > 1);
+    }
     if (changed) {
       this.pause();
       const selected = analysis.interfaces.find(i => i.key === this.selected) || analysis.interfaces.filter(i => i.restrained).sort((a,b) => a.forces[1]-b.forces[1])[0] || analysis.interfaces[0];
@@ -102,8 +106,16 @@ export class InterfaceResults {
       this.historyQuantity = node('select'); this.historyQuantity.setAttribute('aria-label', 'Interface history quantity');
       for (const [v, t] of [['forces', 'Forces'], ['moments', 'Moments'], ['thrust', 'Compression thrust path']]) this.historyQuantity.add(new Option(t, v));
       this.historyQuantity.onchange = () => this.renderCurrent(); historyLabel.append(this.historyQuantity);
+      const scopeLabel = this.scopeLabel = node('label', 'Scope', 'interface-scope-control');
+      this.historyScope = node('select');
+      this.historyScope.setAttribute('aria-label', 'Interface history scope');
+      this.historyScope.add(new Option('Whole history (chained)', 'chain'));
+      this.historyScope.add(new Option('Current analysis only', 'current'));
+      this.historyScope.onchange = () => this.renderCurrent();
+      scopeLabel.append(this.historyScope);
+      scopeLabel.hidden = !(this.chainAnalyses && this.chainAnalyses.length > 1);
       const exportHistory = node('button', 'Export resultants CSV'); exportHistory.onclick = () => this.exportHistory();
-      historyControls.append(historyLabel, exportHistory); detail.append(historyControls, this.historyPlot);
+      historyControls.append(historyLabel, scopeLabel, exportHistory); detail.append(historyControls, this.historyPlot);
       this.snapshotNotice = node('p', undefined, 'result-note');
       const finalButton = node('button', 'Go to final spring snapshot'); finalButton.onclick = () => { this.pause(); this.onStep(this.analysis.steps.length - 1); };
       this.finalButton = finalButton; detail.append(this.snapshotNotice, finalButton);
@@ -188,12 +200,47 @@ export class InterfaceResults {
     this.snapshotPanel.classList.toggle('hidden', !final);
     this.finalButton.classList.toggle('hidden', atFinal);
     this.snapshotNotice.textContent = final ? '' : 'Spring stress and phase histories are not saved at this step. The stage-end snapshot is available at the final step.';
-    if (this.historyQuantity.value === 'thrust') this.drawThrustPath();
+    const useChain = this.historyScope?.value === 'chain' && this.chainAnalyses?.length > 1;
+    const stages = useChain ? this.chainAnalyses : [this.analysis];
+    if (this.historyQuantity.value === 'thrust') this.drawThrustPath(stages);
     else {
       const moments = this.historyQuantity.value === 'moments';
-      const proxy = { name: this.analysis.name, steps: this.analysis.steps.map((s, i) => ({ ...s, reactions: resultantAt(this.analysis, i, this.selected)[moments ? 'moments' : 'forces'] })) };
-      this.historyPlot.replaceChildren(responseChart(proxy, 'reactions', 'step', this.stepIndex, i => { this.pause(); this.onStep(i); }, false,
-        { title: `Interface ${this.selected} ${moments ? 'moments' : 'forces'}`, unit: moments ? 'kN·cm' : 'kN', names: moments ? ['Mx', 'My', 'Mz'] : ['V1', 'N2', 'V3'] }));
+      const chainedSteps = [];
+      let cumulativeIndex = 0;
+      let activeIndex = -1;
+      for (const stage of stages) {
+        const isCurrentStage = stage.name === this.analysis.name;
+        for (let i = 0; i < stage.steps.length; i++) {
+          const s = stage.steps[i];
+          const r = resultantAt(stage, i, this.selected);
+          if (isCurrentStage && i === this.stepIndex) {
+            activeIndex = cumulativeIndex;
+          }
+          chainedSteps.push({
+            ...s,
+            reactions: r ? r[moments ? 'moments' : 'forces'] : [0, 0, 0],
+            analysisName: stage.name,
+            stageLabel: stage.name,
+            stageStep: s.step,
+            cumulativeStep: cumulativeIndex++,
+            stageIndex: stages.indexOf(stage),
+          });
+        }
+      }
+      const proxy = {
+        name: `Interface ${this.selected} ${moments ? 'moments' : 'forces'}`,
+        steps: chainedSteps,
+        chainStages: stages.map(a => ({ name: a.name, stepCount: a.steps.length })),
+      };
+      this.historyPlot.replaceChildren(responseChart(proxy, 'reactions', 'step', activeIndex >= 0 ? activeIndex : this.stepIndex, (idx, aName, sNum) => {
+        this.pause();
+        this.onStep(sNum ?? idx, aName);
+      }, false, {
+        title: `Interface ${this.selected} ${moments ? 'moments' : 'forces'}`,
+        unit: moments ? 'kN·cm' : 'kN',
+        names: moments ? ['Mx', 'My', 'Mz'] : ['V1', 'N2', 'V3'],
+        stages: stages.map(a => ({ name: a.name, stepCount: a.steps.length })),
+      }));
     }
     if (this.viewer) {
       this.clearThrustMarker();
@@ -207,11 +254,24 @@ export class InterfaceResults {
     }
   }
 
-  drawThrustPath() {
+  drawThrustPath(stages = (this.historyScope?.value === 'chain' && this.chainAnalyses?.length > 1 ? this.chainAnalyses : [this.analysis])) {
     const g = this.detail.geometry, tol = normalTolerance(this.analysis, this.selected);
-    const path = this.analysis.steps.map((s, i) => eccentricities(resultantAt(this.analysis, i, this.selected), tol));
+    const pathItems = [];
+    stages.forEach((stage, stageIndex) => {
+      stage.steps.forEach((s, i) => {
+        const r = resultantAt(stage, i, this.selected);
+        const e = eccentricities(r, tol);
+        pathItems.push({
+          e,
+          analysisName: stage.name,
+          step: s.step,
+          isCurrent: stage.name === this.analysis.name && i === this.stepIndex,
+          stageIndex,
+        });
+      });
+    });
     const footprint = g.vint2d.map(p => [p[0] - g.length / 2, p[1]]);
-    const all = [...footprint, ...path.filter(e => e?.compression).map(e => [e.ex, e.ey])];
+    const all = [...footprint, ...pathItems.filter(item => item.e?.compression).map(item => [item.e.ex, item.e.ey])];
     let xmin = Math.min(...all.map(p => p[0])), xmax = Math.max(...all.map(p => p[0])), ymin = Math.min(...all.map(p => p[1])), ymax = Math.max(...all.map(p => p[1]));
     const dx = xmax - xmin || 1, dy = ymax - ymin || 1; xmin -= dx * .1; xmax += dx * .1; ymin -= dy * .1; ymax += dy * .1;
     const scale = Math.min(380 / (xmax - xmin), 250 / (ymax - ymin));
@@ -219,13 +279,27 @@ export class InterfaceResults {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('viewBox', '0 0 480 340'); svg.setAttribute('role', 'img'); svg.setAttribute('aria-label', `Compression thrust path at interface ${this.selected}`);
     const add = (tag, attrs, text) => { const n = document.createElementNS(svg.namespaceURI, tag); for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v); if (text) n.textContent = text; svg.append(n); return n; };
     add('polygon', { points: footprint.map(p => `${x(p[0])},${y(p[1])}`).join(' '), fill: '#2b3d49', stroke: '#d5ad72' });
+    const stageColors = ['#69d8c2', '#f5b86e', '#91a9ff', '#ff84a2', '#a3e048'];
     let previous = null;
-    path.forEach((e, i) => {
+    pathItems.forEach((item, i) => {
+      const e = item.e;
+      const stageColor = stageColors[item.stageIndex % stageColors.length];
       if (!e?.compression) { previous = null; return; }
-      if (previous) add('line', { x1: x(previous.ex), y1: y(previous.ey), x2: x(e.ex), y2: y(e.ey), stroke: '#69d8c2', 'stroke-width': 2 });
-      const dot = add('circle', { cx: x(e.ex), cy: y(e.ey), r: i === this.stepIndex ? 6 : 3, fill: i === this.stepIndex ? '#fff' : '#69d8c2', tabindex: 0 });
-      const title = document.createElementNS(svg.namespaceURI, 'title'); title.textContent = `Step ${this.analysis.steps[i].step}: ex ${fmt(e.ex)} cm, ey ${fmt(e.ey)} cm`; dot.append(title);
-      dot.onclick = () => { this.pause(); this.onStep(i); }; dot.onkeydown = ev => { if (ev.key === 'Enter') dot.onclick(); }; previous = e;
+      if (previous && previous.stageIndex === item.stageIndex) {
+        add('line', { x1: x(previous.e.ex), y1: y(previous.e.ey), x2: x(e.ex), y2: y(e.ey), stroke: stageColor, 'stroke-width': 2 });
+      }
+      const dot = add('circle', {
+        cx: x(e.ex), cy: y(e.ey),
+        r: item.isCurrent ? 6 : 3,
+        fill: item.isCurrent ? '#fff' : stageColor,
+        tabindex: 0,
+      });
+      const title = document.createElementNS(svg.namespaceURI, 'title');
+      title.textContent = `${item.analysisName ? `${item.analysisName} · ` : ''}Step ${item.step}: ex ${fmt(e.ex)} cm, ey ${fmt(e.ey)} cm`;
+      dot.append(title);
+      dot.onclick = () => { this.pause(); this.onStep(item.step, item.analysisName); };
+      dot.onkeydown = ev => { if (ev.key === 'Enter') dot.onclick(); };
+      previous = item;
     });
     add('text', { x: 55, y: 20, fill: '#bcd0dc', 'font-size': 12 }, `ex [${fmt(xmin)} … ${fmt(xmax)} cm] · ey [${fmt(ymin)} … ${fmt(ymax)} cm]`);
     add('text', { x: 55, y: 320, fill: '#bcd0dc', 'font-size': 11 }, 'Thrust point trajectory across steps at this interface');
@@ -233,8 +307,27 @@ export class InterfaceResults {
   }
 
   exportHistory() {
+    const useChain = this.historyScope?.value === 'chain' && this.chainAnalyses?.length > 1;
+    const stages = useChain ? this.chainAnalyses : [this.analysis];
     const tol = normalTolerance(this.analysis, this.selected);
-    downloadCsv(`${this.analysis.name}-interface-${this.selected}-resultants.csv`, [['step', 'V1_kN', 'N2_kN', 'V3_kN', 'Mx_kNcm', 'My_kNcm', 'Mz_kNcm', 'ex_cm', 'ey_cm', 'compression_thrust'], ...this.analysis.steps.map((s, i) => { const r = resultantAt(this.analysis, i, this.selected), e = eccentricities(r, tol); return [s.step, ...r.forces, ...r.moments, e?.ex, e?.ey, e?.compression ?? false]; })]);
+    const rows = [
+      ['analysis', 'stage_step', 'cumulative_step', 'V1_kN', 'N2_kN', 'V3_kN', 'Mx_kNcm', 'My_kNcm', 'Mz_kNcm', 'ex_cm', 'ey_cm', 'compression_thrust']
+    ];
+    let cumulative = 0;
+    for (const stage of stages) {
+      for (let i = 0; i < stage.steps.length; i++) {
+        const s = stage.steps[i];
+        const r = resultantAt(stage, i, this.selected);
+        const e = eccentricities(r, tol);
+        rows.push([
+          stage.name, s.step, cumulative++,
+          ...(r ? r.forces : [0, 0, 0]),
+          ...(r ? r.moments : [0, 0, 0]),
+          e?.ex, e?.ey, e?.compression ?? false,
+        ]);
+      }
+    }
+    downloadCsv(`${this.analysis.name}-interface-${this.selected}-resultants.csv`, rows);
   }
 
   drawMap(parent, readout, quantity) {
