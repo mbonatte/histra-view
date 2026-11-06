@@ -1,3 +1,4 @@
+import { viewSettings, viewSettingsMarkup, bindViewSettings, applyViewerSettings } from './view-settings.js';
 import { QuadViewer } from './mesh-viewer.js';
 import { ModelOverlays } from './model-overlays.js';
 import { MaterialsPage } from './materials.js';
@@ -22,18 +23,50 @@ const TAB_META = {
   materials: { title: 'ASSIGNED MATERIALS', help: 'Toggle visibility or inspect a material.', search: 'Find material…' },
   elements: { title: 'MESH ELEMENTS', help: 'Search by key, material, or connected node, then click to focus.', search: 'Find element…' },
   nodes: { title: 'MESH NODES', help: 'Search by key, name, or coordinate, then click to focus.', search: 'Find node…' },
+  modelPoints: { title: 'MODEL MONITORING POINTS', help: 'Inspect monitoring point locations and connected nodes.', search: 'Find model point…' },
   loads: { title: 'ASSIGNED LOADS', help: 'Inspect applied values and directions.', search: 'Find load…' },
   restraints: { title: 'SUPPORT DEFINITIONS', help: 'Inspect support locations and local DOFs.', search: 'Find restraint…' },
   analyses: { title: 'ANALYSIS DEFINITIONS', help: 'Inspect saved analysis definitions and execution states.', search: 'Find analysis…' },
 };
 const materialsPage = new MaterialsPage(key => builder.openEditor('material', key));
-const analysesPage = new AnalysesPage(key => builder.openEditor('analysis', key));
-const resultsPage = new ResultsPage($('resultsPage'), (data, analysis, step) => {
+const analysesPage = new AnalysesPage(
+  key => builder.openEditor('analysis', key),
+  {
+    getSource: () => ({
+      source: builder.viewerSource || null,
+      modelName: state.model?.name || builder.viewerSourceName || 'model.hrx',
+    }),
+    onRunComplete: async (job, navigateToResults = false) => {
+      if (!job?.bundleReady || !job?.sourceId) return;
+      try {
+        if (navigateToResults) {
+          location.hash = '#results';
+        }
+        const response = await fetch(
+          `/api/results/${encodeURIComponent(job.sourceId)}?analysis=${encodeURIComponent(job.targetName || '')}`
+        );
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+        resultsPage.loadDirectResults(data, job.bundleName || 'Solved results.histra');
+        $('status').textContent = `Solved ${job.targetName} · saved ${job.bundleName}`;
+      } catch (err) {
+        showMessage(`Unable to load solved results: ${err.message || String(err)}`, true);
+      }
+    },
+  }
+);
+const resultsPage = new ResultsPage($('resultsPage'), (data, analysis, step, extra = {}) => {
   $('fileName').textContent = data.name;
   const analysisName = analysis?.name || data.name;
   const stepLabel = step ? (step.label || `step ${step.step}`) : 'results';
   $('status').textContent = `${analysisName} · ${stepLabel} · saved results`;
-  $('stats').textContent = data.mesh?.nodes?.length ? `${data.mesh.nodes.length} nodes / ${data.mesh.quads.length} quads` : 'Response curves';
+  const visible = extra.visibleQuads ?? data.mesh?.quads?.length ?? 0;
+  const total = extra.totalQuads ?? data.mesh?.quads?.length ?? 0;
+  $('stats').textContent = data.mesh?.nodes?.length
+    ? (visible === total
+        ? `${data.mesh.nodes.length.toLocaleString()} nodes / ${total.toLocaleString()} quads`
+        : `${data.mesh.nodes.length.toLocaleString()} nodes / ${visible.toLocaleString()} of ${total.toLocaleString()} quads`)
+    : 'Response curves';
 });
 let viewer;
 let overlays;
@@ -131,6 +164,7 @@ function registerMeasurement(point) {
 
 function inspect(kind, record) {
   if (kind !== 'node') viewer?.clearNodeSelection();
+  if (kind !== 'modelPoint') viewer?.clearModelPointSelection();
   state.selected = record ? { kind, id: record.id ?? record.key } : null;
   const panel = $('inspection');
   panel.replaceChildren();
@@ -168,6 +202,11 @@ function inspect(kind, record) {
     button.disabled = !material;
     button.onclick = () => { setTab('materials'); inspect('material', material); };
     panel.append(button);
+    panel.append(element(
+      'p',
+      '',
+      'C# Advanced flags: “Update mesh” (IsGeometryModified) re-discretizes this object when the model is meshed; unchecking it freezes the current mesh. “Active custom mesh” (IsGeometryCustomized) enables object-specific discretization parameters instead of the global mesh settings.'
+    ));
   } else if (kind === 'node') {
     const connected = state.model.quads.filter(quad => quad.nodeKeys.includes(String(record.key))).length;
     panel.append(properties({
@@ -215,12 +254,41 @@ function inspect(kind, record) {
       Mult: record.attributes.Mult ?? '—',
     }));
     if (record.state.ExitDescription) panel.append(element('p', '', record.state.ExitDescription));
-    const fullAnalyses = element('button', 'full-material-button', 'Open analysis properties →');
+    const fullAnalyses = element('button', 'full-material-button', 'Open & run in Analyses →');
     fullAnalyses.onclick = () => analysesPage.open(record.key);
     const editAnalysis = element('button', 'full-material-button', '✎ Edit in Build model →');
     editAnalysis.onclick = () => builder.openEditor('analysis', record.key);
     panel.append(fullAnalyses, editAnalysis);
-    panel.append(element('p', '', 'State values are read from the saved HRX. The viewer does not run or resume analyses.'));
+    panel.append(element('p', '', 'Open in the Analyses tab to run this analysis with histra-python, monitor live progress and logs, and save a .histra bundle.'));
+  } else if (kind === 'modelPoint') {
+    const pt = record.point || (record.elementKey ? state.nodeMap.get(String(record.elementKey))?.point : null);
+    panel.append(element('p', '', record.description || record.name || 'Model monitoring point'));
+    panel.append(properties({
+      Key: record.key,
+      Name: record.name || `ModelPoint ${record.key}`,
+      Description: record.description || '—',
+      'Target element': `${record.elementType || 'Node'} ${record.elementKey || '—'}`,
+      Coordinates: pt ? `(${format(pt[0])}, ${format(pt[1])}, ${format(pt[2])})` : '—',
+    }));
+    const activeAnalyses = (state.model.analyses || []).filter(a =>
+      (a.activeModelPoints || []).some(mp => String(mp.Key) === String(record.key) && mp.Value === 'true')
+    ).map(a => a.name || `Analysis ${a.key}`);
+    panel.append(properties({
+      'Active in analyses': activeAnalyses.length ? activeAnalyses.join(', ') : 'None',
+    }));
+    if (record.elementKey && state.nodeMap.has(String(record.elementKey))) {
+      const nodeBtn = element('button', '', `Inspect target node ${record.elementKey} →`);
+      nodeBtn.style.marginTop = '12px';
+      nodeBtn.onclick = () => {
+        const node = state.nodeMap.get(String(record.elementKey));
+        setTab('nodes');
+        inspect('node', node);
+        viewer.selectNode(node.key);
+        focusPoint([node.point], true);
+      };
+      panel.append(nodeBtn);
+    }
+    panel.append(element('p', '', 'The model point is highlighted in the 3D viewport. Monitored degrees of freedom are captured in histra-python results.'));
   }
   panel.append(rawAttributes(record.attributes || {}));
   renderList();
@@ -255,6 +323,10 @@ function renderList() {
     records = state.model.nodes.filter(record => (
       `${record.name || ''} ${record.key} node ${record.point.join(' ')}`.toLowerCase().includes(query)
     ));
+  } else if (tab === 'modelPoints') {
+    records = (state.model.modelPoints || []).filter(record => (
+      `${record.name || ''} ${record.key} ${record.description || ''} ${record.elementKey || ''} ${(record.point || []).join(' ')}`.toLowerCase().includes(query)
+    ));
   } else {
     records = state.model[tab].filter(record => {
       if (tab === 'loads' && $('condition').value && record.conditionKey !== $('condition').value) return false;
@@ -274,22 +346,25 @@ function renderList() {
   $('listCount').textContent = visible.length === records.length
     ? String(visible.length)
     : `${visible.length}/${records.length}`;
-  const kind = { materials: 'material', elements: 'quad', nodes: 'node', loads: 'load', restraints: 'restraint', analyses: 'analysis' }[tab];
+  const kind = { materials: 'material', elements: 'quad', nodes: 'node', modelPoints: 'modelPoint', loads: 'load', restraints: 'restraint', analyses: 'analysis' }[tab];
   for (const record of visible) {
     const row = element('div', 'entity');
     row.classList.toggle('selected', state.selected?.kind === kind && String(state.selected.id) === String(record.id ?? record.key));
     const button = element('button', 'inspect-button');
     const swatch = element('span', 'swatch');
     const material = kind === 'quad' ? state.materialMap.get(String(record.materialKey)) : null;
-    swatch.style.background = record.color || material?.color || (kind === 'load' ? '#ffbc66' : kind === 'analysis' ? (record.isExecuted ? '#60d9c5' : '#586d7d') : '#60d9c5');
+    swatch.style.background = record.color || material?.color || (kind === 'load' ? '#ffbc66' : kind === 'modelPoint' ? '#ffd166' : kind === 'analysis' ? (record.isExecuted ? '#60d9c5' : '#586d7d') : '#60d9c5');
     const info = element('span', 'entity-info');
+    const pt = record.point || (record.elementKey ? state.nodeMap.get(String(record.elementKey))?.point : null);
     const title = kind === 'restraint' ? `Restraint ${record.key}`
       : kind === 'node' ? `Node ${record.key}`
       : kind === 'quad' ? `Element ${record.key}`
+      : kind === 'modelPoint' ? `Point ${record.key}`
       : record.name || `${kind} ${record.key}`;
     const subtitle = kind === 'material' ? `${record.quadCount.toLocaleString()} quads · #${record.key}`
       : kind === 'quad' ? `${material?.name || `Material ${record.materialKey}`} · ${record.nodeKeys.length} nodes · #${record.key}`
       : kind === 'node' ? `X ${format(record.point[0])} · Y ${format(record.point[1])} · Z ${format(record.point[2])}`
+      : kind === 'modelPoint' ? `${record.name || record.description || `Node ${record.elementKey}`}${pt ? ` · (${format(pt[0])}, ${format(pt[1])}, ${format(pt[2])})` : ''}`
       : kind === 'load' ? `${record.kind} · ${format(record.value)} · #${record.key}`
       : kind === 'analysis' ? `${record.type} · ${analysisState(record)} · #${record.key}`
       : `${record.attributes.Type || record.type.replace('Geometry', '')} · ${Object.values(record.dofs).filter(d => d === 'Fixed').length}/6 fixed`;
@@ -303,7 +378,16 @@ function renderList() {
         focusPoint([record.point], true);
         return;
       }
+      if (kind === 'modelPoint') {
+        viewer.clearNodeSelection();
+        viewer.selectModelPoint(record.key);
+        inspect('modelPoint', record);
+        const ptCoord = record.point || (record.elementKey ? state.nodeMap.get(String(record.elementKey))?.point : null);
+        if (ptCoord) focusPoint([ptCoord], true);
+        return;
+      }
       viewer.clearNodeSelection();
+      viewer.clearModelPointSelection();
       if (kind === 'quad') {
         const index = state.quadIndex.get(String(record.key));
         if (index != null) viewer.selectQuad(index);
@@ -382,8 +466,8 @@ function updateStats() {
 function updateOverlays() {
   if (!state.model) return;
   overlays.update(state.model, { loads: $('loads').checked, restraints: $('restraints').checked,
+    modelPoints: $('modelPoints').checked,
     condition: $('condition').value, symbolScale: Number($('symbolScale').value) });
-  $('scaleValue').value = `${$('symbolScale').value}×`;
 }
 
 function populateSelect(select, records, label) {
@@ -391,7 +475,7 @@ function populateSelect(select, records, label) {
   for (const record of records) select.add(new Option(`${record.name || record.key} [${record.key}]`, record.key));
 }
 
-function loadModel(model) {
+function loadModel(model, { preserveView = false } = {}) {
   // Finish projection and validation before replacing the visible model.
   state.model = model;
   state.modelViewed = location.hash !== '#materials' && location.hash !== '#analyses';
@@ -402,11 +486,11 @@ function loadModel(model) {
   viewer.visibleQuad = () => true;
   viewer.materialDefinitions = new Map(model.materials.map(m => [String(m.key), m]));
   viewer.layerDefinitions = new Map(model.layers.map(l => [String(l.key), l]));
-  viewer.loadPreview(model, { name: model.name });
+  viewer.loadPreview(model, { name: model.name, modelPoints: model.modelPoints, preserveView });
   state.nodeMap = new Map(model.nodes.map(node => [String(node.key), node]));
   state.materialMap = new Map(model.materials.map(material => [String(material.key), material]));
   state.quadIndex = new Map(viewer.state.quads.map((quad, index) => [String(quad.key), index]));
-  viewer.setView('iso');
+  if (!preserveView) viewer.setView('iso');
   $('fileName').textContent = model.name;
   $('modelTitle').textContent = model.name.replace(/\.hrx$/i, '').replaceAll('_', ' ');
   $('modelSubtitle').textContent = `${model.materials.length} materials · ${model.restraints.length} restraints · ${model.loads.length} loads · ${(model.analyses || []).length} analyses`;
@@ -428,11 +512,12 @@ function loadModel(model) {
   showPage();
 }
 
-const builder = new Builder($('builderContent'), model => loadModel(model));
+const builder = new Builder($('builderContent'), (model, options) => loadModel(model, options));
 
 function showPage() {
   const building = location.hash === '#build';
   $('builderSidebar').classList.toggle('hidden', !building);
+  $('modelWorkspace').classList.toggle('building', building);
   $('modelSidebar').classList.toggle('hidden', building);
   $('viewMode').textContent = building ? 'BUILD' : 'VIEW';
   if (building) builder.activate();
@@ -462,13 +547,19 @@ function showPage() {
 window.addEventListener('hashchange', showPage);
 
 async function readModel(file = null) {
+  if (file && PathLike(file.name) === '.histra') {
+    return readResultFiles([file]);
+  }
   if (state.busy) return;
   state.busy = true;
   $('openFile').disabled = $('loadExample').disabled = true;
   showMessage(file ? `Opening ${file.name}…` : 'Reading the example model…');
   $('status').textContent = 'Reading HRX';
   try {
-    const response = await fetch(file ? '/api/model' : '/api/model/example', file ? { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: file } : {});
+    const response = await fetch(
+      file ? `/api/model?name=${encodeURIComponent(file.name)}` : '/api/model/example',
+      file ? { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: file } : {}
+    );
     const model = await response.json();
     if (!response.ok) throw new Error(model.error || `HTTP ${response.status}`);
     if (file) {
@@ -533,6 +624,12 @@ async function readResultFiles(files) {
     const response = await fetch(`/api/results/import/complete?import_id=${encodeURIComponent(id)}`, { method: 'POST' });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+    if (data.embeddedModel) {
+      if (data.embeddedModelBase64) {
+        builder.setViewerSource(data.embeddedModelBase64, data.embeddedModel.name || resultFile.name);
+      }
+      loadModel(data.embeddedModel);
+    }
     location.hash = '#results';
     resultsPage.loadDirectResults(data, resultFile.name);
     $('fileName').textContent = resultFile.name;
@@ -572,7 +669,17 @@ function showBlankStart() {
 
 try {
   viewer = new QuadViewer($('viewport'), { extrude: true, thicknessScale: 1, opacity: 1 });
-  overlays = new ModelOverlays(viewer, inspect);
+  overlays = new ModelOverlays(viewer, (kind, record) => {
+    inspect(kind, record);
+    if (kind === 'modelPoint') {
+      viewer.clearSelection();
+      viewer.selectModelPoint(record.key);
+      const pt = record.point || (record.elementKey ? state.nodeMap.get(String(record.elementKey))?.point : null);
+      if (pt) focusPoint([pt], true);
+    } else if (record.points?.length) {
+      focusPoint(record.points);
+    }
+  });
   showPage();
   viewer.on('selection', selected => inspect(selected ? 'quad' : null, selected?.quad));
   viewer.on('measure', result => registerMeasurement(result.point));
@@ -611,14 +718,13 @@ try {
   $('search').oninput = renderList;
   $('condition').onchange = () => { renderList(); updateOverlays(); };
   $('layer').onchange = updateVisibility;
-  $('colorBy').onchange = () => viewer.setOptions({ colorBy: $('colorBy').value });
-  for (const id of ['edges', 'nodes', 'extrude']) $(id).onchange = () => viewer.setOptions({ [id]: $(id).checked });
-  for (const id of ['loads', 'restraints', 'symbolScale']) $(id).oninput = updateOverlays;
-  $('opacity').oninput = () => {
-    viewer.setOptions({ opacity: Number($('opacity').value) }, { rebuild: false });
-    $('opacityValue').value = `${Math.round(Number($('opacity').value) * 100)}%`;
-  };
-  $('grid').onchange = () => { viewer.grid.visible = $('grid').checked; viewer.needsRender = true; };
+  $('sharedViewSettings').innerHTML = viewSettingsMarkup();
+  bindViewSettings($('sharedViewSettings'));
+  viewSettings.subscribe((settings, changed) => {
+    applyViewerSettings(viewer, settings, { rebuild: ['colorBy', 'extrude'].some(key => key in changed) });
+    if (['loads', 'restraints', 'modelPoints', 'symbolScale'].some(key => key in changed)) updateOverlays();
+  });
+  applyViewerSettings(viewer, viewSettings.get());
   $('fitView').onclick = () => viewer.fit();
   const setFocusView = enabled => {
     document.body.classList.toggle('focus-view', enabled);

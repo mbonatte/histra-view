@@ -5,12 +5,9 @@ MasonryMaterial.GetShearStress/GetSlidingStress. No model is loaded or solved.
 Run under the viewer's Python environment, with JSON on stdin/stdout.
 """
 from dataclasses import replace
-from pathlib import Path
 import json
 import math
 import sys
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "histra-python"))
 
 
 def _make_spring(attributes, mechanism, direction):

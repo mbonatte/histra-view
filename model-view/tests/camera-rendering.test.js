@@ -10,6 +10,22 @@ const source = (await readFile(new URL('../static/mesh-viewer.js', import.meta.u
   .replace("from '/vendor/OrbitControls.js'", `from '${new URL('../node_modules/three/examples/jsm/controls/OrbitControls.js', import.meta.url).href}'`);
 const { QuadViewer } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
 
+test('loading updated geometry requests view preservation and resets model bounds', () => {
+  const viewer = Object.create(QuadViewer.prototype);
+  viewer.state = { bounds: new Box3(new Vector3(0, 0, 0), new Vector3(1, 1, 1)) };
+  viewer.clearNodeSelection = () => {};
+  viewer.clearMeasurement = () => {};
+  viewer.clearSelection = () => {};
+  viewer.emit = () => {};
+  viewer.getStats = () => ({});
+  viewer.rebuild = options => { viewer.rebuildOptions = options; };
+  const nodes = new Map([[1, new Vector3(4, 5, 6)]]);
+  viewer._loadNormalized({ name: 'updated', nodes, quads: [] }, [], { preserveView: true });
+  assert.equal(viewer.rebuildOptions.preserveView, true);
+  assert.ok(viewer.state.bounds.isEmpty());
+  assert.equal(viewer.state.nodes, nodes);
+});
+
 class CanvasTarget extends EventTarget {
   style = {};
   clientHeight = 600;
@@ -90,6 +106,29 @@ test('selectNode adds and clears a focused node marker', () => {
   assert.ok(viewer.markerRemoved);
 });
 
+test('selectModelPoint adds and clears a focused model point marker', () => {
+  const viewer = Object.create(QuadViewer.prototype);
+  viewer.state = {
+    nodes: new Map([[373, new Vector3(290, -112.5, 100)]]),
+    modelPoints: [{ key: 2, elementType: 'Node', elementKey: '373', point: [290, -112.5, 100] }],
+    bounds: new Box3(new Vector3(0, 0, 0), new Vector3(1000, 300, 300)),
+  };
+  viewer.scene = { add: object => { viewer.markerAdded = object; }, remove: object => { viewer.markerRemoved = object; } };
+  viewer.needsRender = false;
+
+  viewer.selectModelPoint(2);
+  assert.ok(viewer.modelPointMarker);
+  assert.equal(viewer.modelPointMarker.position.x, 290);
+  assert.equal(viewer.modelPointMarker.position.y, -112.5);
+  assert.equal(viewer.modelPointMarker.position.z, 100);
+  assert.equal(viewer.markerAdded, viewer.modelPointMarker);
+  assert.equal(viewer.needsRender, true);
+
+  viewer.clearModelPointSelection();
+  assert.equal(viewer.modelPointMarker, null);
+  assert.ok(viewer.markerRemoved);
+});
+
 test('setProjection switches between PerspectiveCamera and OrthographicCamera while preserving view scale and orientation', () => {
   const viewer = Object.create(QuadViewer.prototype);
   viewer.container = { clientWidth: 800, clientHeight: 600 };
@@ -133,4 +172,3 @@ test('setProjection switches between PerspectiveCamera and OrthographicCamera wh
 
   viewer.controls.dispose();
 });
-

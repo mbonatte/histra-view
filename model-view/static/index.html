@@ -18,8 +18,8 @@
     <div class="file-heading"><span class="status-dot"></span><span id="fileName">No model loaded</span><span class="read-only" id="viewMode">VIEW</span></div>
     <nav class="page-nav" aria-label="Workspace pages"><a href="#build" id="buildNav">Build model</a><a href="#model" id="modelNav" aria-current="page">3D model</a><a href="#materials" id="materialsNav">Material properties</a><a href="#analyses" id="analysesNav">Analyses</a><a href="#results" id="resultsNav">Results</a></nav>
     <div class="header-actions">
-      <button id="openFile" class="primary" title="Import an HRX model (.hrx, .xml)" onclick="document.getElementById('fileInput').click()">＋ Open HRX</button>
-      <input id="fileInput" type="file" accept=".hrx,.xml" hidden>
+      <button id="openFile" class="primary" title="Open a .histra bundle or HRX model (.histra, .hrx, .xml)" onclick="document.getElementById('fileInput').click()">＋ Open HRX / .histra</button>
+      <input id="fileInput" type="file" accept=".histra,.hrx,.xml" hidden>
       <button id="openResultFile" class="secondary" title="Import analysis results (HRX + .Results, .histra, .json, or archive)" onclick="document.getElementById('resultFileInput').click()">＋ Import Results</button>
       <input id="resultFileInput" type="file" accept=".json,.hrx,.xml,.Results,.histra,.rar,.zip" multiple hidden>
     </div>
@@ -32,6 +32,7 @@
         <button role="tab" aria-selected="true" data-tab="materials">Materials</button>
         <button role="tab" aria-selected="false" data-tab="elements">Elements</button>
         <button role="tab" aria-selected="false" data-tab="nodes">Nodes</button>
+        <button role="tab" aria-selected="false" data-tab="modelPoints">Points</button>
         <button role="tab" aria-selected="false" data-tab="loads">Loads</button>
         <button role="tab" aria-selected="false" data-tab="restraints">Restraints</button>
         <button role="tab" aria-selected="false" data-tab="analyses">Analyses</button>
@@ -72,19 +73,8 @@
     <aside class="inspector">
       <div class="panel-title">DISPLAY SETTINGS</div>
       <section class="settings">
-        <div class="settings-section-label">View</div>
-        <label class="field">Color by<select id="colorBy" aria-label="Color by"><option value="material">Material</option><option value="layer">Layer</option><option value="parent">Parent element</option><option value="thickness">Thickness</option><option value="single">Uniform</option></select></label>
-        <label class="field">Layer<select id="layer" aria-label="Layer"><option value="">All layers</option></select></label>
-        <div class="toggle-row"><label for="grid">Ground grid</label><input id="grid" type="checkbox" checked></div>
-        <label class="field range-field">Mesh opacity <output id="opacityValue">100%</output><input id="opacity" type="range" min="0.1" max="1" step="0.05" value="1"></label>
-        <div class="settings-section-label">Geometry</div>
-        <div class="toggle-row"><label for="edges">Element edges</label><input id="edges" type="checkbox" checked></div>
-        <div class="toggle-row"><label for="nodes">Mesh nodes</label><input id="nodes" type="checkbox"></div>
-        <div class="toggle-row"><label for="extrude">Physical thickness</label><input id="extrude" type="checkbox" checked></div>
-        <div class="settings-section-label">Overlays</div>
-        <div class="toggle-row"><label for="loads">Applied loads <span class="amber-dot">●</span></label><input id="loads" type="checkbox" checked></div>
-        <div class="toggle-row"><label for="restraints">Restraints <span class="teal-dot">●</span></label><input id="restraints" type="checkbox" checked></div>
-        <label class="field range-field">Symbol scale <output id="scaleValue">1×</output><input id="symbolScale" type="range" min="0.25" max="3" step="0.25" value="1"></label>
+        <div id="sharedViewSettings"></div>
+        <label class="field">Layer filter<select id="layer" aria-label="Layer"><option value="">All layers</option></select></label>
       </section>
       <div class="panel-title inspection-title">INSPECTOR <button id="clearSelection" title="Clear selection (Escape)">×</button></div>
       <div id="inspection" class="inspection"><div class="empty-icon">⌖</div><h2>Explore the model</h2><p>Select an element, material, load, or restraint to inspect its properties.</p></div>

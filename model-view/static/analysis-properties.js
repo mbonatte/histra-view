@@ -173,3 +173,11 @@ export function formatDiscretizationMode(typeDiscr) {
   }
   return typeDiscr ? String(typeDiscr) : '—';
 }
+
+// Time-history-only settings are not used by static or modal analyses.
+export function isDynamicOnlyAnalysisField(key) {
+  return key.startsWith('Dynamic') || key.startsWith('Damping') || [
+    'AnalysisStepSize', 'FirstFrequency', 'SecondFrequency', 'SetInitialAccelerations',
+    'AdapticIntegrationScheme', 'AdapticMassDampingParameter', 'AdapticStiffDampingParameter',
+  ].includes(key);
+}

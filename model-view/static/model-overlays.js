@@ -2,6 +2,8 @@ import * as THREE from 'three';
 
 const cyan = 0x60d9c5;
 const amber = 0xffbc66;
+const gold = 0xffd166;
+const goldWire = 0xffe680;
 
 export class ModelOverlays {
   constructor(viewer, onSelect) {
@@ -33,6 +35,9 @@ export class ModelOverlays {
       const selected = model.loads.filter(load => load.drawable && (!options.condition || load.conditionKey === options.condition));
       const max = Math.max(...selected.map(load => Math.abs(load.value)), 1e-30);
       for (const load of selected) this.load(load, max);
+    }
+    if (options.modelPoints && model.modelPoints) {
+      for (const point of model.modelPoints) this.modelPoint(point, model);
     }
   }
 
@@ -92,6 +97,83 @@ export class ModelOverlays {
     }
     if (points.length > 1) this.line(points, amber, record, 'load', points.length > 2);
     if (tails.length > 1) this.line(tails.slice(0, points.length > 2 ? points.length : tails.length), amber, record, 'load', points.length > 2);
+  }
+
+  modelPoint(record, model) {
+    let p = null;
+    if (record.point && Array.isArray(record.point) && record.point.length === 3) {
+      p = new THREE.Vector3(...record.point);
+    } else if (record.elementKey) {
+      const node = model.nodes?.find(n => String(n.key) === String(record.elementKey));
+      if (node?.point) p = new THREE.Vector3(...node.point);
+    }
+    if (!p) return;
+
+    const size = this.size * 0.009 * this.options.symbolScale;
+
+    // Outer diamond / octahedron wireframe
+    const outer = new THREE.Mesh(
+      new THREE.OctahedronGeometry(size * 1.3),
+      new THREE.MeshBasicMaterial({ color: goldWire, wireframe: true, depthTest: false })
+    );
+    outer.position.copy(p);
+    outer.userData = { record, kind: 'modelPoint' };
+    outer.renderOrder = 17;
+    this.group.add(outer);
+
+    // Inner solid sphere
+    const inner = new THREE.Mesh(
+      new THREE.SphereGeometry(size * 0.65, 12, 8),
+      new THREE.MeshBasicMaterial({ color: gold, depthTest: false })
+    );
+    inner.position.copy(p);
+    inner.userData = { record, kind: 'modelPoint' };
+    inner.renderOrder = 18;
+    this.group.add(inner);
+
+    // Text badge sprite: e.g. "P1", "P2" ...
+    const label = this.modelPointLabel(String(record.key));
+    if (label) {
+      label.position.copy(p);
+      label.position.z += size * 1.8;
+      label.scale.set(size * 2.8, size * 1.4, 1);
+      label.userData = { record, kind: 'modelPoint' };
+      label.renderOrder = 19;
+      this.group.add(label);
+    }
+  }
+
+  modelPointLabel(key) {
+    if (typeof document === 'undefined') return null;
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+
+    ctx.fillStyle = 'rgba(17, 24, 32, 0.85)';
+    ctx.strokeStyle = '#ffd166';
+    ctx.lineWidth = 4;
+    if (ctx.roundRect) {
+      ctx.beginPath();
+      ctx.roundRect(4, 4, 120, 56, 12);
+      ctx.fill();
+      ctx.stroke();
+    } else {
+      ctx.fillRect(4, 4, 120, 56);
+      ctx.strokeRect(4, 4, 120, 56);
+    }
+
+    ctx.fillStyle = '#ffd166';
+    ctx.font = 'bold 32px monospace, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`P${key}`, 64, 32);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    const material = new THREE.SpriteMaterial({ map: texture, depthTest: false, transparent: true });
+    return new THREE.Sprite(material);
   }
 
   pick() {

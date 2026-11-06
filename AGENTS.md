@@ -81,6 +81,11 @@ The viewer server requires `model-view/.venv`; setup is documented in
 - `model-view/RESULTS_FIDELITY.md` records the bridge-focused C# parity gaps,
   data limitations and deferred implementation backlog. Keep it updated when
   changing the face-texture path or per-step result loading.
+- `model-view/C#_SOFTWARE_PARITY.md` records the local `C#_Software_View`
+  benchmark inventory, the native C# wizard/material/load/analysis UI field
+  map, and the current C#/Python mesh parity gaps. The benchmark regression
+  test is `model-view/tests/test_benchmark_model.py`; it skips when the local
+  `C#_Software_View` folder is absent.
 - `model-view/result_fields.py` defines the shared `stressFields` menu and units.
   The payload mirrors the C# result menu: global tensor components, principal
   and Von Mises stress, and local interface normal/shear components. Strain and

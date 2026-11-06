@@ -1,6 +1,7 @@
 """Local model view service. Run: python3 model-view/server.py"""
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+import base64
 import gzip
 import argparse
 import hashlib
@@ -25,6 +26,7 @@ IMPORT_ROOT.mkdir(parents=True, exist_ok=True)
 IMPORT_SESSIONS = {}
 IMPORT_LOCK = threading.Lock()
 RESULT_SOURCES = {}
+ACTIVE_MODEL = {"bytes": None, "name": "Model.hrx"}
 
 
 
@@ -142,10 +144,11 @@ def saved_results(source_id, mode="", analysis="", key="", step=None):
                 )
             elif native_histra:
                 from histra_results import project_histra
+                eager = bool(source.get("eager_fields"))
                 payload = project_histra(
                     str(files[1]), analysis,
-                    include_stress_fields=False,
-                    include_modal_shapes=False,
+                    include_stress_fields=eager,
+                    include_modal_shapes=eager,
                 )
             else:
                 payload = project_results(str(files[0]), str(files[1]), analysis)
@@ -200,8 +203,38 @@ class Handler(BaseHTTPRequestHandler):
                 ))
             except (ValueError, KeyError, IndexError, OSError, sqlite3.Error, subprocess.TimeoutExpired) as exc:
                 return self.reply(400 if mode else 503, {"error": str(exc)})
+        if route == "/api/solver/status":
+            try:
+                from solver_api import job_status
+                query = parse_qs(urlsplit(self.path).query)
+                job_id = (query.get("job_id") or [None])[0]
+                raw_offset = (query.get("log_offset") or ["0"])[0]
+                offset = int(raw_offset) if raw_offset.isdecimal() else 0
+                return self.reply(200, job_status(job_id, offset))
+            except ValueError as exc:
+                return self.reply(404, {"error": str(exc)})
+        if route == "/api/solver/download":
+            try:
+                from solver_api import bundle_path_for_job
+                query = parse_qs(urlsplit(self.path).query)
+                job_id = (query.get("job_id") or [None])[0]
+                bundle_path = bundle_path_for_job(job_id)
+                data = bundle_path.read_bytes()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/octet-stream")
+                self.send_header("Content-Disposition", f'attachment; filename="{bundle_path.name}"')
+                self.send_header("Content-Length", str(len(data)))
+                self.send_header("Cache-Control", "no-cache")
+                self.end_headers()
+                self.wfile.write(data)
+                return
+            except (ValueError, OSError) as exc:
+                return self.reply(404, {"error": str(exc)})
         if route == "/api/model/example":
-            return self.reply(200, parse_hrx(self.server.model_path.read_bytes(), self.server.model_path.name))
+            raw_bytes = self.server.model_path.read_bytes()
+            ACTIVE_MODEL["bytes"] = raw_bytes
+            ACTIVE_MODEL["name"] = self.server.model_path.name
+            return self.reply(200, parse_hrx(raw_bytes, self.server.model_path.name))
         if route == "/api/builder/defaults":
             try:
                 from builder_api import defaults
@@ -228,10 +261,10 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         route = urlsplit(self.path).path
-        if route in ("/api/builder/inspect", "/api/builder/apply",
+        if route in ("/api/builder/inspect", "/api/builder/open", "/api/builder/apply", "/api/builder/abutment-restraints",
                      "/api/builder/preview", "/api/builder/export"):
             try:
-                from builder_api import apply_edits, build, inspect_source, MAX_SOURCE
+                from builder_api import add_abutment_end_restraints, apply_edits, export, inspect_source, needs_backfill_regeneration, preview, MAX_SOURCE
                 length = int(self.headers.get("Content-Length", "0"))
                 if length <= 0 or length > MAX_SOURCE * 2:
                     raise ValueError("Request is empty or too large.")
@@ -240,16 +273,47 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError("Expected a JSON object.")
                 if route.endswith("inspect"):
                     return self.reply(200, inspect_source(request.get("source")))
+                if route.endswith("open"):
+                    from builder_api import _source
+                    data = _source(request.get('source'))
+                    name = str(request.get('name') or 'Model.hrx')
+                    model = parse_hrx(data, name)
+                    inspection = inspect_source(request.get('source'))
+                    ACTIVE_MODEL['bytes'] = data
+                    ACTIVE_MODEL['name'] = name
+                    return self.reply(200, {'inspection': inspection, 'model': model,
+                                            'needsBackfillRegeneration': needs_backfill_regeneration(data)})
                 if route.endswith("apply"):
                     return self.reply(200, apply_edits(request))
-                data = build(request)
+                if route.endswith("abutment-restraints"):
+                    result = add_abutment_end_restraints(request)
+                    ACTIVE_MODEL["bytes"] = base64.b64decode(result['source'])
+                    ACTIVE_MODEL["name"] = 'Abutment restraints preview.hrx'
+                    return self.reply(200, result)
+                data = export(request) if route.endswith("export") else preview(request)
                 if route.endswith("export"):
                     return self.reply(200, data, "application/octet-stream")
-                return self.reply(200, parse_hrx(data, "Builder preview.hrx"))
+                preview_name = (
+                    (request.get("payload") or {}).get("name")
+                    if request.get("mode") == "create"
+                    else "Builder preview.hrx"
+                ) or "Builder preview.hrx"
+                if not str(preview_name).lower().endswith((".hrx", ".xml")):
+                    preview_name = f"{preview_name}.hrx"
+                if not request.get('rebuild_geometry'):
+                    ACTIVE_MODEL["bytes"] = data
+                    ACTIVE_MODEL["name"] = preview_name
+                return self.reply(200, parse_hrx(data, preview_name))
             except ImportError:
                 return self.reply(503, {"error": "Builder is not installed. Install model-view/requirements-preview.txt."})
             except Exception as exc:
                 return self.reply(400, {"error": str(exc) or "Unable to build this model."})
+        if route == "/api/solver/run":
+            return self.solver_run()
+        if route == "/api/solver/cancel":
+            return self.solver_cancel()
+        if route == "/api/solver/stop":
+            return self.solver_stop()
         if urlsplit(self.path).path == "/api/material/preview":
             return self.material_preview()
         if urlsplit(self.path).path == "/api/results/import":
@@ -263,7 +327,11 @@ class Handler(BaseHTTPRequestHandler):
             if length <= 0 or length > MAX_UPLOAD:
                 return self.reply(413, {"error": "Choose an HRX file between 1 byte and 32 MiB."})
             data = self.rfile.read(length)
-            model = parse_hrx(data, "Imported model.hrx")
+            query = parse_qs(urlsplit(self.path).query)
+            model_name = (query.get("name") or ["Imported model.hrx"])[0]
+            model = parse_hrx(data, model_name)
+            ACTIVE_MODEL["bytes"] = data
+            ACTIVE_MODEL["name"] = model_name
         except (ValueError, UnicodeError, ET.ParseError) as exc:
             return self.reply(400, {"error": str(exc)})
         return self.reply(200, model)
@@ -463,6 +531,16 @@ class Handler(BaseHTTPRequestHandler):
                 str(model_path) if model_path else None, str(result_path),
                 source_id=source_id, lazy=suffix == ".results",
             )
+            if suffix == ".histra":
+                try:
+                    from histra_results import extract_histra_model
+                    model_bytes, model_filename, parsed_model = extract_histra_model(result_path)
+                    ACTIVE_MODEL["bytes"] = model_bytes
+                    ACTIVE_MODEL["name"] = model_filename
+                    payload["embeddedModel"] = parsed_model
+                    payload["embeddedModelBase64"] = base64.b64encode(model_bytes).decode("ascii")
+                except Exception:
+                    pass
             return self.reply(200, payload)
         except Exception as exc:
             with IMPORT_LOCK:
@@ -471,6 +549,77 @@ class Handler(BaseHTTPRequestHandler):
             return self.reply(400, {"error": f"Import failed: {exc}"})
         finally:
             self._import_cleanup(uploaded)
+
+    def solver_run(self):
+        try:
+            from solver_api import decode_source_bytes, start_job
+            length = int(self.headers.get("Content-Length", "0"))
+            if not 0 < length <= MAX_UPLOAD * 2:
+                return self.reply(413, {"error": "Solver request is empty or too large."})
+            request = json.loads(self.rfile.read(length))
+            if not isinstance(request, dict):
+                raise ValueError("Expected a JSON object.")
+            hrx_bytes = decode_source_bytes(request.get("source"), ACTIVE_MODEL.get("bytes"))
+            model_name = request.get("modelName") or ACTIVE_MODEL.get("name") or "model.hrx"
+            ACTIVE_MODEL["bytes"] = hrx_bytes
+            ACTIVE_MODEL["name"] = model_name
+            analysis_key = request.get("analysisKey")
+            combination_row = int(request.get("combinationRow") or 1)
+
+            def _on_complete(job):
+                bundle_path = Path(job["bundlePath"])
+                source_id = job["sourceId"]
+                source = {
+                    "label": f"Solved: {bundle_path.name}",
+                    "folder": str(bundle_path.parent),
+                    "model": "",
+                    "output": bundle_path.name,
+                    "adapter": "histra",
+                    "lazy_fields": False,
+                    "eager_fields": True,
+                }
+                with IMPORT_LOCK:
+                    RESULT_SOURCES[source_id] = source
+                return {
+                    "sourceId": source_id,
+                    "label": source["label"],
+                    "bundleName": bundle_path.name,
+                    "bundlePath": str(bundle_path),
+                }
+
+            status = start_job(
+                hrx_bytes,
+                model_name,
+                analysis_key,
+                combination_row=combination_row,
+                lateral_subgrade=request.get("lateralSubgrade"),
+                scour_workflow=request.get("scourWorkflow"),
+                pdelta_effect=request.get("pdeltaEffect"),
+                arc_lambda_target=request.get("arcLambdaTarget"),
+                on_complete=_on_complete,
+            )
+            return self.reply(200, status)
+        except Exception as exc:
+            return self.reply(400, {"error": str(exc)})
+
+    def solver_stop(self):
+        try:
+            from solver_api import stop_job
+            length = int(self.headers.get("Content-Length", "0"))
+            request = json.loads(self.rfile.read(length)) if length > 0 else {}
+            return self.reply(200, stop_job(request.get("jobId") if isinstance(request, dict) else None))
+        except Exception as exc:
+            return self.reply(400, {"error": str(exc)})
+
+    def solver_cancel(self):
+        try:
+            from solver_api import cancel_job
+            length = int(self.headers.get("Content-Length", "0"))
+            request = json.loads(self.rfile.read(length)) if length > 0 else {}
+            job_id = request.get("jobId") if isinstance(request, dict) else None
+            return self.reply(200, cancel_job(job_id))
+        except Exception as exc:
+            return self.reply(400, {"error": str(exc)})
 
     def material_preview(self):
         try:

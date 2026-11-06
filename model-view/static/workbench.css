@@ -731,7 +731,8 @@ footer i {
 .toggle-row input:focus-visible { outline: 1px solid var(--wb-accent-strong); outline-offset: 2px; }
 
 .amber-dot,
-.teal-dot {
+.teal-dot,
+.gold-dot {
   display: inline-block;
   width: 4px;
   height: 4px;
@@ -744,6 +745,7 @@ footer i {
 
 .amber-dot { background: var(--data-load); }
 .teal-dot { background: var(--data-restraint); }
+.gold-dot { background: #ffd166; }
 
 .range-field { margin: 8px 0 10px; }
 
@@ -1265,3 +1267,12 @@ body.focus-view .workspace > .inspector {
   .panel-title { font-size: 8px; padding: 0 10px; letter-spacing: 0.07em; }
   .viewport-label { font-size: 8px; }
 }
+
+.solver-lateral-soil {
+  padding: .75rem;
+  margin-top: .75rem;
+  border: 1px solid var(--border-color, #444);
+  border-radius: .4rem;
+}
+.solver-lateral-soil label { display: flex; align-items: center; gap: .5rem; margin: .35rem 0; }
+.solver-lateral-soil input:not([type="checkbox"]) { margin-left: auto; max-width: 15rem; }

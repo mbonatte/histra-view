@@ -85,7 +85,7 @@ function normalizePreviewMesh(mesh, name = 'Server preview') {
       attributes: item.attributes ?? {},
     });
   }
-  return { name, nodes, quads };
+  return { name, nodes, quads, modelPoints: mesh?.modelPoints ?? [] };
 }
 
 export async function decodeLocalFile(file) {
@@ -153,7 +153,23 @@ export function parseHrxXml(xmlText, name = 'HRX model') {
   }
   if (!nodes.size) throw new Error('No valid <Node> elements were found.');
   if (!quads.length) throw new Error('No valid <Quad> elements were found.');
-  return { name, nodes, quads };
+
+  const modelPoints = [];
+  for (const element of xml.getElementsByTagName('ModelPoint')) {
+    const key = Number(element.getAttribute('Key'));
+    const pointAttr = element.getAttribute('Point');
+    const point = pointAttr ? pointAttr.split(';').map(Number) : null;
+    modelPoints.push({
+      key,
+      name: element.getAttribute('Name') ?? '',
+      description: element.getAttribute('Description') ?? '',
+      elementType: element.getAttribute('ElementType') ?? '',
+      elementKey: element.getAttribute('ElementKey') ?? element.getAttribute('IdElement') ?? '',
+      idVertex: element.getAttribute('IdVertex') ?? '0',
+      point,
+    });
+  }
+  return { name, nodes, quads, modelPoints };
 }
 
 export class QuadViewer {
@@ -252,18 +268,19 @@ export class QuadViewer {
     this.callbacks[event]?.(value);
   }
 
-  loadPreview(mesh, { name = 'Server preview', modelPoints = [] } = {}) {
+  loadPreview(mesh, { name = 'Server preview', modelPoints = null, preserveView = false } = {}) {
     const normalized = normalizePreviewMesh(mesh, name);
-    this._loadNormalized(normalized, modelPoints);
+    this._loadNormalized(normalized, modelPoints ?? normalized.modelPoints ?? [], { preserveView });
   }
 
   loadHrxText(xmlText, name = 'HRX model') {
     const normalized = parseHrxXml(xmlText, name);
-    this._loadNormalized(normalized, []);
+    this._loadNormalized(normalized, normalized.modelPoints ?? []);
   }
 
   clear() {
     this.clearNodeSelection();
+    this.clearModelPointSelection();
     this.clearMeasurement();
     this._disposeObject(this.state.mesh);
     this._disposeObject(this.state.edgeLines);
@@ -413,7 +430,11 @@ export class QuadViewer {
 
   fit() { this.setView('iso'); }
 
-  clearSelection() { this.selectQuad(null); }
+  clearSelection() {
+    this.clearNodeSelection();
+    this.clearModelPointSelection();
+    this.selectQuad(null);
+  }
 
   selectNode(key) {
     this.clearNodeSelection();
@@ -440,6 +461,95 @@ export class QuadViewer {
     this.nodeMarker.geometry.dispose();
     this.nodeMarker.material.dispose();
     this.nodeMarker = null;
+    this.needsRender = true;
+  }
+
+  selectModelPoint(key) {
+    this.clearModelPointSelection();
+    let point = null;
+    let pointRecord = null;
+    for (const record of (this.state.modelPoints || [])) {
+      if (String(record.key) === String(key)) {
+        pointRecord = record;
+        if (record.point && Array.isArray(record.point) && record.point.length === 3) {
+          const nodeKey = Number(record.elementKey ?? record.nodeKey);
+          if (record.elementType === 'Node' && this.state.nodes.has(nodeKey)) {
+            point = this.state.nodes.get(nodeKey);
+          } else {
+            point = new THREE.Vector3(...record.point);
+          }
+        } else {
+          const nodeKey = Number(record.elementKey ?? record.nodeKey);
+          if (this.state.nodes.has(nodeKey)) point = this.state.nodes.get(nodeKey);
+        }
+        break;
+      }
+    }
+    if (!point && typeof key === 'object' && key?.point) {
+      point = new THREE.Vector3(...key.point);
+      pointRecord = key;
+    }
+    if (!point) return;
+
+    this.selectedModelPointKey = pointRecord?.key ?? key;
+    const size = this.state.bounds.getSize(new THREE.Vector3());
+    const radius = Math.max(size.length() * 0.007, 0.12);
+    const group = new THREE.Group();
+
+    const sphere = new THREE.Mesh(
+      new THREE.SphereGeometry(radius, 16, 12),
+      new THREE.MeshBasicMaterial({ color: 0xffd700, depthTest: false, depthWrite: false })
+    );
+    group.add(sphere);
+
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(radius * 1.5, radius * 2.0, 24),
+      new THREE.MeshBasicMaterial({ color: 0xfff066, side: THREE.DoubleSide, depthTest: false, depthWrite: false })
+    );
+    group.add(ring);
+
+    group.position.copy(point);
+    group.renderOrder = 22;
+    this.modelPointMarker = group;
+    this.scene.add(this.modelPointMarker);
+    this.needsRender = true;
+  }
+
+  clearModelPointSelection() {
+    this.selectedModelPointKey = null;
+    if (!this.modelPointMarker) return;
+    this.scene.remove(this.modelPointMarker);
+    this.modelPointMarker.traverse(obj => {
+      obj.geometry?.dispose();
+      obj.material?.dispose();
+    });
+    this.modelPointMarker = null;
+    this.needsRender = true;
+  }
+
+  updateModelPoints() {
+    if (!this.state.modelPointPoints || !this.state.modelPoints?.length) return;
+    const positions = this.state.modelPointPoints.geometry.attributes.position.array;
+    let idx = 0;
+    for (const pointRecord of this.state.modelPoints) {
+      let point = null;
+      const nodeKey = Number(pointRecord.elementKey ?? pointRecord.nodeKey);
+      if (this.state.nodes.has(nodeKey)) {
+        point = this.state.nodes.get(nodeKey);
+      } else if (pointRecord.point && Array.isArray(pointRecord.point)) {
+        point = { x: pointRecord.point[0], y: pointRecord.point[1], z: pointRecord.point[2] };
+      }
+      if (point && idx * 3 + 2 < positions.length) {
+        positions[idx * 3] = point.x;
+        positions[idx * 3 + 1] = point.y;
+        positions[idx * 3 + 2] = point.z;
+      }
+      idx++;
+    }
+    this.state.modelPointPoints.geometry.attributes.position.needsUpdate = true;
+    if (this.modelPointMarker && this.selectedModelPointKey != null) {
+      this.selectModelPoint(this.selectedModelPointKey);
+    }
     this.needsRender = true;
   }
 
@@ -633,15 +743,26 @@ export class QuadViewer {
     this.modelGroup.add(this.state.nodePoints);
 
     const pointPositions = [];
-    for (const pointRecord of this.state.modelPoints) {
-      const point = this.state.nodes.get(Number(pointRecord.nodeKey));
+    for (const pointRecord of (this.state.modelPoints || [])) {
+      let point = null;
+      if (pointRecord.point && Array.isArray(pointRecord.point) && pointRecord.point.length === 3) {
+        const nodeKey = Number(pointRecord.elementKey ?? pointRecord.nodeKey);
+        if (pointRecord.elementType === 'Node' && this.state.nodes.has(nodeKey)) {
+          point = this.state.nodes.get(nodeKey);
+        } else {
+          point = { x: pointRecord.point[0], y: pointRecord.point[1], z: pointRecord.point[2] };
+        }
+      } else {
+        const nodeKey = Number(pointRecord.elementKey ?? pointRecord.nodeKey);
+        if (this.state.nodes.has(nodeKey)) point = this.state.nodes.get(nodeKey);
+      }
       if (point) pointPositions.push(point.x, point.y, point.z);
     }
     const mpGeometry = new THREE.BufferGeometry();
     mpGeometry.setAttribute('position', new THREE.Float32BufferAttribute(pointPositions, 3));
-    this.state.modelPointPoints = new THREE.Points(mpGeometry, new THREE.PointsMaterial({ color: 0xffe66d, size: 8, sizeAttenuation: false, depthTest: false }));
+    this.state.modelPointPoints = new THREE.Points(mpGeometry, new THREE.PointsMaterial({ color: 0xffd166, size: 9, sizeAttenuation: false, depthTest: false }));
     this.state.modelPointPoints.visible = Boolean(this.options.modelPoints);
-    this.state.modelPointPoints.renderOrder = 6;
+    this.state.modelPointPoints.renderOrder = 8;
     this.modelGroup.add(this.state.modelPointPoints);
 
     if (!this.state.bounds.isEmpty() && preserveView) { /* Keep full-model framing when filtering. */ }
@@ -692,7 +813,7 @@ export class QuadViewer {
     this.container.removeChild(this.renderer.domElement);
   }
 
-  _loadNormalized(model, modelPoints) {
+  _loadNormalized(model, modelPoints, { preserveView = false } = {}) {
     this.clearNodeSelection();
     this.clearMeasurement();
     this.state.bounds.makeEmpty();
@@ -701,7 +822,7 @@ export class QuadViewer {
     this.state.quads = model.quads;
     this.state.modelPoints = modelPoints ?? [];
     this.state.selectedQuadIndex = null;
-    this.rebuild({ preserveView: false });
+    this.rebuild({ preserveView });
     this.clearSelection();
     this.emit('stats', this.getStats());
   }

@@ -38,18 +38,23 @@ From this repository's root:
 npm ci --prefix model-view
 python3.12 -m venv model-view/.venv
 model-view/.venv/bin/python -m pip install -r model-view/requirements-preview.txt
-python3 model-view/server.py
+model-view/.venv/bin/python model-view/server.py
 ```
 
 Open http://127.0.0.1:8765. The page starts blank; use **Open HRX** or **Import Results** to load what you want.
 Choose **Open HRX** or drag a file onto the page to inspect another model. Uploads
-are processed locally in memory and are not saved. Python 3.10+ and a WebGL-capable
+are processed locally in memory and are not saved. Python 3.12–3.14 and a WebGL-capable
 browser are required; Three.js is served locally after installation.
+
+The requirements install HiStrA-Python directly from GitHub at the pinned
+commit. To update the solver, change that revision in
+`requirements-preview.txt`, reinstall the requirements, and run the viewer
+tests. The local `histra-python/` checkout is not used by the viewer.
 
 Alternate initial model / port:
 
 ```sh
-python3 model-view/server.py --model /absolute/path/to/model.hrx --port 8766
+model-view/.venv/bin/python model-view/server.py --model /absolute/path/to/model.hrx --port 8766
 ```
 
 ### Agent CLI & MCP Server (`hrx_cli.py` / `mcp_server.py`)
@@ -65,7 +70,8 @@ model-view/.venv/bin/python model-view/hrx_cli.py catalog
 
 # Create a bridge HRX from dot-path overrides
 model-view/.venv/bin/python model-view/hrx_cli.py create -o bridge.hrx \
-  --set nl=150 --set spans.0.L=800 --set piers.0.H=250
+  --set nl=150 --set spans.0.L=800 --set spans.0.circolare=true \
+  --set piers.0.H=250
 
 # Inspect materials, analyses, and loads
 model-view/.venv/bin/python model-view/hrx_cli.py inspect bridge.hrx
@@ -80,6 +86,21 @@ model-view/.venv/bin/python model-view/hrx_cli.py edit-material bridge.hrx -o br
 model-view/.venv/bin/python model-view/hrx_cli.py edit-analysis bridge.hrx -o bridge.hrx \
   --name "Vert" --set MaxIterations=50 --set ConvergenceTolerance=0.0005
 ```
+
+Set `spans.N.circolare=true` to build an exact circular arch: the intrados
+radius is `R = (f² + (L/2)²) / (2f)` and the springing angle written to the
+HRX is derived from `L`, `S1`, `S2` and `f`, as in the C# wizard. The default
+(`false`) keeps the elliptical arch. The circular mesh is stored explicitly in
+the HRX; the original C# mesher itself has no circular branch and would rebuild
+an ellipse from the wizard data if the model were re-meshed there.
+
+The HRX editor now also exposes the native C# wizard groups (bridge definition,
+lanes, abutments, spans, piers, backfill layers and trunks), the vehicle /
+line-load / schema editors, and the model configuration (`ModelProperty`,
+`AdvancedOptionsDefault` and root flags). See
+[`C#_SOFTWARE_PARITY.md`](C#_SOFTWARE_PARITY.md) for the `model_mesh_complete`
+benchmark inventory, the screenshot-to-field map, and the current C#/Python
+parity gaps.
 
 To expose the same capabilities over the Model Context Protocol (stdio JSON-RPC 2.0),
 launch `model-view/.venv/bin/python model-view/mcp_server.py` (tools:
@@ -382,3 +403,70 @@ sliding previews have zero applied normal stress, so they do not represent a
 specific loaded interface. Fracture-energy coupon scaling follows the C# preview
 (energy divided by 100 for rocking/sliding). No design values or correction
 coefficients are recomputed.
+
+### Linked bridge edits and arch thickness divisions
+
+In Build → Geometry, enable **Link abutments**, **Link piers and foundations**,
+or **Link spans** to apply subsequent field edits to the matching components.
+Linking leaves existing differences untouched until a field is edited. For
+abutments, left/right-specific fields are mirrored. The links are editing
+controls and are not saved as model properties.
+
+Each span offers **Elements through arch thickness** (1–4). The default is 1.
+The choice is stored in WizardData as the HiStrA View extension
+`HiStrAArchLayers` and is used on regeneration; it is not a C# wizard option.
+The generated HRX contains the resulting Quad mesh.
+
+For CLI creation, apply the same edits with, for example:
+
+```sh
+.venv/bin/python hrx_cli.py create --link spans --link abutments \
+  --set spans.0.arch_layers=3 --set left_abutment.H=250 -o bridge.hrx
+```
+
+`--link piers` and `--link all` are also available. Links apply to the specified
+`--set` fields; other values in a JSON spec are left unchanged.
+
+### Linear lateral subgrade in an analysis
+
+The Analysis runner offers **Linear lateral subgrade** for finalized HRX models
+that already contain vertical face restraints. Enable it, enter the intended
+restraint keys and global Kx and Ky in kN/m³, and run the analysis. The solver
+projects the moduli onto each face normal and converts them to each restraint's
+normal stiffness. This is a linear spring in tension and compression; it is not
+the C# nonlinear geotechnical material law. The controls do not create faces.
+
+The source HRX remains untouched. The self-contained result bundle records the
+resulting K2 values in its embedded HRX. Different settings use separate bundle
+names and execution caches, and the complete analysis chain is prepared and run
+with those settings.
+
+### Staged scour workflow
+
+In the Analysis runner, expand **Staged foundation scour** and enable it. Enter
+the pier number (left to right), the existing intact and scoured **masonry**
+materials, and the starting Y edge. Select each scour analysis in turn to set
+its total scour percentage. Then choose the target scour or post-scour modal
+analysis and run it. Earlier configured stages are summarized in the panel.
+The configured stages must start at `scour_1` and be consecutive, with
+nondecreasing total percentages. Modal analyses named `Modal_n` require `n`
+configured stages. Create the desired modal analysis in the model first if it
+is absent.
+
+The solver prepares a fresh mesh, identifies pier-foundation bottom interfaces,
+assigns intact soil before Vert, and changes newly selected interface materials
+before each scour stage. Selection uses interface centroids within the chosen
+fraction of foundation width, measured from the chosen Y edge. Adjacent
+interface sizes can make the selected area differ from the requested fraction.
+The entire Vert → scour chain is run in order with predecessor load and state
+preserved and the independent equilibrium check set to error by default. The
+optional per-run checkbox disables the extra audit and uses the analysis
+convergence criterion; results from such a run are unaudited. A failed or
+incomplete predecessor stops the chain. Settings are per run, not saved into
+the source HRX; successful results include the workflow and resolved interface
+keys in their archive metadata. The support springs already in the HRX remain
+in the model alongside the interface material.
+
+### Shared bridge display settings
+
+`static/view-settings.js` owns the in-memory display settings and generates the controls used by Build/View and Results. Add common presentation options there and apply them through the viewer adapter, rather than maintaining separate panel state. Settings last for the current page session. Result field coloring, deformation, and dataset-specific visibility filters remain in the Results workspace; the shared color choice is visible there when the result color map is set to Uniform. Loads and restraints can be configured from Results, but are only drawn in Build/View because result projections do not consistently include their definitions.

@@ -385,8 +385,21 @@ def _restraints(root, nodes, warnings):
                 points = [point] if point is not None else []
             if not points:
                 warnings.append(f"{tag} {e.get('Key')} has no display geometry.")
+            stiffness = []
+            dofs = {}
+            for direction, index in zip(("U1", "U2", "U3", "R1", "R2", "R3"), range(6)):
+                behaviour = e.get(f"{direction}mechBehaviourType", "Unspecified")
+                attr = f"K{index + 1}" if index < 3 else f"Kr{index - 2}"
+                raw = e.get(attr)
+                value = float(raw) if raw not in (None, "") else None
+                stiffness.append(value)
+                dofs[direction] = (
+                    "Elastic"
+                    if behaviour == "Fixed" and value is not None and value > 0.0
+                    else behaviour
+                )
             result.append({**record(e), "id": f"{tag}:{e.get('Key')}", "type": tag,
-                           "points": points, "dofs": {d: e.get(f"{d}mechBehaviourType", "Unspecified") for d in ("U1", "U2", "U3", "R1", "R2", "R3")},
+                           "points": points, "dofs": dofs, "stiffness": stiffness,
                            "referenceSystem": dict(e.find("ReferenceSystem").attrib) if e.find("ReferenceSystem") is not None else {}})
             if tag == "Restraint":
                 represented.add((e.get("ParentTypeElement"), e.get("ParentKey")))
