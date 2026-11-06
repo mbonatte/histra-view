@@ -2,7 +2,7 @@ import base64
 import unittest
 from xml.etree import ElementTree as ET
 
-from builder_api import apply_edits, build, catalog, defaults, inspect_source
+from builder_api import add_abutment_end_restraints, apply_edits, build, catalog, defaults, export, inspect_source, preview, _document, _geometry_matches
 from hrx_model import parse_hrx
 
 
@@ -20,6 +20,156 @@ class BuilderIntegrationTests(unittest.TestCase):
 
     def test_unedited_source_is_byte_identical(self):
         self.assertEqual(build({'mode': 'edit', 'source': self.source, 'changes': []}), self.original)
+
+    def test_quad_roundoff_is_allowed_but_mesh_edits_are_not(self):
+        original = _document(self.original)
+        candidate = _document(self.original)
+        quad = candidate.find('Quad')
+        quad.set('Length1', str(float(quad.get('Length1')) + 0.00009))
+        centroid = [float(value) for value in quad.get('G').split(';')]
+        centroid[0] += 0.00015
+        quad.set('G', ';'.join(map(str, centroid)))
+        ref = quad.find('ReferenceSystem')
+        origin = [float(value) for value in ref.get('Origin').split(';')]
+        origin[0] += 0.00009
+        ref.set('Origin', ';'.join(map(str, origin)))
+        self.assertTrue(_geometry_matches(original, candidate, 'Quad'))
+        quad.set('MaterialKey', '999')
+        self.assertFalse(_geometry_matches(original, candidate, 'Quad'))
+        quad.set('MaterialKey', original.find('Quad').get('MaterialKey'))
+        quad.set('Length1', str(float(original.find('Quad').get('Length1')) + 0.001))
+        self.assertFalse(_geometry_matches(original, candidate, 'Quad'))
+
+    def test_fixed_abutment_end_restraints_round_trip(self):
+        result = add_abutment_end_restraints({'mode': 'edit', 'source': self.source, 'changes': []})
+        edited = base64.b64decode(result['source'])
+        before, after = ET.fromstring(self.original), ET.fromstring(edited)
+        glrs = [e for e in after.findall('GeometryLineRestraint') if e.get('Name', '').startswith('HiStrAView_EndSupport_')]
+        self.assertTrue(any('Sinistra' in e.get('Name') for e in glrs))
+        self.assertTrue(any('Destra' in e.get('Name') for e in glrs))
+        nodes = {e.get('Key'): [float(v) for v in e.get('Point').split(';')] for e in after.findall('Node')}
+        length = float(after.find('Bridge').get('L'))
+        deck_height = float(after.find('Bridge').get('H'))
+        for side in ('Sinistra', 'Destra'):
+            side_glrs = [e for e in glrs if f'EndSupport_{side}_' in e.get('Name')]
+            self.assertGreaterEqual(max(nodes[e.get(key)][2] for e in side_glrs for key in ('NodeKey1', 'NodeKey2')), deck_height)
+            self.assertTrue(any(nodes[e.get(key)][2] > 0 for e in side_glrs for key in ('NodeKey1', 'NodeKey2')))
+        for glr in glrs:
+            x = 0.0 if 'Sinistra' in glr.get('Name') else length
+            self.assertAlmostEqual(nodes[glr.get('NodeKey1')][0], x)
+            self.assertAlmostEqual(nodes[glr.get('NodeKey2')][0], x)
+            self.assertNotEqual(nodes[glr.get('NodeKey1')][2], nodes[glr.get('NodeKey2')][2])
+            self.assertEqual(glr.get('K'), '-1|-1|-1|-1|-1|-1')
+            key = glr.find('RestraintKeys/RestraintKey').get('Value')
+            restraint = after.find(f"Restraint[@Key='{key}']")
+            self.assertTrue(all(restraint.get(k) == '-1' for k in ('K1','K2','K3','Kr1','Kr2','Kr3')))
+        self.assertEqual(ET.tostring(before.find('Quad')), ET.tostring(after.find('Quad')))
+        self.assertEqual(ET.tostring(before.find('Analysis')), ET.tostring(after.find('Analysis')))
+        self.assertEqual(export({'mode':'edit', 'source':result['source']}), edited)
+        regenerated = export({'mode':'edit', 'source':result['source'], 'rebuild_geometry':True, 'replace_existing_mesh':True})
+        regenerated_root = ET.fromstring(regenerated)
+        self.assertEqual(len([e for e in regenerated_root.findall('GeometryLineRestraint') if e.get('Name', '').startswith('HiStrAView_EndSupport_')]), len(glrs))
+        with self.assertRaisesRegex(ValueError, 'already been added'):
+            add_abutment_end_restraints({'mode':'edit', 'source':result['source']})
+
+    def test_geometry_change_regenerates_abutment_end_restraints(self):
+        result = add_abutment_end_restraints({'mode':'edit', 'source':self.source})
+        changes = [{'collection':'wizard_abutment', 'index':0, 'node':[], 'attribute':'H', 'value':'150'}]
+        request = {'mode':'edit', 'source':result['source'], 'changes':changes, 'rebuild_geometry':True}
+        generated = preview(request)
+        saved = export(request)
+        self.assertEqual(parse_hrx(generated, 'preview.hrx')['nodes'], parse_hrx(saved, 'saved.hrx')['nodes'])
+        root = ET.fromstring(saved)
+        nodes = {n.get('Key'): [float(v) for v in n.get('Point').split(';')] for n in root.findall('Node')}
+        supports = [e for e in root.findall('GeometryLineRestraint') if 'HiStrAView_EndSupport_Sinistra_' in e.get('Name', '')]
+        self.assertTrue(supports)
+        self.assertAlmostEqual(min(nodes[e.get(key)][2] for e in supports for key in ('NodeKey1', 'NodeKey2')), -150)
+        self.assertTrue(all(e.get('K') == '-1|-1|-1|-1|-1|-1' for e in supports))
+
+    def test_end_restraints_reject_pending_geometry(self):
+        change = {'collection':'wizard_pier', 'index':0, 'node':[], 'attribute':'H', 'value':'500'}
+        with self.assertRaisesRegex(ValueError, 'Regenerate and reopen'):
+            add_abutment_end_restraints({'mode':'edit', 'source':self.source, 'changes':[change]})
+
+    def test_elevation_section_edit_preserves_mesh(self):
+        inspected = inspect_source(self.source)
+        elevation = inspected['collections']['wizard_elevation'][0]
+        section = next(n for n in elevation['nodes'] if n['tag'] == 'Elevation')
+        change = {'collection': 'wizard_elevation', 'index': 0, 'node': section['path'], 'attribute': 'H1', 'value': '234'}
+        before = ET.fromstring(self.original)
+        after = ET.fromstring(build({'mode': 'edit', 'source': self.source, 'changes': [change]}))
+        self.assertEqual(after.find('.//WizardData/Elevations/Elevations/Elevation').get('H1'), '234')
+        self.assertEqual(ET.tostring(before.find('Quad')), ET.tostring(after.find('Quad')))
+        generated = preview({'mode': 'edit', 'source': self.source, 'changes': [change], 'rebuild_geometry': True})
+        preview_model = parse_hrx(generated, 'preview.hrx')
+        original_model = parse_hrx(self.original, 'original.hrx')
+        self.assertNotEqual(preview_model['nodes'], original_model['nodes'])
+
+    def test_pier_height_changes_regenerated_preview(self):
+        changes = [{'collection': 'wizard_pier', 'index': 0, 'node': [], 'attribute': 'H', 'value': '500'}]
+        generated = preview({'mode': 'edit', 'source': self.source, 'changes': changes, 'rebuild_geometry': True})
+        self.assertNotEqual(parse_hrx(generated, 'preview.hrx')['nodes'],
+                            parse_hrx(self.original, 'original.hrx')['nodes'])
+        saved = export({'mode': 'edit', 'source': self.source, 'changes': changes})
+        self.assertEqual(parse_hrx(saved, 'saved.hrx')['nodes'], parse_hrx(generated, 'preview.hrx')['nodes'])
+        before, after = ET.fromstring(self.original), ET.fromstring(saved)
+        self.assertEqual(ET.tostring(before.find('Template')), ET.tostring(after.find('Template')))
+        self.assertEqual(ET.tostring(before.find('Analysis')), ET.tostring(after.find('Analysis')))
+
+    def test_export_regenerates_geometry_after_an_intermediate_edit_operation(self):
+        change = {'collection':'wizard_pier', 'index':0, 'node':[], 'attribute':'H', 'value':'500'}
+        request = {'mode':'edit', 'source':self.source,
+                   'steps':[{'changes':[change], 'operations':[{'op':'duplicate_material', 'duplicate':0}]}]}
+        saved = export(request)
+        root = ET.fromstring(saved)
+        self.assertEqual(root.find('./WizardData/Pier').get('H'), '500')
+        self.assertNotEqual(parse_hrx(saved, 'saved.hrx')['nodes'], parse_hrx(self.original, 'original.hrx')['nodes'])
+        self.assertEqual(len(root.findall('Template')), len(ET.fromstring(self.original).findall('Template')) + 1)
+
+    def test_open_endpoint_projects_model_before_replacing_active_source(self):
+        import io
+        import json
+        from unittest.mock import patch
+        from server import ACTIVE_MODEL, Handler
+        def call(source):
+            body = json.dumps({'source':source, 'name':'opened.hrx'}).encode()
+            handler = Handler.__new__(Handler)
+            handler.path = '/api/builder/open'
+            handler.headers = {'Content-Length':str(len(body))}
+            handler.rfile = io.BytesIO(body)
+            handler.reply = lambda code, payload, *args: (code, payload)
+            return handler.do_POST()
+        with patch.dict(ACTIVE_MODEL, {'bytes':None, 'name':'old.hrx'}, clear=True):
+            code, result = call(self.source)
+            self.assertEqual(code, 200)
+            self.assertEqual(result['model']['name'], 'opened.hrx')
+            self.assertEqual(len(result['model']['quads']), len(parse_hrx(self.original, 'original.hrx')['quads']))
+            self.assertEqual(ACTIVE_MODEL['bytes'], self.original)
+            code, _ = call('bad')
+            self.assertEqual(code, 400)
+            self.assertEqual(ACTIVE_MODEL['bytes'], self.original)
+
+    def test_regeneration_rejects_unrecognized_model_objects(self):
+        source = ET.fromstring(self.original)
+        ET.SubElement(source, 'CustomElement', Key='1')
+        encoded = base64.b64encode(ET.tostring(source)).decode('ascii')
+        with self.assertRaisesRegex(ValueError, 'unsupported objects CustomElement'):
+            export({'mode': 'edit', 'source': encoded, 'rebuild_geometry': True})
+
+    def test_explicit_regeneration_replaces_stale_mesh(self):
+        change = {'collection': 'wizard_pier', 'index': 0, 'node': [], 'attribute': 'H', 'value': '500'}
+        stale = build({'mode': 'edit', 'source': self.source, 'changes': [change]})
+        stale_source = base64.b64encode(stale).decode('ascii')
+        saved = export({'mode': 'edit', 'source': stale_source, 'rebuild_geometry': True, 'replace_existing_mesh': True})
+        self.assertNotEqual(parse_hrx(stale, 'stale.hrx')['nodes'], parse_hrx(saved, 'saved.hrx')['nodes'])
+        self.assertEqual(ET.tostring(ET.fromstring(stale).find('Analysis')), ET.tostring(ET.fromstring(saved).find('Analysis')))
+
+    def test_explicit_regeneration_rejects_quad_load(self):
+        root = ET.fromstring(self.original)
+        root.find('Quad').set('LoadTemplateLineKey', '7')
+        source = base64.b64encode(ET.tostring(root)).decode('ascii')
+        with self.assertRaisesRegex(ValueError, 'loads assigned directly'):
+            export({'mode': 'edit', 'source': source, 'rebuild_geometry': True, 'replace_existing_mesh': True})
 
     def test_material_edit_preserves_other_model_data(self):
         materials = inspect_source(self.source)['materials']
@@ -83,11 +233,31 @@ class BuilderIntegrationTests(unittest.TestCase):
         self.assertEqual(len(root.findall('LoadFunctionItem')), 64)
         self.assertEqual(
             root.find("Analysis[@Name='Vert']").get('AdapticConvergenceCriteria'),
-            'ForceMoment',
+            'Work',
         )
         self.assertEqual(
             root.find("Analysis[@Name='Modal_0']").get('AdapticConvergenceCriteria'),
             'Work',
+        )
+
+    def test_generated_model_has_arch_crown_and_pier_model_points(self):
+        root = ET.fromstring(self.original)
+        points = root.findall('ModelPoint')
+        labels = [point.get('Description').split(' · ')[0] for point in points[1:]]
+        self.assertEqual(points[0].get('Key'), '1')
+        self.assertEqual(labels, [
+            'Span 1 arch crown -Y', 'Span 1 arch crown 0Y', 'Span 1 arch crown +Y',
+            'Span 2 arch crown -Y', 'Span 2 arch crown 0Y', 'Span 2 arch crown +Y',
+            'Pier 1 top -Y', 'Pier 1 top +Y', 'Pier 1 bottom -Y', 'Pier 1 bottom +Y',
+        ])
+        nodes = {node.get('Key') for node in root.findall('Node')}
+        for point in points:
+            self.assertEqual(point.get('ElementType'), 'Node')
+            self.assertIn(point.get('ElementKey'), nodes)
+        active = root.find("Analysis[@Name='Vert']/ActiveModelPoints")
+        self.assertEqual(
+            [item.get('Key') for item in active],
+            [point.get('Key') for point in points],
         )
 
     def test_editor_exposes_every_native_masonry_attribute(self):
@@ -213,6 +383,58 @@ class BuilderIntegrationTests(unittest.TestCase):
         self.assertEqual(analyses[-1].get('Name'), 'Modal_0 (2)')
         self.assertEqual(analyses[-1].get('MaxIterations'), '42')
 
+    def test_span_load_and_arch_control_point_generation(self):
+        import copy
+        payload = copy.deepcopy(self.payload)
+        payload['spans'][0]['load_position'] = '1/4'
+        payload['spans'][0]['load_value'] = 0.02
+        raw = build({'mode': 'create', 'payload': payload})
+        root = ET.fromstring(raw)
+
+        # Check Load Template Key="3"
+        templates = [t for t in root.findall('Template') if t.get('Key') == '3']
+        self.assertEqual(len(templates), 1)
+        self.assertEqual(templates[0].get('PurposeType'), 'LineLoad')
+        item = templates[0].find('LoadtemplateItemList/LoadTemplateItem')
+        self.assertIsNotNone(item)
+        self.assertEqual(item.get('LoadValue'), '0.02')
+        self.assertEqual(item.get('IdLoadCondition'), '11')
+
+        # Check LoadElement
+        load_elements = root.findall('LoadElement')
+        self.assertGreaterEqual(len(load_elements), 1)
+        self.assertEqual(load_elements[0].get('IdLoadTemplate'), '3')
+        self.assertEqual(load_elements[0].get('ElementType'), 'Quad')
+
+        # Check arch control ModelPoint
+        model_points = root.findall('ModelPoint')
+        control_mps = [mp for mp in model_points if 'arch control point' in mp.get('Description', '')]
+        self.assertEqual(len(control_mps), 1)
+        control_key = control_mps[0].get('Key')
+
+        # Check LiveLoad_1 analysis has MasterPoint set to control_key
+        analyses = {a.get('Name'): a for a in root.findall('Analysis')}
+        self.assertIn('LiveLoad_1', analyses)
+        live_load = analyses['LiveLoad_1']
+        self.assertEqual(live_load.get('MasterPoint'), control_key)
+        adaptic_phase = live_load.find('AdapticPhases/AdapticPhase')
+        self.assertIsNotNone(adaptic_phase)
+        self.assertEqual(adaptic_phase.get('ModelPointKey'), control_key)
+
 
 if __name__ == '__main__':
     unittest.main()
+
+class AnalysisStepEditTests(unittest.TestCase):
+    def test_load_function_step_discretization_is_saved_to_hrx(self):
+        payload = defaults()
+        original = build({'mode': 'create', 'payload': payload})
+        encoded = base64.b64encode(original).decode('ascii')
+        edited = build({'mode': 'edit', 'source': encoded, 'changes': [
+            {'collection': 'load_function', 'index': 0, 'node': [],
+             'attribute': 'DiscrVal', 'value': '0.05000000000005'},
+        ]})
+        before, after = _document(original), _document(edited)
+        self.assertEqual(before.find('LoadFunction').get('DiscrVal'), '0.2')
+        self.assertEqual(after.find('LoadFunction').get('DiscrVal'), '0.05000000000005')
+        self.assertEqual(len(before.findall('LoadFunctionItem')), len(after.findall('LoadFunctionItem')))

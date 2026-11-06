@@ -32,7 +32,13 @@ Run all commands from `/home/mauricio/coding/histra-bridge/histra-view/model-vie
   --set nl=150 \
   --set spans.0.L=800 \
   --set spans.0.f=350 \
+  --set spans.0.circolare=true \
   --set piers.0.H=250
+
+# `spans.N.circolare=true` builds an exact circular arch of radius
+# R = (f^2 + (L/2)^2) / (2f).  The springing angle Asx/Adx is derived from
+# L, S1, S2 and f on export, exactly as the C# wizard does.  The circular
+# mesh is written explicitly; the native C# mesher has no circular branch.
 
 # 4. Inspect all materials, analyses, and loads in an .hrx file
 .venv/bin/python hrx_cli.py inspect bridge.hrx

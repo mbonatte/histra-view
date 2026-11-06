@@ -1,6 +1,7 @@
 """Bridge authoring and HRX material/analysis editor backed by local histra_builder."""
 import base64
 import binascii
+import math
 import tempfile
 from pathlib import Path
 
@@ -53,7 +54,23 @@ def _document(data):
     return root
 
 
+def _wizard(root):
+    return root.find('WizardData')
+
+
+def _wizard_elements(root, tag):
+    wizard = _wizard(root)
+    return list(wizard.findall(tag)) if wizard is not None else []
+
+
 def _collections(root):
+    wizard = _wizard(root)
+    layers = []
+    if wizard is not None:
+        elevations = wizard.find('Elevations')
+        if elevations is not None:
+            layers = [elevations.find(f'Layer{index}') for index in (1, 2, 3)]
+            layers = [layer for layer in layers if layer is not None]
     return {
         'material': [e for e in root.findall('Template')
                      if e.get('TypeOf', '').endswith('Material')],
@@ -63,12 +80,41 @@ def _collections(root):
         'load_combination': list(root.findall('LoadCombination')),
         'load_combination_item': list(root.findall('LoadCombinationItem')),
         'load_condition': list(root.findall('LoadCondition')),
+        # C# wizard geometry.  These are the exact groups shown by the
+        # Geometry tabs in the native HiStrA bridge wizard.
+        'wizard_definition': [wizard.find('BridgeDefinition')] if wizard is not None and wizard.find('BridgeDefinition') is not None else [],
+        'wizard_corsia': (wizard.find('BridgeDefinition').findall('Corsie/Corsia')
+                          if wizard is not None and wizard.find('BridgeDefinition') is not None else []),
+        'wizard_abutment': _wizard_elements(root, 'Abutment'),
+        'wizard_span': _wizard_elements(root, 'Span'),
+        'wizard_pier': _wizard_elements(root, 'Pier'),
+        'wizard_elevation': [wizard.find('Elevations')] if wizard is not None and wizard.find('Elevations') is not None else [],
+        'wizard_layer': layers,
+        'wizard_trunk': (wizard.find('BridgeDefinition').findall('Trunks/Trunk')
+                         if wizard is not None and wizard.find('BridgeDefinition') is not None else []),
+        # Native load authoring objects.  A vehicle/line-load Template owns its
+        # LoadTemplateItem rows as child nodes; the generic editor exposes each
+        # row through the settings-section selector.
+        'vehicle_load': [e for e in root.findall('Template')
+                         if e.get('PurposeType') == 'VehicleLoad'],
+        'line_load': [e for e in root.findall('Template')
+                      if e.get('PurposeType') == 'LineLoad'],
+        'schema': [e for e in root.findall('Template')
+                   if e.get('PurposeType') == 'Schema'],
+        # Model configuration (Model informations / Advanced options).
+        'model_property': list(root.find('ModelProperty')) if root.find('ModelProperty') is not None else [],
+        'advanced_options': [root.find('AdvancedOptionsDefault')] if root.find('AdvancedOptionsDefault') is not None else [],
+        # The root carries model-wide flags such as
+        # DisableGeoLinksOnLoadingLateralEarthPressure.
+        'model_settings': [root],
     }
 
 
 def _editable_nodes(element, kind):
     # States are execution records. They are preserved, not authoring inputs.
     nodes = []
+    if kind == 'model_settings':
+        return [([], element)]
     def visit(node, path):
         if not isinstance(node.tag, str) or (kind == 'analysis' and node.tag == 'States'):
             return
@@ -82,12 +128,41 @@ def _editable_nodes(element, kind):
 def _record(element, kind):
     records = []
     for path, node in _editable_nodes(element, kind):
-        # Root keys identify model objects; changing one could break references.
-        protected = ('Key', 'key', 'TypeOf') if not path else ('TypeOf',)
+        # Keys identify model objects and child rows; changing one could break
+        # references, so they stay read-only at every level.
+        protected = ('Key', 'key', 'TypeOf')
         attrs = {k: v for k, v in node.attrib.items() if k not in protected}
+        if kind == 'wizard_pier' and not path:
+            attrs.setdefault('HiStrAShoulderHeight', '0')
+        if kind == 'wizard_span' and not path:
+            attrs.setdefault('HiStrAArchLayers', '1')
         if attrs:
             records.append({'path': path, 'tag': node.tag, 'attributes': attrs})
-    return {'name': element.get('Name', kind.title()), 'key': element.get('Key', element.get('key', '')),
+    name = element.get('Name')
+    if not name:
+        if element.tag == 'BridgeDefinition':
+            name = 'Bridge definition'
+        elif element.tag == 'Abutment':
+            name = 'Left abutment' if element.get('AbutmentKind') == 'Sinistra' else 'Right abutment'
+        elif element.tag == 'Span':
+            name = 'Span'
+        elif element.tag == 'Pier':
+            name = 'Pier'
+        elif element.tag in ('Layer1', 'Layer2', 'Layer3'):
+            name = f'Backfill {element.tag[-1]}'
+        elif element.tag in ('GeneralInfo', 'BuildingInfo', 'Soil', 'VitaUtile'):
+            name = {
+                'GeneralInfo': 'General info',
+                'BuildingInfo': 'Building info',
+                'Soil': 'Soil',
+                'VitaUtile': 'Service life',
+            }[element.tag]
+        elif element.tag == 'AdvancedOptionsDefault':
+            name = 'Advanced options'
+        else:
+            name = kind.replace('_', ' ').title()
+    return {'name': name,
+            'key': element.get('Key', element.get('key', element.get('Id', ''))),
             'attributes': records[0]['attributes'] if records and not records[0]['path'] else {},
             'nodes': records}
 
@@ -95,7 +170,18 @@ def _record(element, kind):
 def inspect_source(encoded):
     root = _document(_source(encoded))
     collections = _collections(root)
-    records = {kind: [_record(e, kind) for e in entries] for kind, entries in collections.items()}
+    records = {
+        kind: ([] if kind == 'model_settings' else [_record(e, kind) for e in entries])
+        for kind, entries in collections.items()
+    }
+    if 'model_settings' in collections:
+        attributes = {k: v for k, v in root.attrib.items() if k != 'version'}
+        records['model_settings'] = [{
+            'name': 'Model settings',
+            'key': '',
+            'attributes': attributes,
+            'nodes': [{'path': [], 'tag': root.tag, 'attributes': attributes}],
+        }]
     # Keep legacy names for clients using the original material-only API.
     return {'materials': records['material'], 'analyses': records['analysis'], 'collections': records}
 
@@ -323,8 +409,9 @@ def _change_patches(collections, changes):
         if element is None:
             raise ValueError('Unknown or protected settings.')
         attribute, value = change.get('attribute'), change.get('value')
-        protected = ('Key', 'key', 'TypeOf') if not path else ('TypeOf',)
-        if attribute in protected or attribute not in element.attrib or not isinstance(value, str) or len(value) > 10000:
+        protected = ('Key', 'key', 'TypeOf')
+        extension = not path and ((kind == 'wizard_pier' and attribute == 'HiStrAShoulderHeight') or (kind == 'wizard_span' and attribute == 'HiStrAArchLayers'))
+        if attribute in protected or (attribute not in element.attrib and not extension) or not isinstance(value, str) or len(value) > 10000:
             raise ValueError('Invalid attribute or value.')
         if value != element.get(attribute):
             patches.append(PatchOperation(op='set_attribute', xpath=element.getroottree().getpath(element), attribute=attribute, value=value))
@@ -380,8 +467,260 @@ def build(request):
     return _apply_patches(data, request)
 
 
+def _regenerated_geometry(data, *, legacy_backfill=False, previous_backfill=False):
+    from histra_builder.generator.csharp_import import spec_from_wizard_data
+    from histra_builder.generator.csharp_mesher import CSharpMesher
+    from histra_builder.generator.csharp_writer import serialize_csharp_mesh_to_hrx
+    root = _document(data)
+    wizard = root.find('WizardData')
+    if wizard is None:
+        raise ValueError('This model has no bridge wizard geometry to rebuild.')
+    spec = spec_from_wizard_data(wizard)
+    spec.material_templates = [dict(item.attrib) for item in root.findall('Template')
+                               if item.get('TypeOf', '').endswith('Material') and item.get('Key')]
+    try:
+        return serialize_csharp_mesh_to_hrx(CSharpMesher(spec, legacy_backfill=legacy_backfill,
+                                                        previous_backfill=previous_backfill).mesh())
+    except NotImplementedError as exc:
+        raise ValueError(f'Geometry regeneration is unavailable: {exc}') from exc
+
+
+def preview(request):
+    """Generate a geometry-only preview when an existing wizard is edited."""
+    data = build(request)
+    if request.get('mode') == 'edit' and request.get('rebuild_geometry'):
+        return _regenerate_with_end_restraints(data)
+    return data
+
+
+def _has_fixed_end_restraints(root):
+    supports = [e for e in root.findall('GeometryLineRestraint')
+                if e.get('Name', '').startswith('HiStrAView_EndSupport_')]
+    if not supports:
+        return False
+    sides = {e.get('Name', '').split('_')[2] for e in supports}
+    restraints = {e.get('Key'): e for e in root.findall('Restraint')}
+    if sides != {'Sinistra', 'Destra'}:
+        raise ValueError('Cannot regenerate incomplete abutment end restraints.')
+    for support in supports:
+        refs = support.findall('RestraintKeys/RestraintKey')
+        restraint = restraints.get(refs[0].get('Value')) if len(refs) == 1 else None
+        if (support.get('K') != '-1|-1|-1|-1|-1|-1' or restraint is None or
+                restraint.get('ParentKey') != support.get('Key') or
+                any(restraint.get(key) != '-1' for key in ('K1', 'K2', 'K3', 'Kr1', 'Kr2', 'Kr3'))):
+            raise ValueError('Cannot regenerate modified abutment end restraints.')
+    return True
+
+
+def _regenerate_with_end_restraints(data, *, legacy_backfill=False, previous_backfill=False):
+    from abutment_restraints import add_fixed_abutment_ends
+    from lateral_soil import strip_soil_supports, recreate_soil_supports
+    from lxml import etree
+    original = _document(data)
+    settings, targets = strip_soil_supports(original)
+    stripped = etree.tostring(original, encoding='utf-8', xml_declaration=True)
+    has_ends = _has_fixed_end_restraints(original)
+    generated = _regenerated_geometry(data, legacy_backfill=legacy_backfill, previous_backfill=previous_backfill)
+    if has_ends:
+        generated = add_fixed_abutment_ends(generated)
+    return recreate_soil_supports(generated, settings, stripped, targets)
+
+
+_GENERATED_GEOMETRY_TAGS = {'Node', 'NodeC', 'Quad', 'Restraint', 'GeometryLineRestraint', 'Bridge', 'ModelPoint'}
+_SAFE_MODEL_TAGS = _GENERATED_GEOMETRY_TAGS | {
+    'WizardData', 'Template', 'Layer', 'Analysis', 'LoadCondition',
+    'LoadCombination', 'LoadCombinationItem', 'LoadFunction', 'LoadFunctionItem',
+    'AdvancedOptionsDefault', 'ModelProperty',
+}
+
+
+def _element_signature(element):
+    return (element.tag, tuple(sorted(element.attrib.items())),
+            tuple(_element_signature(child) for child in element if isinstance(child.tag, str)))
+
+
+def _geometry_signatures(root, tag):
+    return [_element_signature(item) for item in root.findall(tag)]
+
+
+def _geometry_matches(left, right, tag):
+    """Match generator output while allowing rounding in derived Quad geometry.
+
+    Older meshes calculated these fields before node coordinates were rounded
+    to four decimal places. Node coordinates, connectivity, material,
+    thickness, flags, and all other data still have to match exactly.
+    """
+    if tag != 'Quad':
+        return _geometry_signatures(left, tag) == _geometry_signatures(right, tag)
+    first, second = left.findall(tag), right.findall(tag)
+    if len(first) != len(second):
+        return False
+    tolerances = {**{f'Length{i}': 0.0001 for i in range(1, 5)},
+                  **{f'Diago{i}': 0.0001 for i in range(1, 3)},
+                  **{f'Cos{i}': 0.000002 for i in range(1, 5)},
+                  **{f'Sin{i}': 0.000002 for i in range(1, 5)}, 'G': 0.0002}
+    def attributes_match(a, b, limits):
+        if set(a.attrib) != set(b.attrib) or len(a) != len(b):
+            return False
+        for key, value in a.attrib.items():
+            other = b.get(key)
+            if value == other:
+                continue
+            if key not in limits:
+                return False
+            try:
+                values = [float(item) for item in value.split(';')]
+                alternatives = [float(item) for item in other.split(';')]
+            except (ValueError, TypeError, AttributeError):
+                return False
+            if (len(values) != len(alternatives) or not values or
+                    any(not math.isfinite(x) or not math.isfinite(y) or abs(x-y) > limits[key]
+                        for x, y in zip(values, alternatives))):
+                return False
+        return True
+    for a, b in zip(first, second):
+        if not attributes_match(a, b, tolerances):
+            return False
+        for x, y in zip(a, b):
+            if x.tag == y.tag == 'ReferenceSystem' and not len(x) and not len(y):
+                if not attributes_match(x, y, {'Origin': 0.0001, 'E1': 0.000002,
+                                                'E2': 0.000002, 'E3': 0.000002}):
+                    return False
+            elif _element_signature(x) != _element_signature(y):
+                return False
+    return True
+
+
+def needs_backfill_regeneration(data):
+    """Recognize unchanged meshes produced by the previous backfill algorithm."""
+    try:
+        root = _document(data)
+        wizard = root.find('WizardData')
+        definition = wizard.find('BridgeDefinition') if wizard is not None else None
+        section = wizard.find('Elevations/Elevations/Elevation') if wizard is not None else None
+        if definition is None or section is None:
+            return False
+        nl = float(definition.get('Nl', '0'))
+        h1, h2, h3 = (float(section.get(key, '0')) for key in ('H1', 'H2', 'H3'))
+        crosses = any(float(span.get('f', '0')) + float(span.get('Tt', '0')) > h1 + 1e-6
+                      for span in wizard.findall('Span'))
+        if not crosses and not (nl > 0 and max(h2, h3) > nl):
+            return False
+        from lateral_soil import strip_soil_supports
+        from lxml import etree
+        strip_soil_supports(root)
+        data = etree.tostring(root, encoding='utf-8', xml_declaration=True)
+        current = _document(_regenerate_with_end_restraints(data))
+        if all(_geometry_matches(root, current, tag)
+               for tag in _GENERATED_GEOMETRY_TAGS):
+            return False
+        for profile in ({'previous_backfill': True}, {'legacy_backfill': True}):
+            old = _document(_regenerate_with_end_restraints(data, **profile))
+            if all(_geometry_matches(root, old, tag)
+                   for tag in _GENERATED_GEOMETRY_TAGS):
+                return True
+        return False
+    except (ValueError, TypeError, KeyError, NotImplementedError):
+        return False
+
+
+def _regenerate_export(original, edited, *, replace_existing=False):
+    """Replace only geometry verified as belonging to the current generator."""
+    from copy import deepcopy
+    from lxml import etree
+    old_root = _document(original)
+    edited_root = _document(edited)
+    from lateral_soil import strip_soil_supports
+    comparison_root = _document(original)
+    soil_settings, _ = strip_soil_supports(comparison_root)
+    has_ends = _has_fixed_end_restraints(old_root)
+    unsupported = sorted({element.tag for element in old_root if element.tag not in _SAFE_MODEL_TAGS})
+    if unsupported:
+        raise ValueError('Cannot safely regenerate this model: unsupported objects ' + ', '.join(unsupported))
+    for element in old_root:
+        if element.tag in _GENERATED_GEOMETRY_TAGS or element.tag == 'WizardData':
+            continue
+        for node in element.iter():
+            for key, value in node.attrib.items():
+                if (key.startswith(('NodeKey', 'QuadKey', 'RestraintKey')) or
+                        key in {'ElementKey', 'IdElement', 'ComputationalElementKey', 'ParentElementKey'}):
+                    if value not in {'', '0', '-1'}:
+                        raise ValueError(f'Cannot safely transfer {node.tag}.{key} to the regenerated mesh.')
+    for analysis in old_root.findall('Analysis'):
+        for state in analysis.findall('States/State'):
+            if state.get('Exit') != 'NotExecuted':
+                raise ValueError('Cannot regenerate a model with executed analysis states; use an unexecuted model.')
+    if replace_existing:
+        for quad in old_root.findall('Quad'):
+            if any(quad.get(key, 'false').lower() == 'true' for key in ('IsGeometryCustomized', 'IsPropertyModified')):
+                raise ValueError('Cannot replace a mesh with customized Quad geometry or properties.')
+            if any(quad.get(key, '0') not in {'', '0', '-1'} for key in ('LoadTemplateAreaKey', 'LoadTemplateLineKey', 'LoadTemplatePointKey')):
+                raise ValueError('Cannot transfer loads assigned directly to Quads.')
+        baseline = old_root
+    else:
+        comparison_bytes = etree.tostring(comparison_root, encoding='utf-8', xml_declaration=True)
+        baseline = _document(_regenerate_with_end_restraints(comparison_bytes))
+        differences = [tag for tag in _GENERATED_GEOMETRY_TAGS
+                       if not _geometry_matches(comparison_root, baseline, tag)]
+        if differences:
+            legacy = None
+            for profile in ({'previous_backfill': True}, {'legacy_backfill': True}):
+                candidate = _document(_regenerate_with_end_restraints(comparison_bytes, **profile))
+                if all(_geometry_matches(comparison_root, candidate, tag)
+                       for tag in _GENERATED_GEOMETRY_TAGS):
+                    legacy = candidate
+                    break
+            if legacy is None:
+                raise ValueError(f'Cannot safely regenerate this model: its {differences[0]} objects differ from the generated wizard mesh.')
+            baseline = legacy
+    updated = _document(_regenerate_with_end_restraints(edited) if has_ends or soil_settings else _regenerated_geometry(edited))
+    def point_roles(root):
+        return [(point.get('Key'), point.get('Description', '').split('Point in (')[0])
+                for point in root.findall('ModelPoint')]
+    if point_roles(baseline) != point_roles(updated):
+        raise ValueError('Cannot safely transfer monitoring points to the regenerated mesh.')
+    for element in list(edited_root):
+        if element.tag in _GENERATED_GEOMETRY_TAGS:
+            edited_root.remove(element)
+    for element in updated:
+        if element.tag in _GENERATED_GEOMETRY_TAGS:
+            edited_root.append(deepcopy(element))
+    return etree.tostring(edited_root, xml_declaration=True, encoding='utf-8', pretty_print=True)
+
+
+def export(request):
+    """Regenerate verified wizard geometry before exporting edits."""
+    if request.get('mode') == 'edit':
+        batches = [*(request.get('steps') or []), request]
+        geometry_changed = request.get('rebuild_geometry') or any(
+            isinstance(batch, dict) and any(
+                isinstance(change, dict) and str(change.get('collection', '')).startswith('wizard_')
+                for change in (batch.get('changes') or [])
+            ) for batch in batches
+        )
+        if geometry_changed:
+            return _regenerate_export(_source(request.get('source')), build(request), replace_existing=request.get('replace_existing_mesh') is True)
+    return build(request)
+
+
 def apply_edits(request):
     """Apply edits and return the new source plus its re-inspected collections."""
     data = build(request)
     encoded = base64.b64encode(data).decode('ascii')
     return {'source': encoded, 'inspection': inspect_source(encoded)}
+
+
+def add_abutment_end_restraints(request):
+    from abutment_restraints import add_fixed_abutment_ends
+    from hrx_model import parse_hrx
+    if request.get('mode') != 'edit':
+        raise ValueError('Open an existing HRX model first.')
+    batches = [*(request.get('steps') or []), request]
+    if any(str(change.get('collection', '')).startswith('wizard_')
+           for batch in batches if isinstance(batch, dict)
+           for change in batch.get('changes', []) if isinstance(change, dict)):
+        raise ValueError('Regenerate and reopen the model before adding end restraints.')
+    data = add_fixed_abutment_ends(build(request))
+    encoded = base64.b64encode(data).decode('ascii')
+    return {'source': encoded, 'inspection': inspect_source(encoded),
+            'model': parse_hrx(data, 'Abutment restraints preview.hrx')}

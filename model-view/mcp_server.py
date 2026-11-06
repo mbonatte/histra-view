@@ -63,7 +63,7 @@ TOOLS = [
                 "overrides": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "Optional dotted KEY=VALUE overrides, e.g. ['nl=150', 'spans.0.L=800', 'spans.0.f=350'].",
+                    "description": "Optional dotted KEY=VALUE overrides, e.g. ['nl=150', 'spans.0.L=800', 'spans.0.circolare=true'].",
                 },
             },
         },

@@ -251,7 +251,7 @@ def get_catalog() -> dict[str, Any]:
             "name": "Model name",
             "nl": "Target finite element mesh size [cm] (>= 5)",
             "strips": "List of deck strips: {width, height, material_key}",
-            "spans": "List of arch spans (1..12): {L, f, Tb, Tt, Asx, Adx, S1, S2, Dz, material_key, material_pulvino_key}",
+            "spans": "List of arch spans (1..12): {L, f, Tb, Tt, Asx, Adx, S1, S2, Dz, circolare, material_key, material_pulvino_key}. Set circolare=true for a true circular arch (Asx/Adx are then derived from L, S1, S2 and f).",
             "piers": "List of intermediate piers (len = len(spans)-1): {H, Hf, b2, B1f, B3f, W1f, W3f, material_key, material_foundation_key, Kz}",
             "left_abutment": "Left abutment: {H, Hf, b2, B1f, B3f, W1f, W3f, material_key, material_foundation_key, Kz}",
             "right_abutment": "Right abutment: {H, Hf, b2, B1f, B3f, W1f, W3f, material_key, material_foundation_key, Kz}",
@@ -278,7 +278,19 @@ def _parse_scalar(val: str) -> Any:
         return val
 
 
-def apply_dotted_overrides(payload: dict[str, Any], pairs: list[str]) -> dict[str, Any]:
+_MIRROR_PAIRS = [
+    ("b1", "b3"), ("w1", "w3"), ("B1f", "B3f"), ("W1f", "W3f"),
+    ("Hsp1", "Hsp2"), ("beta1", "beta2"),
+    ("spinta_passiva_sx", "spinta_passiva_dx"),
+    ("material_geo1_key", "material_geo2_key"),
+    ("is_reinf_left", "is_reinf_right"),
+    ("TreinfTopLeft", "TreinfTopRight"), ("TreinfBotLeft", "TreinfBotRight"),
+    ("material_reinforcement_left_key", "material_reinforcement_right_key"),
+]
+_MIRROR = {key: value for a, b in _MIRROR_PAIRS for key, value in ((a, b), (b, a))}
+
+
+def apply_dotted_overrides(payload: dict[str, Any], pairs: list[str], linked_groups: list[str] | None = None) -> dict[str, Any]:
     """Apply dotted key=value overrides (e.g. 'spans.0.L=800', 'nl=150') to a bridge payload."""
     result = copy.deepcopy(payload)
     for pair in pairs:
@@ -313,6 +325,21 @@ def apply_dotted_overrides(payload: dict[str, Any], pairs: list[str]) -> dict[st
             result["piers"].append(copy.deepcopy(template_pier))
         if len(result["piers"]) > needed_piers:
             result["piers"] = result["piers"][:needed_piers]
+    links = set(linked_groups or [])
+    if "all" in links:
+        links.update(("abutments", "piers", "spans"))
+    for pair in pairs:
+        path, raw_value = pair.split("=", 1)
+        parts = path.strip().split(".")
+        value = _parse_scalar(raw_value)
+        if len(parts) == 3 and parts[0] in ("spans", "piers") and parts[0] in links and parts[1].isdigit():
+            for item in result[parts[0]]:
+                item[parts[2]] = value
+        elif len(parts) == 2 and parts[0] in ("left_abutment", "right_abutment") and "abutments" in links:
+            source = parts[0]
+            other = "right_abutment" if source == "left_abutment" else "left_abutment"
+            result[source][parts[1]] = value
+            result[other][_MIRROR.get(parts[1], parts[1])] = value
     return result
 
 
@@ -320,6 +347,7 @@ def create_bridge_hrx(
     spec: dict[str, Any] | None = None,
     overrides: list[str] | None = None,
     steps: list[dict[str, Any]] | None = None,
+    linked_groups: list[str] | None = None,
 ) -> bytes:
     """Create a parametric bridge .hrx from a spec dictionary and optional overrides/steps."""
     defaults = builder_api.defaults()
@@ -329,7 +357,7 @@ def create_bridge_hrx(
             if k not in ("inspection", "steps", "changes", "operations"):
                 base_payload[k] = v
     if overrides:
-        base_payload = apply_dotted_overrides(base_payload, overrides)
+        base_payload = apply_dotted_overrides(base_payload, overrides, linked_groups)
     req: dict[str, Any] = {
         "mode": "create",
         "payload": base_payload,
@@ -727,6 +755,7 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="PATH=VALUE",
         help="Override geometry parameter (e.g. --set nl=150 --set spans.0.L=800 --set spans.0.f=350)",
     )
+    create_p.add_argument("--link", action="append", choices=("abutments", "piers", "spans", "all"), default=[], help="Apply geometry overrides to matching components; abutment sides are mirrored")
     create_p.add_argument("-o", "--output", required=True, help="Output .hrx file path")
 
     insp_p = sub.add_parser("inspect", help="Inspect an existing .hrx file and output structured JSON")
@@ -812,7 +841,7 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.command == "create":
             spec = json.loads(Path(args.spec).read_text(encoding="utf-8")) if args.spec else None
-            hrx_bytes = create_bridge_hrx(spec=spec, overrides=args.overrides)
+            hrx_bytes = create_bridge_hrx(spec=spec, overrides=args.overrides, linked_groups=args.link)
             out_path = Path(args.output)
             out_path.parent.mkdir(parents=True, exist_ok=True)
             out_path.write_bytes(hrx_bytes)
