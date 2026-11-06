@@ -2,6 +2,7 @@
 import base64
 import binascii
 import math
+import re
 import tempfile
 from pathlib import Path
 
@@ -262,7 +263,17 @@ def _analysis_fragment(root, request):
     from lxml import etree
     analyses = root.findall('Analysis')
     duplicate = request.get('duplicate')
-    if duplicate is not None:
+    if request.get('op') == 'add_next_scour_analysis':
+        numbered = [(int(match.group(1)), item) for item in analyses
+                    if (match := re.fullmatch(r'scour[_ ]?(\d+)', item.get('Name', ''), re.I))]
+        if not numbered:
+            raise ValueError('Add scour_1 before creating the next scour analysis.')
+        number, base = max(numbered, key=lambda item: item[0])
+        attributes = dict(base.attrib)
+        attributes.update({'InitialAnalysisKey': base.get('Key'), 'IntegrationMethod': 'LoadControl',
+                           'ForceControl': 'true', 'Mult': '0'})
+        preferred = f'scour_{number + 1}'
+    elif duplicate is not None:
         if type(duplicate) is not int or duplicate < 0 or duplicate >= len(analyses):
             raise ValueError('Unknown analysis to duplicate.')
         base = analyses[duplicate]
@@ -335,7 +346,7 @@ def _edit_operations(root, request, collections):
         if not isinstance(operation, dict):
             raise ValueError('Invalid edit operation.')
         kind = operation.get('op')
-        if kind in ('add_analysis', 'duplicate_analysis'):
+        if kind in ('add_analysis', 'duplicate_analysis', 'add_next_scour_analysis'):
             xml = _analysis_fragment(root, operation)
             patches.append(PatchOperation(op='append_xml', xpath='/HiStrA', xml=xml))
             # Keep the in-memory tree in sync for later operations and key checks.
@@ -460,6 +471,11 @@ def build(request):
         if not 5 <= nl <= 100000 or sum(float(s.get('L', 0)) for s in spans) / nl > 500:
             raise ValueError('Mesh size must be at least 5 and the total span length / mesh size at most 500.')
         data = export_hrx(payload)
+        if payload.get('minor_scour_stages') is True:
+            root = _document(data)
+            root.set('HiStrAViewMinorScourStages', 'true')
+            from lxml import etree
+            data = etree.tostring(root, encoding='utf-8', xml_declaration=True)
         return _apply_patches(data, request)
     if request.get('mode') != 'edit':
         raise ValueError('Choose a build mode.')
@@ -467,7 +483,7 @@ def build(request):
     return _apply_patches(data, request)
 
 
-def _regenerated_geometry(data, *, legacy_backfill=False, previous_backfill=False):
+def _regenerated_geometry(data, *, legacy_backfill=False, previous_backfill=False, legacy_monitoring_points=False):
     from histra_builder.generator.csharp_import import spec_from_wizard_data
     from histra_builder.generator.csharp_mesher import CSharpMesher
     from histra_builder.generator.csharp_writer import serialize_csharp_mesh_to_hrx
@@ -480,7 +496,8 @@ def _regenerated_geometry(data, *, legacy_backfill=False, previous_backfill=Fals
                                if item.get('TypeOf', '').endswith('Material') and item.get('Key')]
     try:
         return serialize_csharp_mesh_to_hrx(CSharpMesher(spec, legacy_backfill=legacy_backfill,
-                                                        previous_backfill=previous_backfill).mesh())
+                                                        previous_backfill=previous_backfill,
+                                                        legacy_monitoring_points=legacy_monitoring_points).mesh())
     except NotImplementedError as exc:
         raise ValueError(f'Geometry regeneration is unavailable: {exc}') from exc
 
@@ -512,7 +529,7 @@ def _has_fixed_end_restraints(root):
     return True
 
 
-def _regenerate_with_end_restraints(data, *, legacy_backfill=False, previous_backfill=False):
+def _regenerate_with_end_restraints(data, *, legacy_backfill=False, previous_backfill=False, legacy_monitoring_points=False):
     from abutment_restraints import add_fixed_abutment_ends
     from lateral_soil import strip_soil_supports, recreate_soil_supports
     from lxml import etree
@@ -520,7 +537,8 @@ def _regenerate_with_end_restraints(data, *, legacy_backfill=False, previous_bac
     settings, targets = strip_soil_supports(original)
     stripped = etree.tostring(original, encoding='utf-8', xml_declaration=True)
     has_ends = _has_fixed_end_restraints(original)
-    generated = _regenerated_geometry(data, legacy_backfill=legacy_backfill, previous_backfill=previous_backfill)
+    generated = _regenerated_geometry(data, legacy_backfill=legacy_backfill, previous_backfill=previous_backfill,
+                                      legacy_monitoring_points=legacy_monitoring_points)
     if has_ends:
         generated = add_fixed_abutment_ends(generated)
     return recreate_soil_supports(generated, settings, stripped, targets)
@@ -664,7 +682,9 @@ def _regenerate_export(original, edited, *, replace_existing=False):
                        if not _geometry_matches(comparison_root, baseline, tag)]
         if differences:
             legacy = None
-            for profile in ({'previous_backfill': True}, {'legacy_backfill': True}):
+            for profile in ({'legacy_monitoring_points': True}, {'previous_backfill': True}, {'legacy_backfill': True},
+                            {'previous_backfill': True, 'legacy_monitoring_points': True},
+                            {'legacy_backfill': True, 'legacy_monitoring_points': True}):
                 candidate = _document(_regenerate_with_end_restraints(comparison_bytes, **profile))
                 if all(_geometry_matches(comparison_root, candidate, tag)
                        for tag in _GENERATED_GEOMETRY_TAGS):
@@ -677,8 +697,18 @@ def _regenerate_export(original, edited, *, replace_existing=False):
     def point_roles(root):
         return [(point.get('Key'), point.get('Description', '').split('Point in (')[0])
                 for point in root.findall('ModelPoint')]
-    if point_roles(baseline) != point_roles(updated):
+    old_roles, new_roles = point_roles(baseline), point_roles(updated)
+    if new_roles[:len(old_roles)] != old_roles:
         raise ValueError('Cannot safely transfer monitoring points to the regenerated mesh.')
+    new_points = [key for key, _ in new_roles[len(old_roles):]]
+    for analysis in edited_root.findall('Analysis'):
+        active = analysis.find('ActiveModelPoints')
+        displacement = analysis.find('DisplModelPoints')
+        for key in new_points:
+            if active is not None:
+                etree.SubElement(active, 'ActiveModelPoint', Key=key, Value='true')
+            if displacement is not None:
+                etree.SubElement(displacement, 'DisplModelPoint', Key=key, Value='0')
     for element in list(edited_root):
         if element.tag in _GENERATED_GEOMETRY_TAGS:
             edited_root.remove(element)

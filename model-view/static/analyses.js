@@ -138,7 +138,7 @@ export class AnalysesPage {
     this.pdeltaEffect = 'EachStep';
     this.arcLambdaTarget = { analysisKey: null, enabled: false, value: '0' };
     this.lateralSubgrade = { enabled: false, restraintKeys: '', kx: '', ky: '' };
-    this.scourWorkflow = { enabled: false, pier: '1', intactMaterial: '', scouredMaterial: '', direction: '-Y', ratios: {}, skipEquilibriumAudit: false };
+    this.scourWorkflow = { enabled: false, pier: '1', intactMaterial: '', scouredMaterial: '', direction: '-Y', ratios: {}, skipEquilibriumAudit: false, modalEachStage: true, minorStages: false };
     this.pollTimer = null;
     this.logExpanded = true;
     this.notifiedJobId = null;
@@ -215,8 +215,8 @@ export class AnalysesPage {
           .map(a => ({ analysisKey: a.analysisKey, ratio: Number(a.raw) / 100 }));
         if (!config.pier || !config.intactMaterial || !config.scouredMaterial || !stages.length)
           throw new Error('Choose the pier and both soil materials, then configure the scour ratio for each required scour analysis.');
-        scourWorkflow = { pier: Number(config.pier), intactMaterial: Number(config.intactMaterial),
-          scouredMaterial: Number(config.scouredMaterial), direction: config.direction, stages, skipEquilibriumAudit: Boolean(config.skipEquilibriumAudit) };
+        scourWorkflow = { pier: config.pier === 'all' ? 'all' : Number(config.pier), intactMaterial: Number(config.intactMaterial),
+          scouredMaterial: Number(config.scouredMaterial), direction: config.direction, stages, skipEquilibriumAudit: Boolean(config.skipEquilibriumAudit), modalEachStage: Boolean(config.modalEachStage), minorStages: Boolean(config.minorStages) };
       }
       let arcLambdaTarget = null;
       if (this.arcLambdaTarget?.enabled && String(this.arcLambdaTarget.analysisKey) === String(analysis.key)) {
@@ -444,6 +444,9 @@ export class AnalysesPage {
         pill.textContent += ` · selected extent ${(100 * e.ratio).toFixed(2)}%`;
         pill.title = `Requested ${(100 * e.requestedRatio).toFixed(2)}%; selected patch extent ${e.widthCm.toFixed(2)} cm of ${e.foundationWidthCm.toFixed(2)} cm (${e.interfaceCount} interfaces).`;
       }
+      else if (st.scourExtents?.length) {
+        pill.textContent += ` · ${st.scourExtents.map(e => `pier ${e.pier}: ${(100 * e.ratio).toFixed(2)}%`).join(', ')}`;
+      }
       pills.push(pill);
     });
     return pills;
@@ -574,14 +577,28 @@ export class AnalysesPage {
     const toggle = node('input'); toggle.type = 'checkbox'; toggle.checked = this.scourWorkflow.enabled; toggle.disabled = isRunning;
     toggle.onchange = () => { this.scourWorkflow.enabled = toggle.checked; this.render(); };
     toggleLabel.prepend(toggle); scour.append(toggleLabel);
+    const modalLabel = node('label', '', ' Run modal analysis before Vert and after each scour phase');
+    const modalToggle = node('input'); modalToggle.type = 'checkbox'; modalToggle.checked = Boolean(this.scourWorkflow.modalEachStage); modalToggle.disabled = isRunning;
+    modalToggle.onchange = () => { this.scourWorkflow.modalEachStage = modalToggle.checked; };
+    modalLabel.prepend(modalToggle); scour.append(modalLabel);
+    const minorLabel = node('label', '', ' Apply scour in minor outer-to-inner patch groups');
+    const minorToggle = node('input'); minorToggle.type = 'checkbox'; minorToggle.checked = Boolean(this.scourWorkflow.minorStages); minorToggle.disabled = isRunning;
+    minorToggle.onchange = () => { this.scourWorkflow.minorStages = minorToggle.checked; };
+    minorLabel.prepend(minorToggle); scour.append(minorLabel);
     const auditLabel = node('label', '', ' Use the analysis convergence criterion without the additional equilibrium audit');
     const auditToggle = node('input'); auditToggle.type = 'checkbox'; auditToggle.checked = this.scourWorkflow.skipEquilibriumAudit; auditToggle.disabled = isRunning;
     auditToggle.onchange = () => { this.scourWorkflow.skipEquilibriumAudit = auditToggle.checked; };
     auditLabel.prepend(auditToggle); scour.append(auditLabel);
-    const pierLabel = node('label', '', 'Pier number (left to right)'), pierInput = node('input');
-    pierInput.type = 'number'; pierInput.min = '1'; pierInput.step = '1';
+    const pierLabel = node('label', '', 'Pier (left to right)'), pierInput = node(this.pierCount ? 'select' : 'input');
+    if (this.pierCount) {
+      for (let index = 1; index <= this.pierCount; index++) pierInput.add(new Option(`Pier ${index}`, String(index)));
+      pierInput.add(new Option('All piers', 'all'));
+    } else {
+      pierInput.type = 'text'; pierInput.placeholder = '1 or all';
+    }
     pierInput.value = this.scourWorkflow.pier; pierInput.disabled = isRunning;
     pierInput.oninput = () => { this.scourWorkflow.pier = pierInput.value; };
+    pierInput.onchange = () => { this.scourWorkflow.pier = pierInput.value; };
     pierLabel.append(pierInput); scour.append(pierLabel);
     for (const [key, title] of [['intactMaterial', 'Intact soil material'], ['scouredMaterial', 'Scoured soil material']]) {
       const label = node('label', '', title), select = node('select');
@@ -691,8 +708,9 @@ export class AnalysesPage {
 
   setModel(model) {
     this.analyses = model?.analyses || [];
+    this.pierCount = Number(model?.pierCount) || 0;
     this.scourMaterials = masonryMaterialOptions(model);
-    this.scourWorkflow = { enabled: false, pier: '1', intactMaterial: '', scouredMaterial: '', direction: '-Y', ratios: {}, skipEquilibriumAudit: false };
+    this.scourWorkflow = { enabled: false, pier: '1', intactMaterial: '', scouredMaterial: '', direction: '-Y', ratios: {}, skipEquilibriumAudit: false, modalEachStage: true, minorStages: model?.metadata?.HiStrAViewMinorScourStages === 'true' };
     const prevKey = this.selected?.key;
     this.selected = this.analyses.find(a => String(a.key) === String(prevKey))
       || this.analyses.find(a => a.isExecuted)

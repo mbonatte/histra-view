@@ -432,6 +432,9 @@ def _run_job_worker(
                 chain = configure_sequence(model, target_def, workflow)
                 from lxml import etree
                 root = etree.fromstring(effective_hrx, parser=etree.XMLParser(resolve_entities=False, no_network=True))
+                if workflow.get('modalEachStage'):
+                    from scour_workflow import insert_stage_modals
+                    chain = insert_stage_modals(model, root, chain)
                 for definition in chain:
                     element = root.find(f"Analysis[@Key='{int(definition.key)}']")
                     if element is None: raise ValueError('Analysis definition missing from source HRX.')
@@ -501,7 +504,7 @@ def _run_job_worker(
                 if wizard is None:
                     raise ValueError('The scour workflow requires bridge WizardData.')
                 groups = pier_foundation_groups(model, wizard)
-                if workflow['pier'] > len(groups):
+                if workflow['pier'] != 'all' and workflow['pier'] > len(groups):
                     raise ValueError(f"Pier {workflow['pier']} not found; found {len(groups)} foundation footprints.")
                 templates = model.collections.materials
                 for material in (workflow['intactMaterial'], workflow['scouredMaterial']):
@@ -510,15 +513,29 @@ def _run_job_worker(
                 bottom_keys = sorted({e[5] for group in groups for e in group['entries']})
                 report = session.change_interface_materials(bottom_keys, workflow['intactMaterial'], preserve_committed_state=False)
                 _append_log(job, f"Assigned intact soil material {workflow['intactMaterial']} to {len(bottom_keys)} foundation interfaces before Vert.")
-                group = groups[workflow['pier']-1]
-                stage_selections = {item['analysisKey']: select_ratio(group, item['ratio'], workflow['direction']) for item in workflow['stages']}
-                _append_log(job, f"Scour pier {workflow['pier']} from {workflow['direction']}; foundation width {group['ymax']-group['ymin']:.4g} cm.")
+                chosen_groups = list(enumerate(groups, 1)) if workflow['pier'] == 'all' else [(workflow['pier'], groups[workflow['pier']-1])]
+                stage_selections = {item['analysisKey']: sorted({key for _, group in chosen_groups for key in select_ratio(group, item['ratio'], workflow['direction'])}) for item in workflow['stages']}
+                if workflow.get('minorStages'):
+                    from scour_workflow import insert_minor_scour_stages
+                    root = etree.fromstring(effective_hrx, parser=etree.XMLParser(resolve_entities=False, no_network=True))
+                    chain = insert_minor_scour_stages(model, root, chain, [group for _, group in chosen_groups], stage_selections, workflow['direction'])
+                    effective_hrx = etree.tostring(root, encoding='utf-8', xml_declaration=True)
+                    total_stages = len(chain)
+                    job['stages'] = [{"index": index + 1, "key": str(a.key), "name": str(a.name),
+                        "analysisType": int(a.analysis_type), "status": "pending", "steps": 0,
+                        "expectedSteps": 0 if int(a.analysis_type) == 5 else _expected_static_steps(a),
+                        "loadFactor": None, "runtimeSeconds": 0.0, "outcome": None, "stepHistory": []}
+                        for index, a in enumerate(chain)]
+                    _append_log(job, f'Expanded scour sequence to {total_stages} analyses, including minor patch groups.')
                 for item in workflow['stages']:
-                    extent = selected_scour_extent(group, stage_selections[item['analysisKey']], workflow['direction'])
+                    extents = [{'pier': number, **selected_scour_extent(group, stage_selections[item['analysisKey']], workflow['direction'])} for number, group in chosen_groups]
                     stage = next((s for s in job['stages'] if s['key'] == str(item['analysisKey'])), None)
                     if stage is not None:
-                        stage['scourExtent'] = {**extent, 'requestedRatio': item['ratio']}
-                    _append_log(job, f"Scour analysis #{item['analysisKey']}: requested {item['ratio'] * 100:.2f}%; selected patch extent {extent['widthCm']:.4g} cm of {extent['foundationWidthCm']:.4g} cm ({extent['ratio'] * 100:.2f}%), {extent['interfaceCount']} interfaces.")
+                        stage['scourExtents'] = [{**extent, 'requestedRatio': item['ratio']} for extent in extents]
+                        if len(extents) == 1:
+                            stage['scourExtent'] = stage['scourExtents'][0]
+                    for extent in extents:
+                        _append_log(job, f"Scour analysis #{item['analysisKey']}, pier {extent['pier']}: requested {item['ratio'] * 100:.2f}%; selected patch extent {extent['widthCm']:.4g} cm of {extent['foundationWidthCm']:.4g} cm ({extent['ratio'] * 100:.2f}%), {extent['interfaceCount']} interfaces.")
             executed_any = False
             stopped_run = False
             cancelled_run = False
@@ -612,7 +629,15 @@ def _run_job_worker(
                         return True
                     return False
 
-                execution = session.run(
+                # The virgin modal is an independent analysis before gravity;
+                # use a separate session so Vert still starts from virgin state.
+                run_session = session
+                if workflow and workflow.get('modalEachStage') and idx == 0:
+                    run_session = AnalysisSession(model, combination_row=job['combinationRow'],
+                        on_log=on_log, on_progress=on_progress,
+                        equilibrium_policy='off' if workflow['skipEquilibriumAudit'] else 'error',
+                        preserve_predecessor_load=True, strategy_policy='off', performance_policy='compiled')
+                execution = run_session.run(
                     definition,
                     on_step_committed=on_step_committed,
                     should_stop_after_commit=stop_after_commit,
@@ -717,7 +742,7 @@ def _run_job_worker(
                     }} if job['_arcLambdaTarget'] is not None else {}), **({
                         "scour_workflow": workflow,
                         "scour_interface_keys": {str(k): v for k, v in stage_selections.items()},
-                        "scour_selected_extents": {str(k): selected_scour_extent(group, v, workflow['direction']) for k, v in stage_selections.items()},
+                        "scour_selected_extents": {str(k): [{'pier': number, **selected_scour_extent(group, v, workflow['direction'])} for number, group in chosen_groups] for k, v in stage_selections.items()},
                         "intact_foundation_interface_keys": bottom_keys,
                     } if workflow else {})},
                 )
@@ -751,7 +776,7 @@ def _run_job_worker(
                 job["status"] = (
                     "completed"
                     if last_stage and last_stage["status"] in ("completed", "nonconverged") and
-                       (not workflow or (last_stage["key"] == job["targetKey"] and last_stage["status"] == "completed"))
+                       (not workflow or (last_stage["key"] == str(chain[-1].key) and last_stage["status"] == "completed"))
                     else "failed"
                 )
                 job["message"] = (

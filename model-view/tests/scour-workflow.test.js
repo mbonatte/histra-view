@@ -48,7 +48,7 @@ test('sends total scour ratios and ordered stages with a modal run', async () =>
     page.analyses=[{key:'1',name:'Vert'},{key:'23',name:'scour_1'},{key:'24',name:'scour_2'},{key:'40',name:'Modal_2'}];
     page.scourWorkflow={enabled:true,pier:'1',intactMaterial:'146',scouredMaterial:'147',direction:'-Y',ratios:{23:'20',24:'40'}};
     await page.runAnalysis(page.analyses[3]);
-    assert.deepEqual(request.scourWorkflow,{pier:1,intactMaterial:146,scouredMaterial:147,direction:'-Y',stages:[{analysisKey:23,ratio:.2},{analysisKey:24,ratio:.4}],skipEquilibriumAudit:false});
+    assert.deepEqual(request.scourWorkflow,{pier:1,intactMaterial:146,scouredMaterial:147,direction:'-Y',stages:[{analysisKey:23,ratio:.2},{analysisKey:24,ratio:.4}],skipEquilibriumAudit:false,modalEachStage:false,minorStages:false});
   } finally { globalThis.document=previousDocument; globalThis.fetch=previousFetch; }
 });
 

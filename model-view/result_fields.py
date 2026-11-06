@@ -70,6 +70,9 @@ FIELD_DEFS = {
     "plasticStrainNormal": {
         "label": "Plastic strain εp (normal, dir1/dir2)", "unit": "–", "kind": "plastic", "order": 300,
     },
+    "derivedPlasticStrainNormal": {
+        "label": "Derived plastic strain εp (normal, geometric reference)", "unit": "–", "kind": "plastic", "order": 305,
+    },
     "plasticStrainRatioNormal": {
         "label": "Plastic/ultimate strain ratio", "unit": "–", "kind": "plastic", "order": 310,
     },

@@ -1,5 +1,5 @@
 import unittest
-from scour_workflow import select_ratio, selected_scour_extent, normalize_workflow, configure_sequence
+from scour_workflow import select_ratio, selected_scour_extent, normalize_workflow, configure_sequence, insert_stage_modals, partition_new_scour_patches, insert_minor_scour_stages
 from types import SimpleNamespace
 
 class ScourSelectionTests(unittest.TestCase):
@@ -39,10 +39,54 @@ class ScourSelectionTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'every scour stage'):
             configure_sequence(model,analyses[40],cfg)
 
+    def test_modals_are_interleaved_before_next_soil_change(self):
+        from lxml import etree
+        def a(k,name,kind,previous):return SimpleNamespace(key=k,name=name,analysis_type=kind,initial_analysis_key=previous)
+        analyses={1:a(1,'Vert',2,-100),23:a(23,'scour_1',2,1),24:a(24,'scour_2',2,23),
+                  30:a(30,'Modal_-1',5,-100),31:a(31,'Modal_0',5,1)}
+        model=SimpleNamespace(collections=SimpleNamespace(analyses=analyses))
+        root=etree.XML('<Root><Analysis Key="30" Name="Modal_-1"/><Analysis Key="31" Name="Modal_0"/></Root>')
+        chain=insert_stage_modals(model,root,[analyses[1],analyses[23],analyses[24]])
+        self.assertEqual([x.name for x in chain],['Modal_-1','Vert','Modal_0','scour_1','Modal_1','scour_2','Modal_2'])
+        self.assertEqual([x.initial_analysis_key for x in chain],[-100,-100,1,31,23,32,24])
+        self.assertEqual(root.find("Analysis[@Name='Modal_2']").get('Key'),'33')
+
     def test_ratios_must_be_nondecreasing(self):
         raw={'pier':1,'intactMaterial':146,'scouredMaterial':147,'stages':[{'analysisKey':23,'ratio':.4},{'analysisKey':24,'ratio':.2}]}
         with self.assertRaisesRegex(ValueError,'nondecreasing'):
             normalize_workflow(raw)
+
+    def test_all_piers_is_an_explicit_valid_selection(self):
+        config = normalize_workflow({'pier':'all','intactMaterial':146,'scouredMaterial':147,
+                                     'stages':[{'analysisKey':23,'ratio':.25}]})
+        self.assertEqual(config['pier'], 'all')
+
+    def test_minor_patches_pair_outside_in_and_keep_previous_selection(self):
+        from lxml import etree
+        group={'ymin':0,'ymax':10,'entries':[(x,x+1,5,0,10,x+1) for x in range(6)]}
+        batches=partition_new_scour_patches([group], range(1,7), [], '+Y')
+        self.assertEqual(batches, [[1,6],[2,5],[3,4]])
+        a=SimpleNamespace(key=1,name='Vert',analysis_type=2,initial_analysis_key=-100)
+        b=SimpleNamespace(key=23,name='scour_1',analysis_type=2,initial_analysis_key=1,integration_method='LoadControl',mult=0)
+        model=SimpleNamespace(collections=SimpleNamespace(analyses={1:a,23:b}))
+        root=etree.XML('<Root><Analysis Key="1"/><Analysis Key="23"/></Root>')
+        selections={23:list(range(1,7))}
+        chain=insert_minor_scour_stages(model,root,[a,b],[group],selections,'+Y')
+        self.assertEqual([x.name for x in chain],['Vert','scour_1_minor_1','scour_1_minor_2','scour_1'])
+        self.assertEqual(selections[chain[1].key], [1,6])
+        self.assertEqual(selections[chain[2].key], [1,2,5,6])
+        self.assertEqual([x.initial_analysis_key for x in chain],[-100,1,chain[1].key,chain[2].key])
+
+    def test_minor_stages_reject_nonzero_load_or_arc_length(self):
+        from lxml import etree
+        group={'ymin':0,'ymax':10,'entries':[(x,x+1,5,0,10,x+1) for x in range(4)]}
+        for method, mult in [('ArcLength',0),('LoadControl',1)]:
+            a=SimpleNamespace(key=1,name='Vert',analysis_type=2,initial_analysis_key=-100)
+            b=SimpleNamespace(key=23,name='scour_1',analysis_type=2,initial_analysis_key=1,integration_method=method,mult=mult)
+            model=SimpleNamespace(collections=SimpleNamespace(analyses={1:a,23:b}))
+            root=etree.XML('<Root><Analysis Key="1"/><Analysis Key="23"/></Root>')
+            with self.assertRaisesRegex(ValueError, 'LoadControl with zero'):
+                insert_minor_scour_stages(model,root,[a,b],[group],{23:[1,2,3,4]},'+Y')
 
     def test_prepared_foundation_interfaces_accept_soil_mutation(self):
         from tempfile import TemporaryDirectory

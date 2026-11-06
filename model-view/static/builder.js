@@ -770,6 +770,15 @@ export class Builder {
     );
 
     if (this.createSection !== 'geometry') {
+      if (this.createSection === 'analysis') {
+        const label = node('label', ' Generate minor outer-to-inner scour stages during analysis');
+        const input = document.createElement('input');
+        input.type = 'checkbox'; input.checked = Boolean(this.payload.minor_scour_stages);
+        input.onchange = () => { this.payload.minor_scour_stages = input.checked; };
+        label.prepend(input);
+        this.root.append(label);
+        this.root.append(node('p', 'The patch groups are determined after the mesh is prepared. Scour analyses must use LoadControl with zero additional load.'));
+      }
       this.renderCollectionEditor({
         collections: this.createCollections,
         changes: this.createChanges,
@@ -1018,6 +1027,13 @@ export class Builder {
     if (this.editSection === 'geometry') {
       this.renderWizardEditor();
       return;
+    }
+    if (this.editSection === 'analysis') {
+      this.button('Update generated model points', () => {
+        this.appliedGeometryChanges = true;
+        this.scheduleGeometryPreview();
+      }, this.root);
+      this.root.append(node('p', 'Updates generated pier and wall monitoring points when the model mesh can be safely regenerated. Download the edited model to retain them.'));
     }
     if (this.editSection === 'configuration') {
       this.renderConfigurationEditor();
@@ -1744,6 +1760,10 @@ export class Builder {
         () => this.apply({ op: activeKind === 'analysis' ? 'add_analysis' : 'add_material', template: addSelect.value }, allItems.length, isCreate),
         addBar
       );
+      if (activeKind === 'analysis') {
+        this.button('+ Add next scour analysis',
+          () => this.apply({ op: 'add_next_scour_analysis' }, allItems.length, isCreate), addBar);
+      }
       this.root.append(addBar);
     }
 

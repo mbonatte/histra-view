@@ -2,6 +2,7 @@
 from __future__ import annotations
 import math
 import re
+from copy import deepcopy
 
 
 def select_bottom_foundations(model, foundation_material_keys):
@@ -77,20 +78,43 @@ def selected_scour_extent(group, selected, direction='-Y'):
             'ratio': float(extent / width), 'interfaceCount': len(entries)}
 
 
+def partition_new_scour_patches(groups, selected, previous, direction):
+    """Advance by transverse rows, pairing longitudinal ends toward the centre."""
+    new = set(selected) - set(previous)
+    batches = []
+    for group in groups:
+        rows = {}
+        for entry in group['entries']:
+            if entry[5] in new:
+                rows.setdefault(round(float(entry[2]), 6), []).append(entry)
+        for y in sorted(rows, reverse=direction == '+Y'):
+            row = sorted(rows[y], key=lambda e: (e[0] + e[1], e[5]))
+            for index in range((len(row) + 1) // 2):
+                pair = {row[index][5], row[-index-1][5]}
+                batches.append(sorted(pair))
+    return batches
+
+
 def normalize_workflow(raw):
     if not isinstance(raw, dict):
         raise ValueError('Scour settings must be an object.')
     try:
-        pier = int(raw['pier'])
+        pier = 'all' if str(raw['pier']).lower() == 'all' else int(raw['pier'])
         intact = int(raw['intactMaterial'])
         damaged = int(raw['scouredMaterial'])
     except (KeyError, TypeError, ValueError):
         raise ValueError('Choose a pier and both soil material keys.') from None
-    if pier < 1 or intact < 1 or damaged < 1:
+    if (pier != 'all' and pier < 1) or intact < 1 or damaged < 1:
         raise ValueError('Pier and material keys must be positive integers.')
     skip_audit = raw.get('skipEquilibriumAudit', False)
     if type(skip_audit) is not bool:
         raise ValueError('Equilibrium audit setting must be true or false.')
+    modal_each = raw.get('modalEachStage', False)
+    if type(modal_each) is not bool:
+        raise ValueError('Modal sequence setting must be true or false.')
+    minor = raw.get('minorStages', False)
+    if type(minor) is not bool:
+        raise ValueError('Minor scour stage setting must be true or false.')
     direction = raw.get('direction', '-Y')
     if direction not in ('-Y', '+Y'):
         raise ValueError('Choose the -Y or +Y scour edge.')
@@ -110,7 +134,105 @@ def normalize_workflow(raw):
             raise ValueError('Scour stages require distinct analyses and nondecreasing total ratios from 0 to 1.')
         keys.add(key);previous=ratio
         normalized.append({'analysisKey':key,'ratio':ratio})
-    return {'pier':pier,'intactMaterial':intact,'scouredMaterial':damaged,'direction':direction,'stages':normalized,'skipEquilibriumAudit':skip_audit}
+    return {'pier':pier,'intactMaterial':intact,'scouredMaterial':damaged,'direction':direction,'stages':normalized,'skipEquilibriumAudit':skip_audit,'modalEachStage':modal_each,'minorStages':minor}
+
+
+def insert_minor_scour_stages(model, root, chain, groups, selections, direction):
+    """Create explicit load-control analyses for each patch batch."""
+    analyses = model.collections.analyses
+    result, previous = [], set()
+    for analysis in chain:
+        key = int(analysis.key)
+        if key not in selections:
+            result.append(analysis)
+            continue
+        target = set(selections[key])
+        if not previous <= target:
+            raise ValueError('Scour selections must remain cumulative.')
+        batches = partition_new_scour_patches(groups, target, previous, direction)
+        if len(batches) > 1:
+            if str(analysis.integration_method) != 'LoadControl' or abs(float(analysis.mult)) > 1e-12:
+                raise ValueError(f'{analysis.name} must use LoadControl with zero additional load for minor scour stages.')
+            element = root.find(f"Analysis[@Key='{key}']")
+            if element is None:
+                raise ValueError('Scour analysis is missing from the model.')
+            current = set(previous)
+            for index, batch in enumerate(batches[:-1], 1):
+                current.update(batch)
+                minor = deepcopy(analysis)
+                minor.key = max(map(int, analyses), default=0) + 1
+                base = f'{analysis.name}_minor_{index}'
+                names = {str(item.name).casefold() for item in analyses.values()}
+                minor.name = base
+                suffix = 2
+                while minor.name.casefold() in names:
+                    minor.name = f'{base}_{suffix}'
+                    suffix += 1
+                analyses[minor.key] = minor
+                xml = deepcopy(element)
+                xml.set('Key', str(minor.key)); xml.set('Name', minor.name)
+                xml.set('Description', 'Incremental scour re-equilibration')
+                root.append(xml)
+                selections[int(minor.key)] = sorted(current)
+                result.append(minor)
+        previous = target
+        result.append(analysis)
+    for index, analysis in enumerate(result):
+        # A virgin modal and Vert each start independently.
+        if index == 0 or (index == 1 and str(result[0].name).casefold() == 'modal_-1'):
+            analysis.initial_analysis_key = -100
+        else:
+            analysis.initial_analysis_key = int(result[index - 1].key)
+        element = root.find(f"Analysis[@Key='{int(analysis.key)}']")
+        if element is None:
+            raise ValueError('Analysis missing while building minor scour stages.')
+        element.set('InitialAnalysisKey', str(analysis.initial_analysis_key))
+    return result
+
+
+def insert_stage_modals(model, root, sequence):
+    """Insert a virgin modal and a modal after each completed static stage."""
+    analyses = model.collections.analyses
+    by_name = {str(a.name).casefold(): a for a in analyses.values()}
+    template = by_name.get('modal_0') or by_name.get('modal_-1')
+    if template is None or int(template.analysis_type) != 5:
+        raise ValueError('A modal analysis is required to configure the modal sequence.')
+    template_xml = root.find(f"Analysis[@Key='{int(template.key)}']")
+    if template_xml is None:
+        raise ValueError('The modal template is missing from the model.')
+
+    def get_modal(name):
+        existing = by_name.get(name.casefold())
+        if existing is not None:
+            if int(existing.analysis_type) != 5:
+                raise ValueError(f'{name} exists but is not a modal analysis.')
+            return existing
+        key = max((int(k) for k in analyses), default=0) + 1
+        modal = deepcopy(template)
+        modal.key, modal.name = key, name
+        analyses[key] = modal
+        element = deepcopy(template_xml)
+        element.set('Key', str(key)); element.set('Name', name)
+        element.set('Description', f'Modal analysis after {name}')
+        root.append(element)
+        by_name[name.casefold()] = modal
+        return modal
+
+    virgin = get_modal('Modal_-1')
+    virgin.initial_analysis_key = -100
+    static = [item for item in sequence if int(item.analysis_type) != 5]
+    if not static or str(static[0].name).lower() != 'vert':
+        raise ValueError('The modal sequence must begin with Vert.')
+    result = [virgin, static[0], get_modal('Modal_0')]
+    result[2].initial_analysis_key = int(static[0].key)
+    previous = result[2]
+    for index, stage in enumerate(static[1:], 1):
+        stage.initial_analysis_key = int(previous.key)
+        modal = get_modal(f'Modal_{index}')
+        modal.initial_analysis_key = int(stage.key)
+        result.extend((stage, modal))
+        previous = modal
+    return result
 
 
 def configure_sequence(model, target, workflow):

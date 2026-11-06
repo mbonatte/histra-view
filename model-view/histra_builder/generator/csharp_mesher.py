@@ -149,11 +149,12 @@ class CSharpMesher:
     """Port of the straight ``BridgeMesher.AddBridge1`` path."""
 
     def __init__(self, spec: CSharpBridgeSpec, *, legacy_backfill: bool = False,
-                 previous_backfill: bool = False) -> None:
+                 previous_backfill: bool = False, legacy_monitoring_points: bool = False) -> None:
         self.spec = spec
         # Used only to recognize files generated before backfill clipping was fixed.
         self._legacy_backfill = legacy_backfill
         self._previous_backfill = previous_backfill
+        self._legacy_monitoring_points = legacy_monitoring_points
         self.nodes: Dict[int, Point3D] = {}
         self._node_index: Dict[Tuple[float, float, float], int] = {}
         self.quads: Dict[int, GeneratedQuad] = {}
@@ -1244,16 +1245,53 @@ class CSharpMesher:
                 if key is not None:
                     selected.append((key, f"Span {span_index} arch crown {label}"))
 
+        # The outer strips represent the spandrel walls only when their
+        # assigned strip material is masonry; do not label backfill as a wall.
+        templates = {int(t['Key']): t for t in DEFAULT_TEMPLATES}
+        templates.update({int(t['Key']): t for t in self.spec.material_templates})
+        walls = group_nodes(('CSharp_Fill',))
+        strip_walls = []
+        for label, index in (('-Y', min(range(len(centres)), key=lambda i: centres[i])),
+                             ('+Y', max(range(len(centres)), key=lambda i: centres[i]))):
+            strip = self.spec.definition.corsias[index]
+            if templates.get(strip.material_key, {}).get('PurposeType') == 'MasonryMaterial':
+                strip_walls.append((label, centres[index]))
+
+        def wall_top(x, y):
+            pool = [(key, point) for key, point in walls.items() if abs(point.y-y) <= tol]
+            if not pool:
+                return None
+            nearest = min(abs(point.x-x) for _, point in pool)
+            pool = [(key, point) for key, point in pool if abs(abs(point.x-x)-nearest) <= 1e-4]
+            return max(pool, key=lambda item: item[1].z)[0]
+
         pier_nodes = group_nodes(("CSharp_Pier",))
         for pier_index, pier in enumerate(self.spec.piers, start=1):
             if pier.H <= 0.0:
                 continue
             x_pier = self._element_origin(pier)
+            support_centres = (list(centres) if self._legacy_monitoring_points
+                               else [row[0] for row in self._support_rows(pier, centres)])
+            if not support_centres:
+                continue
             for level, z in (("top", 0.0), ("bottom", -pier.H)):
-                for label, y in (("-Y", y_neg), ("+Y", y_pos)):
+                for label, y in (("-Y", min(support_centres)), ("+Y", max(support_centres))):
                     key = pick(pier_nodes, y=y, x=x_pier, z=z)
                     if key is not None:
                         selected.append((key, f"Pier {pier_index} {level} {label}"))
+        if self._legacy_monitoring_points:
+            strip_walls = []
+        for span_index, x_crown in enumerate(span_centres, start=1):
+            for label, y in strip_walls:
+                key = wall_top(x_crown, y)
+                if key is not None:
+                    selected.append((key, f'Span {span_index} spandrel top {label}'))
+        for pier_index, pier in enumerate(self.spec.piers, start=1):
+            x_pier = self._element_origin(pier)
+            for label, y in strip_walls:
+                key = wall_top(x_pier, y)
+                if key is not None:
+                    selected.append((key, f'Pier {pier_index} spandrel top {label}'))
         # Avoid duplicate node keys (e.g. single-strip models where -Y = +Y).
         unique: List[Tuple[int, str]] = []
         seen: set[int] = set()

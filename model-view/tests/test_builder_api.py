@@ -260,6 +260,58 @@ class BuilderIntegrationTests(unittest.TestCase):
             [point.get('Key') for point in points],
         )
 
+    def test_monitoring_points_use_widened_pier_and_masonry_wall_strips(self):
+        payload = defaults()
+        payload['strips'][0]['material_key'] = 18
+        payload['strips'][-1]['material_key'] = 18
+        payload['piers'][0]['w2'] = 500
+        root = ET.fromstring(build({'mode': 'create', 'payload': payload}))
+        points = {p.get('Description', '').split(' · ')[0]: p for p in root.findall('ModelPoint')}
+        for label in ('Span 1 spandrel top -Y', 'Span 1 spandrel top +Y',
+                      'Pier 1 spandrel top -Y', 'Pier 1 spandrel top +Y'):
+            self.assertIn(label, points)
+        for side in ('-Y', '+Y'):
+            pier = points[f'Pier 1 top {side}'].get('Point')
+            wall = points[f'Pier 1 spandrel top {side}'].get('Point')
+            py = float(pier.split(';')[1])
+            wy = float(wall.split(';')[1])
+            self.assertGreater(abs(py), abs(wy))
+
+    def test_legacy_generated_points_migrate_without_changing_existing_keys(self):
+        from builder_api import _regenerated_geometry, _regenerate_export
+        payload = defaults()
+        payload['strips'][0]['material_key'] = 18
+        payload['strips'][-1]['material_key'] = 18
+        payload['piers'][0]['w2'] = 500
+        source = build({'mode': 'create', 'payload': payload})
+        legacy = _regenerated_geometry(source, legacy_monitoring_points=True)
+        old = ET.fromstring(legacy)
+        updated = ET.fromstring(_regenerate_export(legacy, legacy))
+        old_points, new_points = old.findall('ModelPoint'), updated.findall('ModelPoint')
+        self.assertGreater(len(new_points), len(old_points))
+        self.assertEqual([p.get('Key') for p in new_points[:len(old_points)]],
+                         [p.get('Key') for p in old_points])
+        active = updated.find("Analysis[@Name='Vert']/ActiveModelPoints")
+        self.assertEqual([item.get('Key') for item in active], [point.get('Key') for point in new_points])
+
+    def test_build_persists_minor_scour_preference(self):
+        from hrx_model import parse_hrx
+        payload = defaults()
+        payload['minor_scour_stages'] = True
+        source = build({'mode': 'create', 'payload': payload})
+        self.assertEqual(parse_hrx(source, 'test.hrx')['metadata']['HiStrAViewMinorScourStages'], 'true')
+
+    def test_add_next_scour_analysis_preserves_predecessor(self):
+        source = build({'mode': 'create', 'payload': defaults(),
+                        'operations': [{'op': 'add_next_scour_analysis'}]})
+        root = ET.fromstring(source)
+        previous = root.find("Analysis[@Name='scour_4']")
+        added = root.find("Analysis[@Name='scour_5']")
+        self.assertIsNotNone(added)
+        self.assertEqual(added.get('InitialAnalysisKey'), previous.get('Key'))
+        self.assertEqual(added.get('IntegrationMethod'), 'LoadControl')
+        self.assertEqual(added.get('Mult'), '0')
+
     def test_editor_exposes_every_native_masonry_attribute(self):
         materials = inspect_source(self.source)['materials']
         self.assertGreaterEqual(len(materials), 6)

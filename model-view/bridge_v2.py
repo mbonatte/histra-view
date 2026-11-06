@@ -1175,6 +1175,13 @@ def _saved_strain_available_ids(z):
         if quantity == 'strain' and all(valid):
             available.update(('globalStrainX', 'globalStrainY', 'globalStrainZ', 'globalStrainXY',
                               'globalStrainXZ', 'globalStrainYZ', 'principalStrainTensile', 'principalStrainCompressive'))
+    derived = z.get('springs/transverse_derived_plastic_strain')
+    mask = z.get('springs/transverse_derived_plastic_strain_valid')
+    if (derived is not None and mask is not None and np.asarray(mask).size
+            and np.asarray(mask, dtype=bool).all() and np.isfinite(derived).all()
+            and z.get('springs/sliding_plastic_strain') is not None
+            and z.get('springs/sliding_plastic_strain_valid') is not None):
+        available.add('derivedPlasticStrainNormal')
     return available
 
 
@@ -1191,10 +1198,12 @@ def _saved_strain_fields(z, mesh=None):
                            'localStressInPlane': 'plasticStrainInPlane',
                            'localStressOutOfPlane': 'plasticStrainOutOfPlane'},
         'plastic_ratio': {'localStressNormal': 'plasticStrainRatioNormal'},
+        'derived_plastic_strain': {'localStressNormal': 'derivedPlasticStrainNormal'},
     }
     out = {}
     for quantity, mapping in mappings.items():
-        names = [f'springs/{group}_{quantity}' for group in ('transverse', 'sliding')]
+        names = [f'springs/transverse_{quantity}',
+                 f'springs/sliding_{"plastic_strain" if quantity == "derived_plastic_strain" else quantity}']
         if any(name not in z or name + '_valid' not in z for name in names):
             continue
         transverse, sliding = (np.asarray(z[name], dtype=float) for name in names)
@@ -1210,7 +1219,7 @@ def _saved_strain_fields(z, mesh=None):
         # Scalar sliding maps do not depend on the missing normal values. The
         # temporary zeroes are never exposed as normal or tensor fields.
         proxy = dict(z)
-        if quantity in ('plastic_strain', 'plastic_ratio'):
+        if quantity in ('plastic_strain', 'plastic_ratio', 'derived_plastic_strain'):
             transverse = np.maximum(transverse, 0.0)
             sliding = np.maximum(sliding, 0.0)
         proxy['springs/transverse_stress'] = transverse if normal_ok else np.zeros_like(transverse)
@@ -1229,8 +1238,9 @@ def _saved_strain_fields(z, mesh=None):
                 if not (normal_ok and sliding_ok):
                     continue
             from result_fields import available_field
-            result = available_field(target, field['quadCornerValues'], field['step'],
-                                     'Saved final interface-spring strain; C# projection')
+            source = ('Derived using geometric reference lengths; not the native C# strain getter'
+                      if quantity == 'derived_plastic_strain' else 'Saved final interface-spring strain; C# projection')
+            result = available_field(target, field['quadCornerValues'], field['step'], source)
             out[target] = result
     return out
 

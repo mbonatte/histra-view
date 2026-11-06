@@ -355,7 +355,9 @@ def parse_hrx(data: bytes, name="Model.hrx"):
     load_combinations = _load_combinations(root)
     load_functions = _load_functions(root)
     model_points = [_model_point_record(e) for e in root.findall("ModelPoint")]
+    wizard = root.find('WizardData')
     return {"schemaVersion": 1, "name": name, "metadata": dict(root.attrib),
+            "pierCount": len(wizard.findall('Pier')) if wizard is not None else 0,
             "units": "HRX native units", "nodes": list(nodes.values()), "quads": quads,
             "materials": materials, "materialLibrary": material_library,
             "layers": [record(e) for e in root.findall("Layer")],
